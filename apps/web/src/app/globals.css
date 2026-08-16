@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+@theme {
+  /* Colors — Notion-style reference palette (see docs/architecture.md design notes) */
+  --color-notion-blue: #0075de;
+  --color-paper-warmth: #f6f5f4;
+  --color-pure-white: #ffffff;
+  --color-ink-black: #000000;
+  --color-charcoal: #111111;
+  --color-stone: #757575;
+  --color-graphite: #615d59;
+  --color-slate: #696969;
+  --color-sky-tint: #e6f3fe;
+  --color-marigold: #ffb110;
+  --color-coral: #f64932;
+  --color-saffron: #e89d01;
+  --color-vermillion: #e32d14;
+  --color-mocha: #b18164;
+  --color-signal-blue: #097fe8;
+  --color-sky-wash: #62aef0;
+  --color-midnight-ink: #02093a;
+  --color-peach: #f6d5b8;
+
+  /* Fonts */
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-serif: var(--font-source-serif), Georgia, "Times New Roman", serif;
+
+  /* Type scale */
+  --text-caption: 12px;
+  --text-caption--line-height: 1.33;
+  --text-caption--letter-spacing: 0.12px;
+
+  --text-body-sm: 14px;
+  --text-body-sm--line-height: 1.43;
+
+  --text-body: 16px;
+  --text-body--line-height: 1.5;
+
+  --text-subheading: 20px;
+  --text-subheading--line-height: 1;
+
+  --text-heading-sm: 22px;
+  --text-heading-sm--line-height: 1.27;
+  --text-heading-sm--letter-spacing: -0.242px;
+
+  --text-heading: 40px;
+  --text-heading--line-height: 1.5;
+
+  --text-heading-lg: 48px;
+  --text-heading-lg--line-height: 1.5;
+
+  --text-display-sm: 54px;
+  --text-display-sm--line-height: 1.04;
+  --text-display-sm--letter-spacing: -1.89px;
+
+  --text-display: 72px;
+  --text-display--line-height: 1.21;
+  --text-display--letter-spacing: -2.016px;
+
+  --text-display-lg: 96px;
+  --text-display-lg--line-height: 1.04;
+  --text-display-lg--letter-spacing: -4.608px;
+}
+
+:root {
+  color-scheme: light;
+}
+
+body {
+  background: var(--color-paper-warmth);
+  color: var(--color-ink-black);
+}
