@@ -41,7 +41,7 @@ function Mark({
 }) {
   return (
     <span
-      className={`inline-block shrink-0 overflow-hidden rounded-full ${className}`}
+      className={`shrink-0 overflow-hidden rounded-full ${className}`}
       style={{ width: size, height: size }}
     >
       <Image
@@ -186,7 +186,7 @@ export default function Home() {
     <div className="flex min-h-screen flex-col bg-paper-warmth">
       {/* Nav */}
       <header className="sticky top-0 z-50 border-b border-ink-black/8 bg-paper-warmth/90 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-[1440px] items-center justify-between px-6">
+        <div className="mx-auto flex h-16 max-w-[1680px] items-center justify-between px-6">
           <a href="#" className="text-heading-sm font-bold tracking-[-0.242px] text-ink-black">
             Cadence
           </a>
@@ -212,7 +212,7 @@ export default function Home() {
               href="#"
               className="rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity duration-200 ease-out hover:opacity-90"
             >
-              Get started
+              Get Cadence Free
             </a>
           </div>
         </div>
@@ -220,7 +220,7 @@ export default function Home() {
 
       <main className="flex-1">
         {/* Hero */}
-        <section className="relative mx-auto max-w-[1440px] px-6 pt-20 pb-16 text-center">
+        <section className="relative mx-auto max-w-[1680px] px-6 pt-20 pb-16 text-center">
           <div className="mb-8 flex items-center justify-center -space-x-4">
             {Object.values(MARKS).map((src) => (
               <Mark
@@ -251,7 +251,7 @@ export default function Home() {
                 href="#"
                 className="rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity duration-200 ease-out hover:opacity-90"
               >
-                Get started
+                Get Cadence Free
               </a>
               <a
                 href="#philosophy"
@@ -260,20 +260,6 @@ export default function Home() {
                 See how it works
               </a>
             </div>
-          </div>
-
-          {/* Category avatar row */}
-          <div className="mt-14 flex flex-wrap items-center justify-center gap-4">
-            {CATEGORY_MARKS.map((mark) => (
-              <div key={mark.label} className="flex flex-col items-center gap-2">
-                <div
-                  className={`flex h-11 w-11 items-center justify-center rounded-full border-2 bg-pure-white text-ink-black ${mark.border}`}
-                >
-                  <mark.Icon className="h-5 w-5" />
-                </div>
-                <span className="text-caption text-ink-black/40">{mark.label}</span>
-              </div>
-            ))}
           </div>
 
           {/* Product mockup: Today screen */}
@@ -343,7 +329,7 @@ export default function Home() {
         </section>
 
         {/* Quick actions */}
-        <section className="mx-auto max-w-[1440px] px-6 pb-20">
+        <section className="mx-auto max-w-[1680px] px-6 pb-20">
           <p className="text-center text-caption font-medium uppercase tracking-wide text-ink-black/40">
             What using it feels like
           </p>
@@ -367,7 +353,7 @@ export default function Home() {
         </section>
 
         {/* Philosophy */}
-        <section id="philosophy" className="relative mx-auto max-w-[1440px] px-6 py-20">
+        <section id="philosophy" className="relative mx-auto max-w-[1680px] px-6 py-20">
           <Mark
             src={MARKS.beanie}
             size={48}
@@ -394,7 +380,7 @@ export default function Home() {
         </section>
 
         {/* Categories */}
-        <section id="categories" className="mx-auto max-w-[1440px] px-6 py-20">
+        <section id="categories" className="mx-auto max-w-[1680px] px-6 py-20">
           <div className="grid items-center gap-12 md:grid-cols-2">
             <div>
               <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">
@@ -413,6 +399,20 @@ export default function Home() {
               <p className="mt-4 text-caption font-medium uppercase tracking-wide text-ink-black/40">
                 Example categories shown — yours will look different
               </p>
+
+              {/* Category avatar row */}
+              <div className="mt-6 flex flex-wrap gap-3">
+                {CATEGORY_MARKS.map((mark) => (
+                  <div key={mark.label} className="flex items-center gap-2">
+                    <div
+                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 bg-pure-white text-ink-black ${mark.border}`}
+                    >
+                      <mark.Icon className="h-3.5 w-3.5" />
+                    </div>
+                    <span className="text-caption text-ink-black/40">{mark.label}</span>
+                  </div>
+                ))}
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               {CATEGORIES.map((category) => (
@@ -434,7 +434,7 @@ export default function Home() {
         </section>
 
         {/* Leave */}
-        <section id="leave" className="mx-auto max-w-[1440px] px-6 py-20">
+        <section id="leave" className="mx-auto max-w-[1680px] px-6 py-20">
           <div className="grid items-center gap-12 md:grid-cols-2">
             <div className="order-2 md:order-1">
               <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">
@@ -490,7 +490,7 @@ export default function Home() {
         </section>
 
         {/* Sync */}
-        <section id="sync" className="mx-auto max-w-[1440px] px-6 py-20">
+        <section id="sync" className="mx-auto max-w-[1680px] px-6 py-20">
           <SectionHeader
             eyebrow="One system, three places"
             title="Cloud is the source of truth"
@@ -517,7 +517,7 @@ export default function Home() {
         </section>
 
         {/* Screens */}
-        <section id="screens" className="mx-auto max-w-[1440px] px-6 py-20">
+        <section id="screens" className="mx-auto max-w-[1680px] px-6 py-20">
           <SectionHeader eyebrow="Screens" title="Everything in seconds" />
           <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {SCREENS.map((screen) => (
@@ -568,7 +568,7 @@ export default function Home() {
                 href="#"
                 className="inline-flex rounded-lg bg-pure-white px-5 py-2.5 text-body-sm font-medium text-notion-blue transition-opacity duration-200 ease-out hover:opacity-90"
               >
-                Get started
+                Get Cadence Free
               </a>
             </div>
           </div>
@@ -577,7 +577,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="border-t border-ink-black/8">
-        <div className="mx-auto flex max-w-[1440px] flex-col items-center justify-between gap-6 px-6 py-12 md:flex-row">
+        <div className="mx-auto flex max-w-[1680px] flex-col items-center justify-between gap-6 px-6 py-12 md:flex-row">
           <div>
             <p className="text-heading-sm font-bold tracking-[-0.242px] text-ink-black">
               Cadence
@@ -586,7 +586,7 @@ export default function Home() {
               Fixed anchors. Flexible content.
             </p>
           </div>
-          <nav className="flex items-center gap-1">
+          <nav className="hidden items-center gap-1 md:flex">
             {NAV_LINKS.map((link) => (
               <a
                 key={link.href}
