@@ -2,12 +2,13 @@
 
 import { useEffect, useState } from "react";
 
+// Warm/cool hues alternate so two similar colors never land back-to-back.
 const WORDS = [
-  { word: "sustainable", bg: "bg-marigold", text: "text-ink-black" },
-  { word: "consistent", bg: "bg-coral", text: "text-pure-white" },
-  { word: "balanced", bg: "bg-sky-wash", text: "text-ink-black" },
-  { word: "flexible", bg: "bg-signal-blue", text: "text-pure-white" },
-  { word: "realistic", bg: "bg-mocha", text: "text-pure-white" },
+  { word: "sustainable", bg: "bg-marigold" },
+  { word: "consistent", bg: "bg-denim" },
+  { word: "balanced", bg: "bg-terracotta" },
+  { word: "flexible", bg: "bg-sky-wash" },
+  { word: "realistic", bg: "bg-orchid" },
 ];
 
 export function RotatingWord() {
@@ -25,7 +26,7 @@ export function RotatingWord() {
   return (
     <span
       key={current.word}
-      className={`animate-word-in inline-flex items-center rounded-full px-6 py-2 ${current.bg} ${current.text}`}
+      className={`animate-word-in inline-flex items-center rounded-full px-6 py-2 text-ink-black ${current.bg}`}
     >
       {current.word}
     </span>
