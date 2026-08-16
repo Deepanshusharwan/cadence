@@ -1,5 +1,22 @@
 import type { ReactNode } from "react";
 import { RotatingWord } from "@/components/rotating-word";
+import {
+  BookIcon,
+  TrendingUpIcon,
+  DumbbellIcon,
+  LightbulbIcon,
+  GlassesIcon,
+  FolderIcon,
+  BrowserIcon,
+  SmartphoneIcon,
+  PlayIcon,
+  CalendarMinusIcon,
+  SwapIcon,
+  BarChartIcon,
+  PencilIcon,
+  SparkleIcon,
+  SquiggleArrowIcon,
+} from "@/components/icons";
 
 const NAV_LINKS = [
   { href: "#philosophy", label: "Philosophy" },
@@ -9,12 +26,12 @@ const NAV_LINKS = [
 ];
 
 const CATEGORY_MARKS = [
-  { initials: "St", label: "Study", border: "border-signal-blue" },
-  { initials: "Ca", label: "Career Growth", border: "border-terracotta" },
-  { initials: "Ft", label: "Fitness", border: "border-marigold" },
-  { initials: "Sk", label: "New Skill", border: "border-sky-wash" },
-  { initials: "Rd", label: "Reading", border: "border-orchid" },
-  { initials: "Pr", label: "Side Project", border: "border-midnight-ink" },
+  { Icon: BookIcon, label: "Study", border: "border-signal-blue" },
+  { Icon: TrendingUpIcon, label: "Career Growth", border: "border-terracotta" },
+  { Icon: DumbbellIcon, label: "Fitness", border: "border-marigold" },
+  { Icon: LightbulbIcon, label: "New Skill", border: "border-sky-wash" },
+  { Icon: GlassesIcon, label: "Reading", border: "border-orchid" },
+  { Icon: FolderIcon, label: "Side Project", border: "border-midnight-ink" },
 ];
 
 const PHILOSOPHY_CARDS = [
@@ -51,19 +68,30 @@ const DAY_TYPES = [
 const CLIENTS = [
   {
     name: "Web",
+    Icon: BrowserIcon,
     border: "border-notion-blue",
     body: "The full dashboard. Sign in with Clerk, always reading current server state.",
   },
   {
     name: "iOS",
+    Icon: SmartphoneIcon,
     border: "border-signal-blue",
     body: "Native Swift. Offline session logging, syncs to the cloud when back online.",
   },
   {
     name: "Android",
-    border: "border-coral",
+    Icon: SmartphoneIcon,
+    border: "border-terracotta",
     body: "Native Kotlin. Offline session logging, syncs to the cloud when back online.",
   },
+];
+
+const QUICK_ACTIONS = [
+  { Icon: PlayIcon, label: "Start a session" },
+  { Icon: CalendarMinusIcon, label: "Mark a reduced day" },
+  { Icon: SwapIcon, label: "Swap a block" },
+  { Icon: BarChartIcon, label: "View this week's progress" },
+  { Icon: PencilIcon, label: "Log a session manually" },
 ];
 
 const SCREENS = [
@@ -156,7 +184,10 @@ export default function Home() {
       <main className="flex-1">
         {/* Hero */}
         <section className="mx-auto max-w-[1440px] px-6 pt-20 pb-16 text-center">
-          <Pill className="bg-sky-tint text-notion-blue">Planner + Consistency Tracker</Pill>
+          <div className="relative inline-block">
+            <Pill className="bg-sky-tint text-notion-blue">Planner + Consistency Tracker</Pill>
+            <SparkleIcon className="pointer-events-none absolute -right-6 -top-5 hidden h-4 w-4 text-marigold md:block" />
+          </div>
 
           <h1 className="mx-auto mt-6 max-w-3xl text-display-sm font-semibold text-ink-black md:text-display">
             A demanding year, made <RotatingWord />.
@@ -168,19 +199,22 @@ export default function Home() {
             — built around weekly commitments instead of daily guilt.
           </p>
 
-          <div className="mt-8 flex items-center justify-center gap-3">
-            <a
-              href="#"
-              className="rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity duration-200 ease-out hover:opacity-90"
-            >
-              Get started
-            </a>
-            <a
-              href="#philosophy"
-              className="rounded-lg bg-sky-tint px-4 py-2 text-body-sm font-medium text-notion-blue transition-opacity duration-200 ease-out hover:opacity-90"
-            >
-              See how it works
-            </a>
+          <div className="mt-8 flex items-center justify-center">
+            <div className="relative inline-flex items-center gap-3">
+              <SquiggleArrowIcon className="pointer-events-none absolute -left-24 top-6 hidden h-10 w-20 text-ink-black/25 lg:block" />
+              <a
+                href="#"
+                className="rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity duration-200 ease-out hover:opacity-90"
+              >
+                Get started
+              </a>
+              <a
+                href="#philosophy"
+                className="rounded-lg bg-sky-tint px-4 py-2 text-body-sm font-medium text-notion-blue transition-opacity duration-200 ease-out hover:opacity-90"
+              >
+                See how it works
+              </a>
+            </div>
           </div>
 
           {/* Category avatar row */}
@@ -188,9 +222,9 @@ export default function Home() {
             {CATEGORY_MARKS.map((mark) => (
               <div key={mark.label} className="flex flex-col items-center gap-2">
                 <div
-                  className={`flex h-11 w-11 items-center justify-center rounded-full border-2 bg-pure-white text-body-sm font-semibold text-ink-black ${mark.border}`}
+                  className={`flex h-11 w-11 items-center justify-center rounded-full border-2 bg-pure-white text-ink-black ${mark.border}`}
                 >
-                  {mark.initials}
+                  <mark.Icon className="h-5 w-5" />
                 </div>
                 <span className="text-caption text-ink-black/40">{mark.label}</span>
               </div>
@@ -255,6 +289,30 @@ export default function Home() {
                 </div>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* Quick actions */}
+        <section className="mx-auto max-w-[1440px] px-6 pb-20">
+          <p className="text-center text-caption font-medium uppercase tracking-wide text-ink-black/40">
+            What using it feels like
+          </p>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            {QUICK_ACTIONS.map((action) => (
+              <a
+                key={action.label}
+                href="#"
+                className="group flex items-center gap-3 rounded-xl border border-ink-black/8 bg-pure-white px-4 py-3 transition-colors duration-200 ease-out hover:bg-ink-black/[0.02]"
+              >
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-tint text-notion-blue">
+                  <action.Icon className="h-4 w-4" />
+                </span>
+                <span className="text-body-sm font-medium text-ink-black">{action.label}</span>
+                <span className="text-ink-black/30 transition-transform duration-200 ease-out group-hover:translate-x-0.5 group-hover:text-ink-black/60">
+                  →
+                </span>
+              </a>
+            ))}
           </div>
         </section>
 
@@ -390,9 +448,9 @@ export default function Home() {
                 className="rounded-xl border border-ink-black/8 bg-pure-white p-6"
               >
                 <div
-                  className={`flex h-10 w-10 items-center justify-center rounded-full border-2 bg-pure-white text-body-sm font-semibold text-ink-black ${client.border}`}
+                  className={`flex h-10 w-10 items-center justify-center rounded-full border-2 bg-pure-white text-ink-black ${client.border}`}
                 >
-                  {client.name.slice(0, 2)}
+                  <client.Icon className="h-5 w-5" />
                 </div>
                 <h3 className="mt-4 text-heading-sm font-bold tracking-[-0.242px] text-ink-black">
                   {client.name}
