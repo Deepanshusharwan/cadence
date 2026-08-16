@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { RotatingWord } from "@/components/rotating-word";
 
 const NAV_LINKS = [
   { href: "#philosophy", label: "Philosophy" },
@@ -158,11 +159,7 @@ export default function Home() {
           <Pill className="bg-sky-tint text-notion-blue">Planner + Consistency Tracker</Pill>
 
           <h1 className="mx-auto mt-6 max-w-3xl text-display-sm font-semibold text-ink-black md:text-display">
-            A demanding year, made{" "}
-            <span className="inline-flex items-center rounded-full bg-marigold px-6 py-2 text-ink-black">
-              sustainable
-            </span>
-            .
+            A demanding year, made <RotatingWord />.
           </h1>
 
           <p className="mx-auto mt-6 max-w-xl font-serif text-subheading leading-[1.56] text-graphite">
