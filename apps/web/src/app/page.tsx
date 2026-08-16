@@ -186,7 +186,7 @@ export default function Home() {
     <div className="flex min-h-screen flex-col bg-paper-warmth">
       {/* Nav */}
       <header className="sticky top-0 z-50 border-b border-ink-black/8 bg-paper-warmth/90 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-[1680px] items-center justify-between px-6">
+        <div className="mx-auto flex h-16 max-w-[1760px] items-center justify-between px-4 sm:px-6">
           <a href="#" className="text-heading-sm font-bold tracking-[-0.242px] text-ink-black">
             Cadence
           </a>
@@ -220,7 +220,7 @@ export default function Home() {
 
       <main className="flex-1">
         {/* Hero */}
-        <section className="relative mx-auto max-w-[1680px] px-6 pt-20 pb-16 text-center">
+        <section className="relative mx-auto max-w-[1760px] px-4 sm:px-6 pt-20 pb-16 text-center">
           <div className="mb-8 flex items-center justify-center -space-x-4">
             {Object.values(MARKS).map((src) => (
               <Mark
@@ -268,6 +268,11 @@ export default function Home() {
               src={MARKS.cat}
               size={44}
               className="pointer-events-none absolute -bottom-5 -right-5 hidden shadow-[0px_2px_6px_rgba(0,0,0,0.12)] lg:block"
+            />
+            <Mark
+              src={MARKS.signpost}
+              size={40}
+              className="pointer-events-none absolute -left-6 -top-6 hidden shadow-[0px_2px_6px_rgba(0,0,0,0.12)] lg:block"
             />
             <div className="flex items-center justify-between">
               <span className="text-heading-sm font-semibold text-ink-black">Today</span>
@@ -329,7 +334,7 @@ export default function Home() {
         </section>
 
         {/* Quick actions */}
-        <section className="mx-auto max-w-[1680px] px-6 pb-20">
+        <section className="mx-auto max-w-[1760px] px-4 sm:px-6 pb-20">
           <p className="text-center text-caption font-medium uppercase tracking-wide text-ink-black/40">
             What using it feels like
           </p>
@@ -353,7 +358,7 @@ export default function Home() {
         </section>
 
         {/* Philosophy */}
-        <section id="philosophy" className="relative mx-auto max-w-[1680px] px-6 py-20">
+        <section id="philosophy" className="relative mx-auto max-w-[1760px] px-4 sm:px-6 py-20">
           <Mark
             src={MARKS.beanie}
             size={48}
@@ -380,7 +385,7 @@ export default function Home() {
         </section>
 
         {/* Categories */}
-        <section id="categories" className="mx-auto max-w-[1680px] px-6 py-20">
+        <section id="categories" className="mx-auto max-w-[1760px] px-4 sm:px-6 py-20">
           <div className="grid items-center gap-12 md:grid-cols-2">
             <div>
               <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">
@@ -434,7 +439,12 @@ export default function Home() {
         </section>
 
         {/* Leave */}
-        <section id="leave" className="mx-auto max-w-[1680px] px-6 py-20">
+        <section id="leave" className="relative mx-auto max-w-[1760px] px-4 sm:px-6 py-20">
+          <Mark
+            src={MARKS.folder}
+            size={44}
+            className="pointer-events-none absolute left-10 top-10 hidden shadow-[0px_2px_6px_rgba(0,0,0,0.1)] lg:block"
+          />
           <div className="grid items-center gap-12 md:grid-cols-2">
             <div className="order-2 md:order-1">
               <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">
@@ -490,7 +500,12 @@ export default function Home() {
         </section>
 
         {/* Sync */}
-        <section id="sync" className="mx-auto max-w-[1680px] px-6 py-20">
+        <section id="sync" className="relative mx-auto max-w-[1760px] px-4 sm:px-6 py-20">
+          <Mark
+            src={MARKS.pinkHair}
+            size={44}
+            className="pointer-events-none absolute right-10 top-6 hidden shadow-[0px_2px_6px_rgba(0,0,0,0.1)] lg:block"
+          />
           <SectionHeader
             eyebrow="One system, three places"
             title="Cloud is the source of truth"
@@ -517,7 +532,12 @@ export default function Home() {
         </section>
 
         {/* Screens */}
-        <section id="screens" className="mx-auto max-w-[1680px] px-6 py-20">
+        <section id="screens" className="relative mx-auto max-w-[1760px] px-4 sm:px-6 py-20">
+          <Mark
+            src={MARKS.profileMan}
+            size={44}
+            className="pointer-events-none absolute left-10 top-4 hidden shadow-[0px_2px_6px_rgba(0,0,0,0.1)] lg:block"
+          />
           <SectionHeader eyebrow="Screens" title="Everything in seconds" />
           <div className="mt-12 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
             {SCREENS.map((screen) => (
@@ -535,7 +555,12 @@ export default function Home() {
         </section>
 
         {/* Pull quote */}
-        <section className="bg-midnight-ink py-24">
+        <section className="relative overflow-hidden bg-midnight-ink py-24">
+          <Mark
+            src={MARKS.beanie}
+            size={48}
+            className="pointer-events-none absolute left-12 bottom-12 hidden ring-2 ring-pure-white/20 lg:block"
+          />
           <div className="mx-auto max-w-3xl px-6 text-center">
             <p className="font-serif text-[32px] leading-[1.25] text-pure-white">
               &ldquo;The timetable exists to serve the user&apos;s goals and life. The
@@ -577,7 +602,7 @@ export default function Home() {
 
       {/* Footer */}
       <footer className="border-t border-ink-black/8">
-        <div className="mx-auto flex max-w-[1680px] flex-col items-center justify-between gap-6 px-6 py-12 md:flex-row">
+        <div className="mx-auto flex max-w-[1760px] flex-col items-center justify-between gap-6 px-4 sm:px-6 py-12 md:flex-row">
           <div>
             <p className="text-heading-sm font-bold tracking-[-0.242px] text-ink-black">
               Cadence
