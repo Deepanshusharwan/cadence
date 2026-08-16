@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Image from "next/image";
 import { RotatingWord } from "@/components/rotating-word";
 import {
   BookIcon,
@@ -17,6 +18,42 @@ import {
   SparkleIcon,
   SquiggleArrowIcon,
 } from "@/components/icons";
+
+// Illustrated character marks — see apps/web/public/marks/README.md for
+// provenance and the approval criteria used to pick this set.
+const MARKS = {
+  signpost: "/marks/signpost.png",
+  folder: "/marks/folder.png",
+  profileMan: "/marks/profile-man.png",
+  cat: "/marks/cat.png",
+  pinkHair: "/marks/pink-hair.png",
+  beanie: "/marks/beanie.png",
+};
+
+function Mark({
+  src,
+  size = 48,
+  className = "",
+}: {
+  src: string;
+  size?: number;
+  className?: string;
+}) {
+  return (
+    <span
+      className={`inline-block shrink-0 overflow-hidden rounded-full ${className}`}
+      style={{ width: size, height: size }}
+    >
+      <Image
+        src={src}
+        alt=""
+        width={size}
+        height={size}
+        className="h-full w-full object-cover"
+      />
+    </span>
+  );
+}
 
 const NAV_LINKS = [
   { href: "#philosophy", label: "Philosophy" },
@@ -183,20 +220,28 @@ export default function Home() {
 
       <main className="flex-1">
         {/* Hero */}
-        <section className="mx-auto max-w-[1440px] px-6 pt-20 pb-16 text-center">
-          <div className="relative inline-block">
-            <Pill className="bg-sky-tint text-notion-blue">Planner + Consistency Tracker</Pill>
-            <SparkleIcon className="pointer-events-none absolute -right-6 -top-5 hidden h-4 w-4 text-marigold md:block" />
+        <section className="relative mx-auto max-w-[1440px] px-6 pt-20 pb-16 text-center">
+          <div className="mb-8 flex items-center justify-center -space-x-4">
+            {Object.values(MARKS).map((src) => (
+              <Mark
+                key={src}
+                src={src}
+                size={72}
+                className="shadow-[0px_2px_6px_rgba(0,0,0,0.1)] ring-2 ring-paper-warmth"
+              />
+            ))}
           </div>
 
-          <h1 className="mx-auto mt-6 max-w-3xl text-display-sm font-semibold text-ink-black md:text-display">
-            A demanding year, made <RotatingWord />.
-          </h1>
+          <div className="relative mx-auto max-w-3xl">
+            <SparkleIcon className="pointer-events-none absolute right-8 top-0 hidden h-4 w-4 text-marigold md:block" />
+            <h1 className="text-display-sm font-semibold text-ink-black md:text-display">
+              A demanding year, made <RotatingWord />.
+            </h1>
+          </div>
 
           <p className="mx-auto mt-6 max-w-xl font-serif text-subheading leading-[1.56] text-graphite">
-            Cadence is a planner and tracker for anyone building a routine around a goal
-            that matters to them — a student, an office worker, a career change, a habit
-            — built around weekly commitments instead of daily guilt.
+            Set weekly targets, log real sessions, and stay consistent — built for
+            anyone chasing a goal.
           </p>
 
           <div className="mt-8 flex items-center justify-center">
@@ -232,7 +277,12 @@ export default function Home() {
           </div>
 
           {/* Product mockup: Today screen */}
-          <div className="mx-auto mt-16 max-w-2xl rounded-xl border border-ink-black/8 bg-pure-white p-6 text-left shadow-[0px_4px_12px_rgba(0,0,0,0.1)]">
+          <div className="relative mx-auto mt-16 max-w-2xl rounded-xl border border-ink-black/8 bg-pure-white p-6 text-left shadow-[0px_4px_12px_rgba(0,0,0,0.1)]">
+            <Mark
+              src={MARKS.cat}
+              size={44}
+              className="pointer-events-none absolute -bottom-5 -right-5 hidden shadow-[0px_2px_6px_rgba(0,0,0,0.12)] lg:block"
+            />
             <div className="flex items-center justify-between">
               <span className="text-heading-sm font-semibold text-ink-black">Today</span>
               <div className="flex items-center gap-2">
@@ -317,7 +367,12 @@ export default function Home() {
         </section>
 
         {/* Philosophy */}
-        <section id="philosophy" className="mx-auto max-w-[1440px] px-6 py-20">
+        <section id="philosophy" className="relative mx-auto max-w-[1440px] px-6 py-20">
+          <Mark
+            src={MARKS.beanie}
+            size={48}
+            className="pointer-events-none absolute right-10 top-16 hidden shadow-[0px_2px_6px_rgba(0,0,0,0.1)] lg:block"
+          />
           <SectionHeader
             eyebrow="Philosophy"
             title="Structure without rigidity"
@@ -493,7 +548,17 @@ export default function Home() {
         </section>
 
         {/* Final CTA */}
-        <section className="bg-marigold py-20">
+        <section className="relative overflow-hidden bg-marigold py-20">
+          <Mark
+            src={MARKS.profileMan}
+            size={56}
+            className="pointer-events-none absolute -left-4 bottom-8 hidden shadow-[0px_2px_6px_rgba(0,0,0,0.15)] lg:block"
+          />
+          <Mark
+            src={MARKS.pinkHair}
+            size={48}
+            className="pointer-events-none absolute -right-2 top-10 hidden shadow-[0px_2px_6px_rgba(0,0,0,0.15)] lg:block"
+          />
           <div className="mx-auto max-w-2xl px-6 text-center">
             <h2 className="text-heading-lg font-semibold text-ink-black">
               Plan the year. Protect the person.
