@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import Image from "next/image";
 import { RotatingWord } from "@/components/rotating-word";
+import { Mark, MARKS } from "@/components/marks";
 import {
   BookIcon,
   TrendingUpIcon,
@@ -18,42 +18,6 @@ import {
   SparkleIcon,
   SquiggleArrowIcon,
 } from "@/components/icons";
-
-// Illustrated character marks — see apps/web/public/marks/README.md for
-// provenance and the approval criteria used to pick this set.
-const MARKS = {
-  signpost: "/marks/signpost.png",
-  folder: "/marks/folder.png",
-  profileMan: "/marks/profile-man.png",
-  cat: "/marks/cat.png",
-  pinkHair: "/marks/pink-hair.png",
-  beanie: "/marks/beanie.png",
-};
-
-function Mark({
-  src,
-  size = 48,
-  className = "",
-}: {
-  src: string;
-  size?: number;
-  className?: string;
-}) {
-  return (
-    <span
-      className={`shrink-0 overflow-hidden rounded-full ${className}`}
-      style={{ width: size, height: size }}
-    >
-      <Image
-        src={src}
-        alt=""
-        width={size}
-        height={size}
-        className="h-full w-full object-cover"
-      />
-    </span>
-  );
-}
 
 const NAV_LINKS = [
   { href: "#philosophy", label: "Philosophy" },
@@ -209,7 +173,7 @@ export default function Home() {
               Sign in
             </a>
             <a
-              href="#"
+              href="/setup"
               className="rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity duration-200 ease-out hover:opacity-90"
             >
               Get Cadence Free
@@ -248,7 +212,7 @@ export default function Home() {
             <div className="relative inline-flex items-center gap-3">
               <SquiggleArrowIcon className="pointer-events-none absolute -left-24 top-6 hidden h-10 w-20 text-ink-black/25 lg:block" />
               <a
-                href="#"
+                href="/setup"
                 className="rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity duration-200 ease-out hover:opacity-90"
               >
                 Get Cadence Free
@@ -590,7 +554,7 @@ export default function Home() {
             </h2>
             <div className="mt-8">
               <a
-                href="#"
+                href="/setup"
                 className="inline-flex rounded-lg bg-pure-white px-5 py-2.5 text-body-sm font-medium text-notion-blue transition-opacity duration-200 ease-out hover:opacity-90"
               >
                 Get Cadence Free
