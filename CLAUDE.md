@@ -6,7 +6,7 @@ After completing a feature, fix, or any other commitable change, show the propos
 
 ## Context
 
-Read `docs/timetable.md`, `docs/software-specification.md`, and `docs/architecture.md` before working on this project.
+Read `docs/software-specification.md` and `docs/architecture.md` before working on this project. `docs/examples/cs-student.md` is a fully worked example configuration (not the product definition itself) — read it for concrete illustration, not as a source of product requirements.
 
 ## Website design
 

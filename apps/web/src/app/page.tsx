@@ -9,18 +9,18 @@ const NAV_LINKS = [
 ];
 
 const CATEGORY_MARKS = [
-  { initials: "Un", label: "University", border: "border-signal-blue" },
-  { initials: "SD", label: "System Design", border: "border-coral" },
-  { initials: "DS", label: "DSA", border: "border-marigold" },
-  { initials: "Dv", label: "Development", border: "border-sky-wash" },
-  { initials: "RL", label: "Random Learning", border: "border-mocha" },
-  { initials: "Pr", label: "Projects", border: "border-midnight-ink" },
+  { initials: "St", label: "Study", border: "border-signal-blue" },
+  { initials: "Ca", label: "Career Growth", border: "border-terracotta" },
+  { initials: "Ft", label: "Fitness", border: "border-marigold" },
+  { initials: "Sk", label: "New Skill", border: "border-sky-wash" },
+  { initials: "Rd", label: "Reading", border: "border-orchid" },
+  { initials: "Pr", label: "Side Project", border: "border-midnight-ink" },
 ];
 
 const PHILOSOPHY_CARDS = [
   {
     title: "Fixed anchors, flexible content",
-    body: "Work 10–6, DSA 8–9 AM, and the evening study blocks are fixed. Which subject fills each block isn't.",
+    body: "Your fixed commitments and focus blocks stay put. Which category fills a given block doesn't.",
   },
   {
     title: "Weekly targets over daily perfection",
@@ -28,17 +28,17 @@ const PHILOSOPHY_CARDS = [
   },
   {
     title: "Consistency over intensity",
-    body: "The goal isn't another 12-hour study day. It's a system that survives a bad week and keeps moving.",
+    body: "The goal isn't another 12-hour day. It's a system that survives a bad week and keeps moving.",
   },
 ];
 
 const CATEGORIES = [
-  { name: "University", tier: "Tier 1", target: "8h / week", bg: "bg-marigold", text: "text-ink-black" },
-  { name: "System Design", tier: "Tier 1", target: "8h / week", bg: "bg-coral", text: "text-pure-white" },
-  { name: "DSA", tier: "Tier 2", target: "4 sessions / week", bg: "bg-signal-blue", text: "text-pure-white" },
-  { name: "Development", tier: "Tier 3", target: "No minimum", bg: "bg-sky-wash", text: "text-ink-black" },
-  { name: "Random Learning", tier: "Tier 4", target: "No minimum", bg: "bg-mocha", text: "text-pure-white" },
-  { name: "Projects", tier: "Weekends", target: "~5–8h", bg: "bg-midnight-ink", text: "text-pure-white" },
+  { name: "Study", tier: "Tier 1", target: "8h / week", bg: "bg-marigold", text: "text-ink-black" },
+  { name: "Career Growth", tier: "Tier 1", target: "6h / week", bg: "bg-terracotta", text: "text-ink-black" },
+  { name: "Fitness", tier: "Tier 2", target: "4 sessions / week", bg: "bg-signal-blue", text: "text-pure-white" },
+  { name: "New Skill", tier: "Tier 3", target: "No minimum", bg: "bg-sky-wash", text: "text-ink-black" },
+  { name: "Reading", tier: "Tier 4", target: "No minimum", bg: "bg-orchid", text: "text-ink-black" },
+  { name: "Side Project", tier: "Weekends", target: "~5h", bg: "bg-midnight-ink", text: "text-pure-white" },
 ];
 
 const DAY_TYPES = [
@@ -163,9 +163,9 @@ export default function Home() {
           </h1>
 
           <p className="mx-auto mt-6 max-w-xl font-serif text-subheading leading-[1.56] text-graphite">
-            Cadence is a planner and tracker for people running a job, a degree, and a
-            one-year goal at the same time — built around weekly commitments instead of
-            daily guilt.
+            Cadence is a planner and tracker for anyone building a routine around a goal
+            that matters to them — a student, an office worker, a career change, a habit
+            — built around weekly commitments instead of daily guilt.
           </p>
 
           <div className="mt-8 flex items-center justify-center gap-3">
@@ -210,7 +210,7 @@ export default function Home() {
             <div className="mt-6 space-y-3">
               <div className="flex items-center justify-between rounded-lg border border-ink-black/8 px-4 py-3">
                 <span className="text-body-sm text-slate">08:00–09:00</span>
-                <span className="text-body-sm font-medium text-ink-black">DSA</span>
+                <span className="text-body-sm font-medium text-ink-black">Study</span>
               </div>
               <div className="flex items-center justify-between rounded-lg border border-ink-black/8 px-4 py-3">
                 <span className="text-body-sm text-slate">10:00–18:00</span>
@@ -218,18 +218,18 @@ export default function Home() {
               </div>
               <div className="flex items-center justify-between rounded-lg border border-ink-black/8 px-4 py-3">
                 <span className="text-body-sm text-slate">19:00–21:00</span>
-                <span className="text-body-sm font-medium text-ink-black">System Design</span>
+                <span className="text-body-sm font-medium text-ink-black">Career Growth</span>
               </div>
               <div className="flex items-center justify-between rounded-lg border border-ink-black/8 px-4 py-3">
                 <span className="text-body-sm text-slate">21:30–23:30</span>
-                <span className="text-body-sm font-medium text-ink-black">University</span>
+                <span className="text-body-sm font-medium text-ink-black">Study</span>
               </div>
             </div>
 
             <div className="mt-6 space-y-3 border-t border-ink-black/8 pt-5">
               <div>
                 <div className="flex justify-between text-caption text-ink-black/60">
-                  <span>University</span>
+                  <span>Study</span>
                   <span>4.5 / 8h</span>
                 </div>
                 <div className="mt-1">
@@ -238,16 +238,16 @@ export default function Home() {
               </div>
               <div>
                 <div className="flex justify-between text-caption text-ink-black/60">
-                  <span>System Design</span>
-                  <span>3.0 / 8h</span>
+                  <span>Career Growth</span>
+                  <span>3.0 / 6h</span>
                 </div>
                 <div className="mt-1">
-                  <ProgressBar value={37} className="bg-coral" />
+                  <ProgressBar value={50} className="bg-terracotta" />
                 </div>
               </div>
               <div>
                 <div className="flex justify-between text-caption text-ink-black/60">
-                  <span>DSA</span>
+                  <span>Fitness</span>
                   <span>3 / 4 sessions</span>
                 </div>
                 <div className="mt-1">
@@ -263,7 +263,7 @@ export default function Home() {
           <SectionHeader
             eyebrow="Philosophy"
             title="Structure without rigidity"
-            body="“You completed a two-hour core study block. Your University target is healthy and System Design needs more attention this week.” Not: “You failed your 7 PM task.”"
+            body="“You completed a two-hour focused block. Your top-priority category is healthy, and a secondary category could use more attention this week.” Not: “You failed your 7 PM task.”"
           />
           <div className="mt-12 grid gap-6 md:grid-cols-3">
             {PHILOSOPHY_CARDS.map((card) => (
@@ -288,13 +288,17 @@ export default function Home() {
                 Categories
               </p>
               <h2 className="mt-3 text-heading-lg font-semibold text-ink-black">
-                Six categories. Two you can&apos;t skip.
+                Your categories. Your priorities.
               </h2>
               <p className="mt-4 text-body text-graphite">
-                University and System Design carry equal weight — the planner won&apos;t
-                quietly favor one. DSA has a weekly target, not a daily requirement.
-                Development and Random Learning stay flexible on purpose, and Projects
-                get the weekend.
+                Cadence ships with no built-in categories — you define what you&apos;re
+                building toward and how important each part is. Two categories can share
+                top priority; the planner won&apos;t quietly favor one. Session-based
+                categories get a weekly target instead of a daily requirement, and
+                no-minimum categories stay flexible on purpose.
+              </p>
+              <p className="mt-4 text-caption font-medium uppercase tracking-wide text-ink-black/40">
+                Example categories shown — yours will look different
               </p>
             </div>
             <div className="grid grid-cols-2 gap-4">

@@ -1,3 +1,9 @@
+# Example Configuration: CS Student Pursuing a Product-Based Company Role
+
+> **This is an example, not the product spec.** Cadence has no built-in categories, targets, or anchor times — see [`../software-specification.md`](../software-specification.md) for the generic, user-configurable product. What follows is one real, fully worked configuration: a working computer-science student's actual categories, weekly targets, and timetable, kept in full because it's a useful concrete illustration of how the generic mechanism gets filled in by a real person. If you're setting up your own categories, use this as inspiration, not a template you're required to follow.
+
+---
+
 # Personal Learning & Work Timetable
 
 ## 1. Purpose

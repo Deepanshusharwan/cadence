@@ -1,7 +1,7 @@
-# Timetable Planner & Consistency Tracker — Software Design Specification
+# Planner & Consistency Tracker — Software Design Specification
 
 > **Status:** Initial product/technical specification  
-> **Purpose:** Define the software we are going to build to manage the learning timetable, planning, consistency, leave, and progress system.
+> **Purpose:** Define the software we are going to build to manage a personal planning, consistency, leave, and progress system — for any goal, for any user.
 >
 > This document defines *what* the product does and is intentionally stack-agnostic. For the chosen client/backend stack, repo layout, auth, and the mobile sync model, see [`architecture.md`](architecture.md).
 
@@ -9,7 +9,7 @@
 
 # 1. Product Overview
 
-The application is a **planner + tracker** for a working computer-science student who wants to maintain a structured but flexible learning routine over the course of a year.
+The application is a **planner + tracker** for anyone who wants to maintain a structured but flexible routine toward their own goals over an extended period — a student, an office worker, someone studying for a certification, a parent rebuilding a habit, or anyone juggling a job or school with things they care about.
 
 It is intentionally **not** a simple calendar and not merely a time tracker.
 
@@ -23,30 +23,25 @@ The central design philosophy is:
 
 > **Fixed anchors + flexible content.**
 
-The application should provide enough structure to prevent procrastination and decision paralysis while preserving enough flexibility for work, college, social plans, energy fluctuations, outings, and unexpected events.
+The application should provide enough structure to prevent procrastination and decision paralysis while preserving enough flexibility for work, school, social plans, energy fluctuations, outings, and unexpected events.
+
+> **A note on examples in this document:** category names like *University*, *System Design*, and *DSA* appear in several places below purely as illustrations of how a mechanism works — they're inherited from one user's real configuration, preserved in full at [`examples/cs-student.md`](examples/cs-student.md). Nothing about categories, targets, or anchor times is hardcoded into the product itself; every user defines their own from scratch (§4).
 
 ---
 
 # 2. Primary Goal
 
-The user is working toward becoming sufficiently strong to move to a good product-based company within approximately one year.
+Every user defines their own long-term goal — a career move, a degree, a certification, a fitness target, a creative project, or simply "be more consistent about the things I keep meaning to do." Cadence does not assume what the goal is or how long it should take.
 
-The learning system therefore prioritizes:
+What the application provides instead is the scaffolding to structure a routine around whatever that goal is:
 
-1. University syllabus
-2. System Design
-3. DSA / Problem Solving
-4. Development
-5. Random Learning
-6. Projects
+- User-defined **categories** (§4), each with its own priority
+- User-defined **weekly targets** per category (§6)
+- A **leave system** so the routine survives real life (§13)
+- A **planner** that turns targets and priorities into a suggested schedule (§32)
+- A **tracker** that measures actual progress against those targets, honestly (§41)
 
-University and System Design are intentionally given **equal priority**.
-
-DSA is important but intentionally receives less time than the two core areas.
-
-Development and Random Learning are flexible.
-
-Projects are primarily a weekend activity.
+For a fully worked example — one real user's categories, priorities, and weekly targets, built around a one-year job-search goal — see [`examples/cs-student.md`](examples/cs-student.md).
 
 ---
 
@@ -58,11 +53,11 @@ The application must not become a prison-like timetable.
 
 Bad design:
 
-> "You were supposed to study System Design at 7:00 PM, but you studied University instead. Failed."
+> "You were supposed to work on Category B at 7:00 PM, but you worked on Category A instead. Failed."
 
 Desired design:
 
-> "You completed a two-hour core study block. Your University target is healthy and System Design needs more attention this week."
+> "You completed a two-hour focused block. Your top-priority category is healthy, and a secondary category could use more attention this week."
 
 The application should care more about **weekly commitments and priorities** than exact adherence to every suggested subject.
 
@@ -70,21 +65,18 @@ The application should care more about **weekly commitments and priorities** tha
 
 ## 3.2 Fixed anchors + flexible content
 
-Some times are intentionally fixed:
+Some times are intentionally fixed — anchors the user defines once, which the planner then respects:
 
-- Work: 10 AM–6 PM
-- DSA: 8–9 AM by default
-- Evening study: 7 PM start
-- Main evening blocks
-- Weekly review
+- A fixed commitment block (e.g. a job or class schedule)
+- A preferred morning/priority block, if the user wants one
+- One or more evening/focus blocks
+- A weekly review
 
 Other things remain flexible:
 
-- Which core subject occupies a study block
-- Development
-- Random Learning
-- Evening walks
-- Social time
+- Which category occupies a given focus block
+- Lower-priority categories
+- Walks, social time, downtime
 - Weekend activities
 - Catch-up sessions
 
@@ -92,13 +84,9 @@ Other things remain flexible:
 
 ## 3.3 Weekly targets over daily perfection
 
-The core commitments are weekly:
+Core commitments are weekly, not daily — expressed per category as an hour or session target the user sets (§6, §7).
 
-- University: 8h/week
-- System Design: 8h/week
-- DSA: 4h/week / 4 sessions
-
-The user has a normal-day study target of approximately 4 hours, but the application should not treat exactly four hours as mandatory every day.
+The user has a normal-day focused-time target that feels right for their life, but the application should not treat that number as mandatory every single day.
 
 A strong day can exceed the target.
 
@@ -132,228 +120,73 @@ and still maintain long-term progress.
 
 ---
 
-# 4. Learning Categories
+# 4. Categories
 
-The application must support the following categories.
+Cadence ships with **no built-in categories**. Every user creates their own — what they're called, how they're tracked, and how important they are is entirely up to the person using the app.
 
-## 4.1 University
+A category needs:
 
-Formal university/NEP syllabus work.
+- A **name** — anything. "Deep Work", "Spanish", "Job Applications", "Guitar Practice", "Thesis", "University", whatever fits the user's life.
+- A **tracking mode** — hour-based or session-based (§7)
+- A **weekly target**, if the user wants one — some categories genuinely have no minimum
+- A **priority tier**, relative to the user's other categories (§5)
+- Optionally, a **preferred scheduling pattern** — e.g. "weekday mornings", "weekends only", "no preference"
 
-Examples:
+### Categories aren't just about studying
 
-- Semester subjects
-- Lectures
-- Notes
-- Assignments
-- Exam preparation
-- Reading
-- Revision
-- Practice
+Despite "Learning Categories" being the working name early in this project, a category can represent anything the user is trying to build consistency around: a job search, a fitness routine, an instrument, a side project, household admin, a language, therapy homework, or an actual course of study — anything that benefits from a weekly target and a bit of gentle structure.
 
-Weekly minimum:
+### Example
 
-> **8 hours**
+An office worker studying for a certification exam on the side might define:
 
-Priority:
+```text
+Certification study    6h/week      Tier 1
+Job-skills practice     3h/week      Tier 2
+Reading                 no minimum   Tier 3
+Side project            no minimum   Weekend-preferred
+```
 
-> **Tier 1**
+A parent rebuilding a creative habit might define a single category with a 2-session/week target and nothing else. Both are complete, valid configurations of the same product.
 
----
-
-## 4.2 System Design
-
-Learning software/system architecture and design.
-
-Examples:
-
-- System design lectures
-- Architecture exercises
-- Distributed systems
-- Databases
-- Caching
-- Messaging
-- Scalability
-- Reliability
-- Design exercises
-
-Weekly minimum:
-
-> **8 hours**
-
-Priority:
-
-> **Tier 1**
-
----
-
-## 4.3 DSA / Problem Solving
-
-Interview-oriented problem solving.
-
-Examples:
-
-- LeetCode-style problems
-- Algorithms
-- Data structures
-- Problem-solving exercises
-- Complexity analysis
-
-Weekly minimum:
-
-> **4 hours / 4 sessions**
-
-Default morning slot:
-
-> **8:00–9:00 AM**
-
-DSA is intentionally not required every day.
-
-Once the weekly target is completed, the planner should stop forcing additional DSA sessions unless the user explicitly wants more.
-
-Priority:
-
-> **Tier 2**
-
----
-
-## 4.4 Development
-
-Career-oriented practical software-development learning.
-
-The current frontend course belongs here.
-
-Examples:
-
-- Frontend
-- React
-- Next.js
-- Backend
-- Django
-- APIs
-- Docker
-- Kubernetes
-- Cloud
-- Testing
-- Frameworks
-- Tooling
-
-There is currently **no hard weekly minimum**.
-
-Development is opportunistic and may happen:
-
-- During weekday flexible time
-- During evening blocks when core targets are healthy
-- On weekends
-- As part of project work
-
-Priority:
-
-> **Tier 3**
-
----
-
-## 4.5 Random Learning
-
-Curiosity-driven learning.
-
-Examples:
-
-- Raycasting
-- Compilers
-- Linux internals
-- Bluetooth protocols
-- Research papers
-- Interesting algorithms
-- New programming languages
-- Open-source internals
-- Technical rabbit holes
-
-There is:
-
-> **No minimum.**
-
-Random Learning exists to preserve curiosity.
-
-The user should not feel guilty for not doing it.
-
-Priority:
-
-> **Tier 4**
-
----
-
-## 4.6 Projects
-
-Projects are practical application/building work.
-
-Examples:
-
-- Building an app
-- Building a backend
-- Creating an open-source contribution
-- Building a tool
-- Experimenting with an architecture
-- Implementing something learned during the week
-
-Projects are primarily scheduled on weekends.
-
-Target:
-
-> Approximately 5–8 focused hours/week when possible.
-
-There is no strict minimum because real-life weekends vary.
+For a fully worked example — six categories, specific weekly hour/session targets, and a full weekday/weekend timetable — see [`examples/cs-student.md`](examples/cs-student.md).
 
 ---
 
 # 5. Priority Model
 
-The planner should use the following priority order when resolving conflicts:
+The planner resolves conflicts using **priority tiers the user assigns to their own categories** — there is no built-in ranking.
 
 ```text
-University
+Tier 1 (highest)
      │
-System Design
+Tier 2
      │
-DSA
+Tier 3
      │
-Development
+    ...
      │
-Random Learning
+Tier N (lowest)
 ```
 
-University and System Design are equal.
+Two or more categories can share the same tier — the planner does not need to break every tie. If two categories are both Tier 1, the scheduler should not systematically favor one over the other.
 
-This means the scheduler should not systematically prioritize one over the other.
-
-Projects have a special weekend priority and should generally receive the main Saturday project blocks.
+Categories flagged as weekend-preferred (§4) can carry a scheduling preference that pulls them toward Saturday/Sunday blocks, independent of their priority tier.
 
 ---
 
 # 6. Weekly Targets
 
-The application must support configurable weekly targets.
+The application must support configurable weekly targets, per category, per user. There are no built-in default categories or targets — every target is something the user set up themselves (§4).
 
-Initial defaults:
+Targets are stored as configuration, not hardcoded, and the user can change at any time:
 
-```text
-University       8h
-System Design    8h
-DSA              4h / 4 sessions
-Development      no minimum
-Random Learning  no minimum
-Projects         no strict minimum
-```
-
-Targets should be stored as configuration rather than hardcoded.
-
-Future versions may allow the user to change:
-
-- Target hours
-- Number of sessions
-- Priority
+- Target hours or target sessions
+- Priority tier
 - Preferred days
 - Preferred time windows
+
+For a worked set of concrete numbers from one real configuration, see [`examples/cs-student.md`](examples/cs-student.md).
 
 ---
 
@@ -631,90 +464,68 @@ It should not force the user to study when taking a day off is genuinely necessa
 
 # 18. Timetable Anchors
 
-The standard weekday timetable is:
+A weekday timetable is built from a small set of anchor **slot types** the user fills in with their own times and categories:
 
 ```text
-06:00–08:00    Wake-up window
-08:00–09:00    DSA
-09:00–10:00    Breakfast / preparation / buffer
-10:00–18:00    Work
-18:00–19:00    Work → Study transition
-19:00–21:00    Deep Study Block 1
-21:00–21:30    Dinner / break
-21:30–23:30    Deep Study Block 2
-23:30+         Wind-down / flexible
+Wake window              user-defined
+Morning priority block   user-defined (optional)
+Buffer / preparation     user-defined
+Fixed commitment block   user-defined (e.g. job or class hours)
+Transition buffer        user-defined
+Evening focus block(s)   user-defined
+Break                    user-defined
+Wind-down                flexible
 ```
 
-The exact task within study blocks is dynamic.
+The number of blocks, their order, and their duration are all configurable. A shift worker, a student with morning classes, and a parent working around a school pickup schedule will each fill this template out completely differently. The exact task within any focus block is still dynamic regardless of the template (§35).
+
+See [`examples/cs-student.md`](examples/cs-student.md) for one fully filled-in instance of this template.
 
 ---
 
 # 19. Wake-up Window
 
-Wake window:
+The user configures their own wake window — a default might be something like 6:00–8:00 AM, but the exact times are entirely user-defined.
 
-> **6:00–8:00 AM**
-
-The user prefers not to waste the morning.
-
-The application should therefore encourage:
+Many users prefer not to waste the morning. The application can therefore encourage:
 
 > Wake → routine → intentional activity
 
 rather than:
 
-> Wake → phone → doom-scroll → lose morning.
+> Wake → phone → doom-scroll → lose the morning.
 
-However, the system must not punish a late wake-up.
-
-If the user wakes at 8 AM, the planner should shift DSA appropriately.
+This is a preference, not a rule — some users won't want a morning nudge at all. The system must not punish a late wake-up: if the user wakes later than their configured window, the planner should shift the day's morning block(s) accordingly rather than marking anything an automatic failure.
 
 ---
 
-# 20. DSA Morning Anchor
+# 20. Morning Priority Anchor
 
-Default:
+If the user wants one, a single category can be given a preferred morning slot — a strong anchor placed early in the day, when cognitive freshness tends to be highest. This is optional; not every user wants a fixed morning block.
 
-> **8:00–9:00 AM**
-
-This is a strong anchor because DSA is intentionally placed in the morning when the user is likely to have better cognitive freshness.
-
-If the user wakes late:
-
-Example:
+If the user wakes late, the planner should shift this block rather than mark it an automatic failure:
 
 ```text
-Wake: 8:00
-DSA: 8:30–9:30
+Example:
+Configured wake: 6:00, configured anchor: 8:00–9:00
+Actual wake: 8:00 → anchor shifts to 8:30–9:30
 ```
 
-The planner should adjust the morning rather than mark the DSA session as an automatic failure.
+See [`examples/cs-student.md`](examples/cs-student.md) for a concrete instance (an 8:00–9:00 AM problem-solving block).
 
 ---
 
-# 21. Fixed Work Block
+# 21. Fixed Commitment Block
 
-Work:
+Most users have at least one large recurring block of time that isn't theirs to schedule — a job, classes, shift work, childcare. The user configures its start and end time; the planner treats this period as unavailable for ordinary focus time.
 
-> **10:00 AM–6:00 PM**
-
-This is a hard anchor.
-
-The planner should treat this period as unavailable for ordinary learning.
-
-Occasional work overruns should be represented as exceptions.
-
-The system should not normalize work spilling into the evening.
+Occasional overruns should be represented as exceptions. The system should not normalize this block routinely eating into the rest of the day.
 
 ---
 
-# 22. Work → Study Transition
+# 22. Transition Buffer
 
-Default:
-
-> **6:00–7:00 PM**
-
-This is a transition buffer.
+An optional buffer between the fixed commitment block and the evening focus block(s), if the user wants one.
 
 Possible activities:
 
@@ -726,75 +537,47 @@ Possible activities:
 - Personal tasks
 - Decompression
 
-The user does not need to use this entire hour for leisure.
-
-The purpose is simply to avoid an abrupt:
-
-> Work → Deep Study
-
-transition.
+The user does not need to fill this time with anything specific. Its purpose is simply to avoid an abrupt jump from the fixed commitment block straight into deep focus.
 
 ---
 
-# 23. Evening Study Block 1
+# 23. Evening Focus Block 1
 
-Default:
-
-> **7:00–9:00 PM**
-
-Primary categories:
-
-- University
-- System Design
-
-The planner should choose based on weekly progress.
+A user-defined evening focus block, the first of however many the user wants. Which category occupies it is chosen dynamically by the planner based on weekly progress and priority (§37), not fixed in advance.
 
 Example:
 
 ```text
-University: 6/8h
-System Design: 3/8h
+Category A: 6/8h this week
+Category B: 3/8h this week
 ```
 
-The next evening block should favor System Design.
+The next focus block should favor Category B.
 
 ---
 
-# 24. Dinner / Break
+# 24. Break
 
-Default:
-
-> **9:00–9:30 PM**
-
-This is a break between the two evening study blocks.
-
-The application should allow the user to shift this if their actual routine requires it.
+An optional break between focus blocks, if the user has more than one. Fully user-configurable — some users won't want a fixed evening break at all.
 
 ---
 
-# 25. Evening Study Block 2
+# 25. Evening Focus Block 2
 
-Default:
+A second evening focus block, if the user wants one. Primary categories are chosen the same way as block 1 (§23).
 
-> **9:30–11:30 PM**
+Secondary options, once core targets are healthy:
 
-Primary categories:
-
-- University
-- System Design
-
-Secondary options if core targets are healthy:
-
-- Development
-- DSA catch-up
-- Project-related learning
-- Random Learning
+- Lower-priority categories
+- Catch-up on a session-based category
+- Project-related work
+- Anything with no weekly minimum
 
 ---
 
 # 26. Late Night
 
-After 11:30 PM, the user can:
+After the last configured focus block, the user can:
 
 - Relax
 - Continue a task
@@ -803,122 +586,62 @@ After 11:30 PM, the user can:
 - Spend time socially
 - Wind down
 
-However, the planner should recognize sleep impact.
-
-The user prefers working at night, so the system should not force an overly early bedtime.
+The planner should recognize sleep impact here (§27), but this is a preference to respect either way: some users work better late and shouldn't be forced into an artificially early bedtime; others want a hard stop, and the application shouldn't validate an unsustainable pattern for them either.
 
 ---
 
 # 27. Sleep Model
 
-Target sleep:
+The user configures:
 
-> **12:00–1:00 AM**
+- A target sleep window
+- A flexible range around it
+- A latest normal bedtime
+- A wake window (§19)
 
-Flexible:
+The planner should never quietly recommend a schedule that's inconsistent with the user's *own* configured sleep window and morning anchor — e.g. a very late configured bedtime plus a very early configured wake window plus a demanding morning anchor, presented as if that combination were normal.
 
-> **12:00–3:00 AM**
+Sleep should be treated as a capacity input. If the previous night's sleep was short, the planner may:
 
-Latest normal bedtime:
-
-> **3:00 AM**
-
-Wake window:
-
-> **6:00–8:00 AM**
-
-Important:
-
-The planner should avoid recommending:
-
-> Sleep at 3 AM → wake at 6 AM → DSA at 8 AM
-
-as if this were normal.
-
-Sleep should be treated as a capacity input.
-
-If the previous night's sleep was short, the planner may:
-
-- Shift DSA later
+- Shift the morning anchor later
 - Suggest a reduced day
 - Reduce evening workload
-- Preserve important weekly targets while avoiding an unrealistic schedule
+- Preserve the most important weekly targets while avoiding an unrealistic schedule
 
 ---
 
 # 28. Weekend Planner
 
-## Saturday
+Weekends can have a different character from weekdays. For many users this means more room for weekend-preferred categories (§4, §5) — projects, hobbies, catch-up, or simply rest. This is configurable, not assumed: a user with no weekend-only categories can leave weekends unstructured entirely.
 
-Primary purpose:
+A common pattern — used in the worked example at [`examples/cs-student.md`](examples/cs-student.md) — is a morning routine followed by a large mid-day deep-work block for a weekend-preferred category, with the rest of the day open.
 
-> **Projects**
-
-Default structure:
-
-```text
-07:00–08:00    Wake + routine
-08:00–09:00    DSA if needed
-09:00–10:00    Breakfast
-10:00–13:00    Project Deep Work
-13:00–14:00    Lunch
-14:00–16:00    Project / Development
-16:00–19:00    Free / friends / outing
-19:00–20:00    Dinner
-20:00–22:00    Optional project / development / random learning
-22:00+         Free
-```
-
-Target:
-
-> ~4–6 focused hours.
+Target, if the user wants weekend focused time at all: a modest number of hours, not a second workweek.
 
 ---
 
 # 29. Sunday Planner
 
-Primary purpose:
+The second weekend day, if the user has one, is typically lighter than the first — more open time, room for catch-up on any category, and the weekly review (§52).
 
-> **Projects + catch-up + weekly reset**
-
-Default structure:
-
-```text
-07:00–08:00    Wake + routine
-08:00–09:00    DSA if needed
-09:00–10:00    Breakfast
-10:00–12:00    Project
-12:00–13:00    Lunch
-13:00–15:00    Free
-15:00–17:00    Core catch-up / Development
-17:00–19:00    Friends / walk / free
-19:00–20:00    Dinner
-20:00–21:00    Weekly review + next-week planning
-21:00+         Wind-down
-```
+Like all weekend structure, this is a pattern, not a requirement: a user without a weekly-review habit or without a second day of relative freedom can skip it.
 
 ---
 
-# 30. DSA Weekend Rule
+# 30. Session-Based Weekend Rule
 
-DSA is a:
-
-> **4 sessions/week**
-
-commitment.
-
-It does not need to happen every weekend.
+A session-based category (§7.2) with a weekly target doesn't need a session every weekend.
 
 The planner should check:
 
 ```text
-if dsa_sessions_completed >= 4:
-    do_not_schedule_dsa
+if sessions_completed >= weekly_session_target:
+    do_not_schedule_more_sessions
 else:
     schedule_remaining_sessions
 ```
 
-This prevents DSA from unnecessarily consuming weekend time.
+This prevents an already-satisfied category from unnecessarily consuming weekend time.
 
 ---
 
@@ -995,24 +718,21 @@ The planner should consider:
 
 ## Fixed commitments
 
-- Work
-- College
+- Work / school
 - Appointments
 - Planned events
 
 ## User preferences
 
-- Morning DSA
-- Evening study
-- Preferred study duration
+- Morning priority anchor, if configured
+- Evening focus blocks
+- Preferred focus-block duration
 - Preferred break duration
 - Sleep window
 
 ## Weekly requirements
 
-- University target
-- System Design target
-- DSA target
+- Each category's weekly target (§4, §6)
 
 ## Current progress
 
@@ -1040,8 +760,8 @@ The planner should consider:
 The scheduler should:
 
 1. Place fixed commitments first.
-2. Reserve DSA's preferred morning slot.
-3. Reserve evening core-study blocks.
+2. Reserve the user's preferred morning/priority slot, if configured.
+3. Reserve evening focus blocks.
 4. Calculate remaining weekly requirements.
 5. Identify categories falling behind.
 6. Allocate future blocks to those categories.
@@ -1061,8 +781,8 @@ The scheduler should distinguish between:
 
 Cannot normally be moved:
 
-- Work
-- Planned college events
+- The fixed commitment block (§21)
+- Planned events
 - Planned leave
 - Certain external appointments
 
@@ -1070,19 +790,19 @@ Cannot normally be moved:
 
 Strong recommendations but movable:
 
-- DSA 8–9 AM
-- Evening study 7 PM
-- Sunday weekly review
+- The user's morning priority anchor, if configured (§20)
+- Evening focus block start times (§23, §25)
+- The weekly review
 
 ### Flexible blocks
 
 Can be moved freely:
 
-- Development
-- Random Learning
-- Project work
+- Lower-priority categories
+- No-minimum categories
+- Project/weekend-preferred work
 - Catch-up
-- Extra study
+- Extra focused time
 
 This distinction should exist in the data model.
 
@@ -1633,19 +1353,19 @@ Potential notifications:
 
 ### Morning
 
-> "DSA block starts at 8:00 AM."
+> "Your morning priority block starts at 8:00 AM."
 
 ### Work shutdown
 
-> "Work block ends in 15 minutes."
+> "Your fixed commitment block ends in 15 minutes."
 
 ### Evening
 
-> "System Design is your highest-priority target tonight."
+> "[Category] is your highest-priority target tonight."
 
 ### Weekly
 
-> "You're 2 hours behind on System Design this week."
+> "You're 2 hours behind on [category] this week."
 
 ### Leave
 
@@ -1663,7 +1383,7 @@ Avoid:
 
 Prefer:
 
-> "Your System Design target is currently 2h behind. You have an available study block tonight."
+> "Your [category] target is currently 2h behind. You have an available focus block tonight."
 
 The application should be a **coach**, not a punishment system.
 
@@ -1693,13 +1413,13 @@ The planner should treat these as unavailable time.
 
 ---
 
-# 58. College Days
+# 58. Large External Commitment Days
 
-College attendance is usually rare but may consume an entire day or multiple days.
+Some external commitments are rare but consume an entire day or multiple days — a college session, a conference, a family obligation, a long appointment.
 
 The user should be able to enter:
 
-> College: 9 AM–5 PM
+> External commitment: 9 AM–5 PM
 
 The planner can automatically recommend:
 
@@ -1719,9 +1439,7 @@ The user remains in control.
 
 The application should not force leisure every day.
 
-The user explicitly prefers:
-
-> 1–2 hours of evening personal time when desired, but it can be skipped.
+Many users want some amount of evening personal time when desired, but skippable — the exact amount is a user preference, not a product default.
 
 Therefore, social/leisure time is represented as:
 
@@ -1729,7 +1447,7 @@ Therefore, social/leisure time is represented as:
 
 rather than a mandatory daily block.
 
-The 6–7 PM transition period is available for this purpose.
+The transition buffer (§22) is available for this purpose, but isn't the only place it can happen.
 
 ---
 
@@ -1974,7 +1692,7 @@ notes
 Types:
 
 ```text
-COLLEGE
+SCHOOL_OR_WORK
 SOCIAL
 PERSONAL
 TRAVEL
@@ -2154,14 +1872,14 @@ Suggested scheduling order:
 
 ```text
 1. Hard fixed events
-2. Work
+2. Fixed commitment block
 3. Planned leave
-4. DSA morning anchor
-5. Evening core blocks
-6. Remaining core deficit
-7. Project blocks on weekends
-8. Development
-9. Random Learning
+4. Morning priority anchor, if configured
+5. Evening focus blocks
+6. Remaining deficit on top-priority categories
+7. Weekend-preferred category blocks
+8. Lower-priority categories
+9. No-minimum categories
 10. Optional capacity
 ```
 
@@ -2275,7 +1993,7 @@ Each morning:
 3. Check fixed events.
 4. Check weekly deficits.
 5. Adjust today's suggested blocks.
-6. Show DSA and next study block.
+6. Show the morning priority anchor (if configured) and the next focus block.
 ```
 
 ---
@@ -2675,18 +2393,16 @@ Settings should include:
 
 ### Schedule
 
-- Work start/end
+- Fixed commitment start/end
 - Wake window
 - Sleep target
 - Latest bedtime
-- DSA preferred time
-- Evening study start
+- Morning priority anchor time
+- Evening focus block start
 
 ### Targets
 
-- University
-- System Design
-- DSA
+- Each category's weekly target (user-managed list, §4/§6)
 
 ### Leave
 
@@ -2695,9 +2411,9 @@ Settings should include:
 
 ### Notifications
 
-- Morning DSA
-- Work shutdown
-- Study start
+- Morning priority anchor
+- Fixed commitment ending
+- Focus block starting
 - Weekly review
 
 ---
@@ -2927,12 +2643,12 @@ MVP should focus on:
 
 ## Must have
 
-- Categories
+- User-defined categories
 - Weekly targets
 - Daily planner
-- Fixed work schedule
-- DSA morning block
-- Evening study blocks
+- Fixed commitment schedule
+- Morning priority anchor (optional, user-configured)
+- Evening focus blocks
 - Timer
 - Manual session logging
 - Weekly progress
@@ -2971,16 +2687,16 @@ Open app
 See today's plan
    │
    ▼
-DSA 08:00–09:00
+Morning priority block (if configured)
    │
    ▼
-Work 10:00–18:00
+Fixed commitment block
    │
    ▼
-Transition 18:00–19:00
+Transition buffer
    │
    ▼
-Evening study
+Evening focus block
    │
    ▼
 Start timer
@@ -3005,9 +2721,9 @@ Sunday
    ▼
 Weekly Review
    │
-   ├── University: X / 8h
-   ├── System Design: X / 8h
-   └── DSA: X / 4 sessions
+   ├── Category A: X / target
+   ├── Category B: X / target
+   └── Category C: X / target
    │
    ▼
 Analyze deficits
@@ -3034,45 +2750,34 @@ Week begins
 
 ```text
 MONDAY
-08:00 DSA
-10:00–18:00 Work
-19:00–21:00 University
-21:30–23:30 System Design
+[morning priority block, if configured]
+[fixed commitment block]
+[evening focus block] → Category A
+[evening focus block] → Category B
 
 TUESDAY
-08:00 DSA
-10:00–18:00 Work
-19:00–21:00 System Design
-21:30–23:30 University
+[morning priority block, if configured]
+[fixed commitment block]
+[evening focus block] → Category B
+[evening focus block] → Category A
 
-WEDNESDAY
-08:00 DSA
-10:00–18:00 Work
-19:00–21:00 University
-21:30–23:30 System Design
-
-THURSDAY
-08:00 DSA
-10:00–18:00 Work
-19:00–21:00 System Design
-21:30–23:30 University
+...
 
 FRIDAY
-No mandatory DSA if weekly session target is already met
-10:00–18:00 Work
-19:00–21:00 Core target catch-up
-21:30–23:30 Development / Core / free
+No mandatory session-based category if weekly target is already met
+[fixed commitment block]
+[evening focus block] → whichever category is furthest behind
 
 SATURDAY
-Projects
+Weekend-preferred category work
 
 SUNDAY
-Projects + catch-up + weekly review
+Weekend-preferred category work + catch-up + weekly review
 ```
 
-This is only an example.
+This is only a shape, not a schedule — the planner generates the actual category allocation dynamically per user (§37), and which days have a fixed commitment block at all depends on the user's own work/school pattern.
 
-The planner should generate the actual subject allocation dynamically.
+For a complete, filled-in week with real category names and clock times, see [`examples/cs-student.md`](examples/cs-student.md).
 
 ---
 
@@ -3081,17 +2786,17 @@ The planner should generate the actual subject allocation dynamically.
 The application should never:
 
 1. Treat planned leave as failure.
-2. Force exact subjects into every block.
+2. Force exact categories into every block.
 3. Create punishment backlogs automatically.
-4. Require DSA every day.
-5. Force Development every week.
-6. Force Random Learning.
+4. Require a session-based category every day.
+5. Force a no-minimum category into a weekly quota.
+6. Assume a category's presence just because it exists in someone else's configuration.
 7. Fill every available minute.
 8. Treat a missed day as a moral failure.
 9. Reset a traditional streak to zero.
 10. Override user decisions silently.
-11. Treat 25h/week as mandatory just because the user is capable of it.
-12. Turn weekends into another 10–6 work schedule.
+11. Treat a user's peak capability as their mandatory baseline.
+12. Turn weekends into another full workday.
 13. Require the user to compensate immediately for every missed session.
 
 ---
@@ -3102,27 +2807,27 @@ These should be treated as product invariants.
 
 ### Invariant 1
 
-University and System Design remain equal priority.
+Categories that share a priority tier remain equal — the scheduler never systematically favors one over the other.
 
 ### Invariant 2
 
-DSA has a weekly target, not a mandatory daily requirement.
+A session-based category has a weekly target, not a mandatory daily requirement.
 
 ### Invariant 3
 
-Work remains a fixed 10–6 block.
+The fixed commitment block, once configured, is a hard anchor the planner treats as unavailable.
 
 ### Invariant 4
 
-The 8–9 AM DSA block is the preferred anchor but can shift when the user wakes late.
+The morning priority anchor, if configured, is a preferred anchor that can shift when the user wakes late.
 
 ### Invariant 5
 
-The 6–7 PM period is a transition buffer.
+The transition buffer, if configured, exists between the fixed commitment block and evening focus blocks.
 
 ### Invariant 6
 
-Evening study starts around 7 PM by default.
+Evening focus blocks start at a time the user defines, not a product default.
 
 ### Invariant 7
 
@@ -3142,11 +2847,15 @@ Leave can carry for one additional month only.
 
 ### Invariant 11
 
-Development and Random Learning remain flexible.
+No-minimum categories remain flexible — never turned into a hidden quota.
 
 ### Invariant 12
 
 The planner must adapt instead of punishing deviations.
+
+### Invariant 13
+
+No category is built into the product. Every category, target, and anchor time is something a specific user configured.
 
 ---
 
@@ -3212,19 +2921,19 @@ The ultimate feedback loop is:
 
 # 120. Final Product Definition
 
-The application is a **flexible learning planner and consistency tracker** built around a small number of hard rules:
+The application is a **flexible planner and consistency tracker** built around a small number of hard mechanisms — with every specific number and name filled in by the user, not the product:
 
 ```text
-10–6          Work
-8–9           DSA anchor
-7–11:30       Evening core-study capacity
-8h/week       University
-8h/week       System Design
-4 sessions    DSA
-7 units       Monthly leave
-1 month       Leave carry-forward
-Weekend       Projects
+User-defined     Fixed commitment block
+User-defined     Morning priority anchor (optional)
+User-defined     Evening focus block(s)
+User-defined     Categories, each with its own weekly hour/session target
+7 units          Monthly leave
+1 month          Leave carry-forward
+User-defined     Weekend-preferred categories
 ```
+
+For one real instantiation of every one of these — actual categories, actual hours, actual clock times — see [`examples/cs-student.md`](examples/cs-student.md).
 
 Everything else is deliberately flexible.
 

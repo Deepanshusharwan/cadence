@@ -15,7 +15,7 @@ const sourceSerif = Source_Serif_4({
 export const metadata: Metadata = {
   title: "Cadence — Plan the year. Protect the person.",
   description:
-    "Cadence is a planner and consistency tracker for a demanding year — a job, a degree, and a one-year goal at once. Weekly commitments over daily guilt.",
+    "Cadence is a planner and consistency tracker for anyone building a routine around a goal that matters to them — students, office workers, and everyone in between. Weekly commitments over daily guilt.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
