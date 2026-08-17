@@ -272,7 +272,7 @@ function DayView({
 
   function startEdit(s: Session) {
     setEditingId(s.id);
-    setEditCategoryId(s.categoryId);
+    setEditCategoryId(s.categoryId ?? "");
     setEditMinutes(String(s.durationMinutes));
     setEditTags(s.tags.join(", "));
   }

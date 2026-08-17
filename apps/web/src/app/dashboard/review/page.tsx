@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useStore, type DayType } from "@/lib/store";
@@ -66,6 +66,11 @@ export default function ReviewPage() {
   }
 
   const review = state.reviews[weekKey] ?? { wins: "", problems: "", nextWeekChanges: "" };
+
+  useEffect(() => {
+    store.loadReview(weekKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekKey]);
 
   function save() {
     show("Weekly review saved");

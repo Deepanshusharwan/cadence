@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { Mark, MARKS } from "@/components/marks";
 import { CadenceMark } from "@/components/logo";
-import { useStore } from "@/lib/store";
+import { useStore, anchorAppliesOn, todayISO } from "@/lib/store";
 import {
   ChevronLeftIcon,
   HomeIcon,
@@ -50,6 +50,51 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       router.replace("/setup");
     }
   }, [store.ready, store.state.onboarded, router]);
+
+  // Anchor reminders (spec §55): a start-soon nudge for every anchor, plus an
+  // end-soon nudge for fixed (non-focus) blocks. `notifiedRef` is per-session
+  // only — it resets on reload, which is an acceptable prototype tradeoff
+  // rather than persisting a full notification log.
+  const notifiedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!store.state.settings.notificationsEnabled) return;
+    if (typeof Notification === "undefined") return;
+
+    function checkAnchors() {
+      if (Notification.permission !== "granted") return;
+      const now = new Date();
+      const today = todayISO(now);
+      const dayOfWeek = now.getDay();
+      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+      for (const anchor of store.state.anchors) {
+        if (!anchorAppliesOn(anchor, today, dayOfWeek)) continue;
+        const [startH, startM] = anchor.start.split(":").map(Number);
+        const startMinutes = startH * 60 + startM;
+        const startKey = `${today}-${anchor.id}-start`;
+        const untilStart = startMinutes - nowMinutes;
+        if (!notifiedRef.current.has(startKey) && untilStart >= 0 && untilStart <= 5) {
+          notifiedRef.current.add(startKey);
+          new Notification(`${anchor.label} starts soon`, { body: `${anchor.start}–${anchor.end}` });
+        }
+
+        if (!anchor.isFocusBlock) {
+          const [endH, endM] = anchor.end.split(":").map(Number);
+          const endMinutes = endH * 60 + endM;
+          const endKey = `${today}-${anchor.id}-end`;
+          const untilEnd = endMinutes - nowMinutes;
+          if (!notifiedRef.current.has(endKey) && untilEnd >= 0 && untilEnd <= 15) {
+            notifiedRef.current.add(endKey);
+            new Notification(`${anchor.label} ends soon`, { body: `Ends at ${anchor.end}` });
+          }
+        }
+      }
+    }
+
+    checkAnchors();
+    const id = setInterval(checkAnchors, 60000);
+    return () => clearInterval(id);
+  }, [store.state.settings.notificationsEnabled, store.state.anchors]);
 
   if (!store.ready || !store.state.onboarded) {
     return (

@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Mark, MARKS } from "@/components/marks";
 import { FlameIcon, PlayIcon, TrendingUpIcon } from "@/components/icons";
-import { useStore, todayISO, anchorAppliesOn, type Category, type DayType } from "@/lib/store";
+import { useStore, todayISO, type Category, type DayType } from "@/lib/store";
 import { useToast } from "@/components/toast";
 
 const DAY_TYPE_META: Record<DayType, { label: string; cost: string }> = {
@@ -67,82 +67,13 @@ export default function DashboardPage() {
     [state.categories, store]
   );
 
-  const rankedForFocus = useMemo(
-    () =>
-      [...progress]
-        .filter((p) => p.category.weeklyTarget !== null)
-        .sort((a, b) => a.category.priorityTier - b.category.priorityTier || b.deficit - a.deficit),
-    [progress]
-  );
-
   const categoriesWithTarget = progress.filter((p) => p.category.weeklyTarget !== null);
   const onTrackCount = categoriesWithTarget.filter((p) => p.deficit <= 0).length;
 
-  // Focus blocks are assigned a category in priority/deficit order, one
-  // per unpinned block — the 1st gets the highest-deficit category, the
-  // 2nd the next, and so on, cycling back through if there are more
-  // blocks than categories. A block with a pinned category (manual
-  // "swapping", §36) always uses that category instead.
-  const todayDayOfWeek = new Date().getDay();
-  const todaysAnchors = state.anchors
-    .filter((a) => anchorAppliesOn(a, today, todayDayOfWeek))
-    .sort((a, b) => a.start.localeCompare(b.start));
-
-  const unpinnedFocusBlocksToday = todaysAnchors.filter(
-    (a) => a.isFocusBlock && a.categoryIds.length === 0
-  );
-
-  function rankCategories(cats: Category[]) {
-    return [...cats].sort((a, b) => {
-      const tierDiff = a.priorityTier - b.priorityTier;
-      if (tierDiff !== 0) return tierDiff;
-      const deficitA = progress.find((p) => p.category.id === a.id)?.deficit ?? 0;
-      const deficitB = progress.find((p) => p.category.id === b.id)?.deficit ?? 0;
-      return deficitB - deficitA;
-    });
-  }
-
-  const anchorBlocks = todaysAnchors.map((a) => {
-    const pinnedCategories = a.categoryIds
-      .map((id) => state.categories.find((c) => c.id === id))
-      .filter((c): c is Category => !!c);
-
-    if (!a.isFocusBlock) {
-      const label =
-        pinnedCategories.length > 0
-          ? `${a.label} (${pinnedCategories.map((c) => c.name).join(", ")})`
-          : a.label;
-      return { start: a.start, time: `${a.start}–${a.end}`, label, dim: true, isEvent: false };
-    }
-    if (pinnedCategories.length > 0) {
-      const [top] = rankCategories(pinnedCategories);
-      return { start: a.start, time: `${a.start}–${a.end}`, label: top.name, dim: false, isEvent: false };
-    }
-    const focusIndex = unpinnedFocusBlocksToday.findIndex((x) => x.id === a.id);
-    const pick =
-      rankedForFocus.length > 0 ? rankedForFocus[focusIndex % rankedForFocus.length] : undefined;
-    return {
-      start: a.start,
-      time: `${a.start}–${a.end}`,
-      label: pick?.category.name ?? "Add a category to plan this",
-      dim: false,
-      isEvent: false,
-    };
-  });
-
-  const todaysEventBlocks = state.events
-    .filter((e) => e.date === today)
-    .map((e) => ({
-      start: e.start,
-      time: `${e.start}–${e.end}`,
-      label: e.title,
-      dim: false,
-      isEvent: true,
-    }));
-
-  const scheduleBlocks = [...anchorBlocks, ...todaysEventBlocks].sort((a, b) =>
-    a.start.localeCompare(b.start)
-  );
+  // Today's schedule (deficit/priority planner + pinned-category overrides,
+  // merged with today's events) comes from the backend now — architecture.md
+  // §2 keeps that scheduling logic server-side only, not duplicated here.
+  const scheduleBlocks = state.todaySchedule;
 
   function startTimerFor(id: string) {
     if (!id) return;

@@ -34,10 +34,45 @@ function describeRecurrence(a: { recurrence: AnchorRecurrence; date: string | nu
 const inputClass =
   "w-full rounded-lg border border-ink-black/12 bg-pure-white px-3 py-2 text-body-sm text-ink-black outline-none transition-colors focus:border-notion-blue";
 
+// `Intl.supportedValuesOf` isn't in every browser's lib.dom.d.ts yet — feature-detect at
+// runtime and fall back to a short curated list so the picker still works everywhere.
+const FALLBACK_TIMEZONES = [
+  "UTC",
+  "America/New_York",
+  "America/Chicago",
+  "America/Denver",
+  "America/Los_Angeles",
+  "America/Sao_Paulo",
+  "Europe/London",
+  "Europe/Berlin",
+  "Europe/Moscow",
+  "Africa/Cairo",
+  "Asia/Dubai",
+  "Asia/Kolkata",
+  "Asia/Dhaka",
+  "Asia/Bangkok",
+  "Asia/Shanghai",
+  "Asia/Tokyo",
+  "Australia/Sydney",
+  "Pacific/Auckland",
+];
+
+function listTimezones(): string[] {
+  const intlWithSupportedValues = Intl as typeof Intl & {
+    supportedValuesOf?: (key: string) => string[];
+  };
+  try {
+    return intlWithSupportedValues.supportedValuesOf?.("timeZone") ?? FALLBACK_TIMEZONES;
+  } catch {
+    return FALLBACK_TIMEZONES;
+  }
+}
+
 export default function SettingsPage() {
   const store = useStore();
   const { state } = store;
   const { show } = useToast();
+  const timezoneOptions = listTimezones();
 
   const [name, setName] = useState(state.profile.name);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -314,6 +349,77 @@ export default function SettingsPage() {
         <p className="mt-3 text-caption text-ink-black/40">
           Unused units carry into next month, capped at your max balance above.
         </p>
+      </section>
+
+      {/* Timezone & notifications */}
+      <section className="mt-6 rounded-xl border border-ink-black/8 bg-pure-white p-6">
+        <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">
+          Timezone &amp; notifications
+        </p>
+        <div className="mt-4 space-y-4">
+          <label className="block">
+            <span className="text-body-sm font-medium text-ink-black">Timezone</span>
+            <select
+              value={state.settings.timezone}
+              onChange={(e) => store.updateSettings({ timezone: e.target.value })}
+              className={`${inputClass} mt-1.5`}
+            >
+              {timezoneOptions.includes(state.settings.timezone) ? null : (
+                <option value={state.settings.timezone}>{state.settings.timezone}</option>
+              )}
+              {timezoneOptions.map((tz) => (
+                <option key={tz} value={tz}>
+                  {tz}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1.5 text-caption text-ink-black/40">
+              All times in Cadence are shown in your device&apos;s local time — this is used to
+              label what &quot;local&quot; means once your data syncs across devices.
+            </p>
+          </label>
+
+          <div className="flex items-center justify-between rounded-lg border border-ink-black/8 px-4 py-3">
+            <div>
+              <p className="text-body-sm font-medium text-ink-black">Anchor reminders</p>
+              <p className="text-caption text-ink-black/40">
+                Browser notifications a few minutes before an anchor starts, and when your fixed
+                commitment block ends.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={async () => {
+                if (state.settings.notificationsEnabled) {
+                  store.updateSettings({ notificationsEnabled: false });
+                  show("Anchor reminders turned off");
+                  return;
+                }
+                if (typeof Notification === "undefined") {
+                  show("This browser doesn't support notifications");
+                  return;
+                }
+                const permission =
+                  Notification.permission === "granted"
+                    ? "granted"
+                    : await Notification.requestPermission();
+                if (permission === "granted") {
+                  store.updateSettings({ notificationsEnabled: true });
+                  show("Anchor reminders turned on");
+                } else {
+                  show("Notification permission denied");
+                }
+              }}
+              className={`shrink-0 rounded-full px-3 py-1.5 text-caption font-medium transition-colors ${
+                state.settings.notificationsEnabled
+                  ? "bg-notion-blue text-pure-white"
+                  : "bg-ink-black/5 text-ink-black/60 hover:bg-ink-black/10"
+              }`}
+            >
+              {state.settings.notificationsEnabled ? "On" : "Off"}
+            </button>
+          </div>
+        </div>
       </section>
 
       {/* Wake window */}
