@@ -9,6 +9,7 @@ The single cloud API behind all three clients (web, iOS, Android). Owns the prim
   - ✅ Computed endpoints ported from the web prototype's client-side logic: `GET /today` (deficit/priority planner), `GET /leave` (carry-forward balance), `GET /streaks`, `GET /insights`
   - ✅ Automated test suite (`tests/`) covering the endpoints above against an isolated in-memory DB — passing
   - ✅ Wired up to `apps/web` — `src/lib/api.ts`/`store.tsx` on the web side talk to this API for everything, running against `DEV_AUTH_BYPASS=true` (a single fixed dev user)
+  - ✅ Caddy reverse proxy (`Caddyfile`) in front of a containerized API (`Dockerfile`), wired into `docker-compose.yml` behind the `full` profile — TLS termination + a stable :80/:443 entry point for a real deployment, automatic HTTPS via just setting `CADDY_DOMAIN` to a real domain. Verified end to end locally (Caddy → containerized API → Postgres, `caddy validate`/`caddy fmt` clean)
   - ⚠️ Clerk verification is implemented per Clerk's documented JWKS approach (`app/auth.py`) but **has not been live-tested** — this environment has no real Clerk project/keys, and `apps/web` has no `@clerk/nextjs` integration yet either. `DEV_AUTH_BYPASS=true` exists to develop/test everything else without them; never enable it against a real deployment
 
 See [`../docs/architecture.md`](../docs/architecture.md) for the API's role in the sync model and system architecture.
@@ -26,6 +27,17 @@ uv run uvicorn app.main:app --reload
 ```
 
 Open [http://localhost:8000/docs](http://localhost:8000/docs) for the interactive API docs, or `GET /health` for a bare liveness check.
+
+### Running the full stack (Caddy + containerized API + Postgres)
+
+The above runs the API directly on the host for fast iteration. To instead run the actual production topology — Caddy fronting a containerized API, both talking to Postgres over the compose network — use the `full` profile:
+
+```bash
+docker compose --profile full up -d --build
+curl http://localhost/health      # through Caddy, not :8000 directly — the API has no host port
+```
+
+Set `CADDY_DOMAIN=your-real-domain.com` (in `.env`, picked up by compose) to get automatic HTTPS instead of the local-dev `:80`-only fallback — nothing else changes. `docker compose --profile full up -d` still starts `db` too (it's always in the default set); only `api`/`caddy` are behind the profile.
 
 ## Tests
 
@@ -50,6 +62,9 @@ app/
   services/                   planner.py, leave.py, analytics.py — the engines from architecture.md §2
 alembic/                       Migrations
 tests/                          pytest suite against an in-memory DB
+Dockerfile                       Container image for `api` (docker-compose `full` profile)
+Caddyfile                         Reverse proxy in front of the containerized API
+docker-compose.yml                 db (always) + api/caddy (behind the `full` profile)
 ```
 
 ## Connecting a real Clerk project

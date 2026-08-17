@@ -1,0 +1,31 @@
+# Reverse proxy in front of the FastAPI app (architecture.md — Caddy is the
+# server's front door: TLS termination + a stable :80/:443 entry point,
+# uvicorn stays bound to the internal `api:8000` service and is never
+# exposed directly). Point a real domain at this host and set CADDY_DOMAIN
+# to it — Caddy fetches/renews a certificate automatically, nothing else in
+# this file changes.
+#
+# Local dev (docker compose up, no CADDY_DOMAIN set) falls back to plain
+# `:80` with automatic HTTPS disabled, since there's no real domain/DNS to
+# issue a certificate for.
+{
+	auto_https off
+}
+
+{$CADDY_DOMAIN::80} {
+	reverse_proxy api:8000
+
+	encode gzip
+
+	header {
+		# Caddy already terminates TLS in production; these are safe
+		# defaults for the plaintext hop to uvicorn behind it.
+		X-Content-Type-Options nosniff
+		X-Frame-Options DENY
+	}
+
+	log {
+		output stdout
+		format console
+	}
+}

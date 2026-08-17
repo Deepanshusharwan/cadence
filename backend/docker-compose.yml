@@ -9,6 +9,54 @@ services:
       - "5433:5432"
     volumes:
       - cadence_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cadence"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # `api` and `caddy` are opt-in via the "full" profile — day-to-day local
+  # dev still runs `uv run uvicorn --reload` directly against `db` (faster
+  # iteration than rebuilding a container on every change). This profile
+  # exists to run/test the actual production topology (Caddy -> containerized
+  # API -> Postgres) end to end: `docker compose --profile full up -d`.
+  api:
+    profiles: ["full"]
+    build: .
+    environment:
+      DATABASE_URL: postgresql+psycopg2://cadence:cadence@db:5432/cadence
+      DEV_AUTH_BYPASS: ${DEV_AUTH_BYPASS:-true}
+      CLERK_SECRET_KEY: ${CLERK_SECRET_KEY:-}
+      CLERK_PUBLISHABLE_KEY: ${CLERK_PUBLISHABLE_KEY:-}
+      CLERK_JWKS_URL: ${CLERK_JWKS_URL:-}
+      CLERK_ISSUER: ${CLERK_ISSUER:-}
+      CORS_ORIGINS: ${CORS_ORIGINS:-["http://localhost:3000"]}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  caddy:
+    profiles: ["full"]
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    # Bare `- CADDY_DOMAIN` (no `=value`) passes the host's env var through
+    # only if it's actually set, and omits it entirely otherwise — unlike
+    # `CADDY_DOMAIN: ${CADDY_DOMAIN:-}`, which always sets the container's
+    # env var (to an empty string when unset on the host) and so defeats
+    # the Caddyfile's own `{$CADDY_DOMAIN::80}` placeholder default, which
+    # only applies when the variable is truly absent.
+    environment:
+      - CADDY_DOMAIN
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
 
 volumes:
   cadence_db_data:
+  caddy_data:
+  caddy_config:
