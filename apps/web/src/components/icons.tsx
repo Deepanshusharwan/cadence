@@ -182,7 +182,7 @@ export function SettingsIcon(props: IconProps) {
 export function ChevronLeftIcon(props: IconProps) {
   return (
     <svg {...baseProps} {...props}>
-      <path d="M14.5 5.5 8 12l6.5 6.5" />
+      <path d="M15 5.5 9 12l6 6.5" />
     </svg>
   );
 }
@@ -219,9 +219,22 @@ export function SparkleIcon(props: IconProps) {
 
 export function SquiggleArrowIcon(props: IconProps) {
   return (
-    <svg viewBox="0 0 90 50" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" aria-hidden {...props}>
-      <path d="M4 8c14 22 38 32 62 30" />
-      <path d="M56 30c4 3 8 6 10 8-1-4-1-9 0-13" />
+    <svg
+      viewBox="0 0 90 50"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      {...props}
+    >
+      {/* Curve ends heading ~50° down-right; the two arrowhead wings are
+          symmetric around that exact tangent, so the head reads as a real
+          arrow instead of a crooked V regardless of how the whole icon is
+          rotated or mirrored for a given placement. */}
+      <path d="M6 6C20 8 50 28 60 40" />
+      <path d="M50 35.3 60 40 57.2 29.4" />
     </svg>
   );
 }

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { RotatingWord } from "@/components/rotating-word";
 import { Mark, MARKS } from "@/components/marks";
+import { CadenceMark } from "@/components/logo";
 import {
   BookIcon,
   TrendingUpIcon,
@@ -151,7 +152,8 @@ export default function Home() {
       {/* Nav */}
       <header className="sticky top-0 z-50 border-b border-ink-black/8 bg-paper-warmth/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-[1760px] items-center justify-between px-4 sm:px-6">
-          <a href="#" className="text-heading-sm font-bold tracking-[-0.242px] text-ink-black">
+          <a href="#" className="flex items-center gap-2 text-heading-sm font-bold tracking-[-0.242px] text-ink-black">
+            <CadenceMark className="h-5 w-5 shrink-0 text-notion-blue" />
             Cadence
           </a>
           <nav className="hidden items-center gap-1 md:flex">
@@ -210,7 +212,7 @@ export default function Home() {
 
           <div className="mt-8 flex items-center justify-center">
             <div className="relative inline-flex items-center gap-3">
-              <SquiggleArrowIcon className="pointer-events-none absolute -left-24 top-6 hidden h-10 w-20 text-ink-black/25 lg:block" />
+              <SquiggleArrowIcon className="pointer-events-none absolute -left-14 -top-1 hidden h-10 w-20 text-ink-black/25 lg:block" />
               <a
                 href="/setup"
                 className="rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity duration-200 ease-out hover:opacity-90"
@@ -228,6 +230,10 @@ export default function Home() {
 
           {/* Product mockup: Today screen */}
           <div className="relative mx-auto mt-16 max-w-2xl rounded-xl border border-ink-black/8 bg-pure-white p-6 text-left shadow-[0px_4px_12px_rgba(0,0,0,0.1)]">
+            {/* Scattered marks — echoes the avatar row above, floating around
+                the mockup the way Notion scatters its integration bubbles
+                around the hero screenshot, but built from Cadence's own
+                illustrated cast instead of third-party logos. */}
             <Mark
               src={MARKS.cat}
               size={44}
@@ -237,6 +243,31 @@ export default function Home() {
               src={MARKS.signpost}
               size={40}
               className="pointer-events-none absolute -left-6 -top-6 hidden shadow-[0px_2px_6px_rgba(0,0,0,0.12)] lg:block"
+            />
+            <div className="pointer-events-none absolute -left-28 top-28 hidden lg:block">
+              <Mark src={MARKS.folder} size={48} className="shadow-[0px_2px_6px_rgba(0,0,0,0.12)]" />
+              <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-marigold ring-2 ring-paper-warmth">
+                <SparkleIcon className="h-2.5 w-2.5 text-ink-black" />
+              </span>
+            </div>
+            <SquiggleArrowIcon className="pointer-events-none absolute -left-20 top-24 hidden h-8 w-14 -scale-x-100 text-ink-black/20 xl:block" />
+            <SquiggleArrowIcon className="pointer-events-none absolute -left-14 bottom-9 hidden h-7 w-12 -scale-x-100 text-ink-black/20 xl:block" />
+            <Mark
+              src={MARKS.beanie}
+              size={36}
+              className="pointer-events-none absolute -left-8 bottom-2 hidden shadow-[0px_2px_6px_rgba(0,0,0,0.12)] lg:block"
+            />
+            <SquiggleArrowIcon className="pointer-events-none absolute -right-28 top-6 hidden h-8 w-14 text-ink-black/20 xl:block" />
+            <div className="pointer-events-none absolute -right-24 top-14 hidden lg:block">
+              <Mark src={MARKS.pinkHair} size={44} className="shadow-[0px_2px_6px_rgba(0,0,0,0.12)]" />
+              <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-signal-blue ring-2 ring-paper-warmth">
+                <SparkleIcon className="h-2.5 w-2.5 text-pure-white" />
+              </span>
+            </div>
+            <Mark
+              src={MARKS.profileMan}
+              size={48}
+              className="pointer-events-none absolute -right-28 bottom-20 hidden shadow-[0px_2px_6px_rgba(0,0,0,0.12)] xl:block"
             />
             <div className="flex items-center justify-between">
               <span className="text-heading-sm font-semibold text-ink-black">Today</span>
@@ -571,7 +602,8 @@ export default function Home() {
       <footer className="border-t border-ink-black/8">
         <div className="mx-auto flex max-w-[1760px] flex-col items-center justify-between gap-6 px-4 sm:px-6 py-12 md:flex-row">
           <div>
-            <p className="text-heading-sm font-bold tracking-[-0.242px] text-ink-black">
+            <p className="flex items-center gap-2 text-heading-sm font-bold tracking-[-0.242px] text-ink-black">
+              <CadenceMark className="h-5 w-5 shrink-0 text-notion-blue" />
               Cadence
             </p>
             <p className="mt-1 text-body-sm text-ink-black/40">

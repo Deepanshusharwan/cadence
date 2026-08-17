@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { Mark, MARKS } from "@/components/marks";
+import { CadenceMark } from "@/components/logo";
 import { useStore } from "@/lib/store";
 import {
   ChevronLeftIcon,
@@ -65,24 +66,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           collapsed ? "w-[72px] px-2" : "w-56 px-4"
         }`}
       >
-        <div className="relative flex items-center">
+        <button
+          type="button"
+          onClick={() => setCollapsed((c) => !c)}
+          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          className="absolute -right-3 top-9 flex h-6 w-6 items-center justify-center rounded-full border border-ink-black/10 bg-pure-white text-ink-black/50 shadow-[0px_1px_3px_rgba(0,0,0,0.1)] transition-transform hover:text-ink-black"
+        >
+          <ChevronLeftIcon className={`h-3.5 w-3.5 transition-transform ${collapsed ? "rotate-180" : ""}`} />
+        </button>
+
+        {collapsed ? (
           <Link
             href="/"
-            className={`text-heading-sm font-bold tracking-[-0.242px] text-ink-black ${
-              collapsed ? "mx-auto" : "px-2"
-            }`}
+            aria-label="Cadence"
+            className="mx-auto flex h-9 w-9 items-center justify-center rounded-lg border border-ink-black/8 bg-pure-white text-notion-blue"
           >
-            {collapsed ? "C" : "Cadence"}
+            <CadenceMark className="h-5 w-5" />
           </Link>
-          <button
-            type="button"
-            onClick={() => setCollapsed((c) => !c)}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className="absolute -right-3 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full border border-ink-black/10 bg-pure-white text-ink-black/50 shadow-[0px_1px_3px_rgba(0,0,0,0.1)] transition-transform hover:text-ink-black"
-          >
-            <ChevronLeftIcon className={`h-3.5 w-3.5 transition-transform ${collapsed ? "rotate-180" : ""}`} />
-          </button>
-        </div>
+        ) : (
+          <Link href="/" className="flex items-center gap-2 px-2">
+            <CadenceMark className="h-5 w-5 shrink-0 text-notion-blue" />
+            <span className="text-heading-sm font-bold tracking-[-0.242px] text-ink-black">
+              Cadence
+            </span>
+          </Link>
+        )}
 
         <nav className="mt-8 flex flex-col gap-1">
           {NAV.map((item) => {
