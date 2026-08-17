@@ -8,7 +8,7 @@ import { useStore } from "@/lib/store";
 
 const NAV = [
   { href: "/dashboard", label: "Today" },
-  { href: "/dashboard/week", label: "Week" },
+  { href: "/dashboard/calendar", label: "Calendar" },
   { href: "/dashboard/progress", label: "Progress" },
   { href: "/dashboard/settings", label: "Settings" },
 ];

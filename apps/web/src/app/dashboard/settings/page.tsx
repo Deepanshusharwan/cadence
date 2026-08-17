@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Mark, MARKS, type MarkKey } from "@/components/marks";
+import { PencilIcon } from "@/components/icons";
 import { useStore, type TrackingMode } from "@/lib/store";
 import { useToast } from "@/components/toast";
 
@@ -17,10 +18,18 @@ export default function SettingsPage() {
   const { show } = useToast();
 
   const [name, setName] = useState(state.profile.name);
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [newCatName, setNewCatName] = useState("");
   const [newCatMode, setNewCatMode] = useState<TrackingMode>("hours");
   const [newCatTarget, setNewCatTarget] = useState("");
   const [newCatTier, setNewCatTier] = useState(1);
+  const [confirmingRemoveId, setConfirmingRemoveId] = useState<string | null>(null);
+
+  function saveProfile() {
+    store.setProfile({ name: name.trim() || state.profile.name });
+    setIsEditingProfile(false);
+    show("Profile updated");
+  }
 
   function addCategory() {
     if (!newCatName.trim()) return;
@@ -54,30 +63,56 @@ export default function SettingsPage() {
         <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">
           Profile
         </p>
-        <div className="mt-4 flex items-center gap-4">
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            onBlur={() => store.setProfile({ name: name.trim() || state.profile.name })}
-            className={inputClass}
-          />
-        </div>
-        <div className="mt-4 flex flex-wrap gap-3">
-          {(Object.keys(MARKS) as MarkKey[]).map((key) => (
+
+        {!isEditingProfile ? (
+          <div className="mt-4 flex items-center gap-3">
+            <Mark src={MARKS[state.profile.avatar]} size={44} />
+            <span className="text-body font-medium text-ink-black">{state.profile.name}</span>
             <button
-              key={key}
               type="button"
-              onClick={() => store.setProfile({ avatar: key })}
-              className={`rounded-full p-1 transition-all duration-200 ease-out ${
-                state.profile.avatar === key
-                  ? "scale-110 ring-2 ring-notion-blue ring-offset-2 ring-offset-pure-white"
-                  : "opacity-60 hover:opacity-100"
-              }`}
+              onClick={() => {
+                setName(state.profile.name);
+                setIsEditingProfile(true);
+              }}
+              aria-label="Edit profile"
+              className="ml-auto rounded-full p-2 text-ink-black/40 transition-colors hover:bg-ink-black/5 hover:text-ink-black"
             >
-              <Mark src={MARKS[key]} size={44} />
+              <PencilIcon className="h-4 w-4" />
             </button>
-          ))}
-        </div>
+          </div>
+        ) : (
+          <div className="mt-4">
+            <input
+              autoFocus
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className={inputClass}
+            />
+            <div className="mt-3 flex flex-wrap gap-3">
+              {(Object.keys(MARKS) as MarkKey[]).map((key) => (
+                <button
+                  key={key}
+                  type="button"
+                  onClick={() => store.setProfile({ avatar: key })}
+                  className={`rounded-full p-1 transition-all duration-200 ease-out ${
+                    state.profile.avatar === key
+                      ? "scale-110 ring-2 ring-notion-blue ring-offset-2 ring-offset-pure-white"
+                      : "opacity-60 hover:opacity-100"
+                  }`}
+                >
+                  <Mark src={MARKS[key]} size={44} />
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={saveProfile}
+              className="mt-3 rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity hover:opacity-90"
+            >
+              Done
+            </button>
+          </div>
+        )}
       </section>
 
       {/* Categories */}
@@ -92,12 +127,34 @@ export default function SettingsPage() {
               className={`flex items-center justify-between rounded-lg p-3 ${c.color} text-ink-black`}
             >
               <span className="font-semibold">{c.name}</span>
-              <button
-                onClick={() => removeCategory(c.id, c.name)}
-                className="rounded-full px-2 py-1 text-body-sm text-ink-black/50 hover:bg-ink-black/10"
-              >
-                ×
-              </button>
+              {confirmingRemoveId === c.id ? (
+                <div className="flex items-center gap-2">
+                  <span className="text-caption font-medium">Remove?</span>
+                  <button
+                    onClick={() => {
+                      removeCategory(c.id, c.name);
+                      setConfirmingRemoveId(null);
+                    }}
+                    className="rounded-full bg-ink-black/15 px-2.5 py-1 text-caption font-semibold hover:bg-ink-black/25"
+                  >
+                    Yes, remove
+                  </button>
+                  <button
+                    onClick={() => setConfirmingRemoveId(null)}
+                    className="rounded-full px-2.5 py-1 text-caption font-medium hover:bg-ink-black/10"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setConfirmingRemoveId(c.id)}
+                  className="rounded-full px-2 py-1 text-body-sm text-ink-black/50 hover:bg-ink-black/10"
+                  aria-label={`Remove ${c.name}`}
+                >
+                  ×
+                </button>
+              )}
             </div>
           ))}
         </div>
