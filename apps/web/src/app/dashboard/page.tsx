@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import { Mark, MARKS } from "@/components/marks";
 import { PlayIcon } from "@/components/icons";
 import { useStore, todayISO, type Category, type DayType } from "@/lib/store";
@@ -263,9 +265,25 @@ export default function DashboardPage() {
           This week
         </p>
         {progress.length === 0 ? (
-          <p className="mt-4 text-body-sm text-ink-black/50">
-            No categories yet — head to Settings to add your first one.
-          </p>
+          <div className="mt-2 flex flex-col items-center py-6 text-center">
+            <Image
+              src="/illustrations/empty-categories.png"
+              alt=""
+              width={340}
+              height={253}
+              className="h-auto w-full max-w-[220px]"
+            />
+            <p className="mt-4 text-body font-semibold text-ink-black">No categories yet</p>
+            <p className="mt-1 max-w-xs text-body-sm text-ink-black/50">
+              Add your first category to start organizing your week around it.
+            </p>
+            <Link
+              href="/dashboard/settings"
+              className="mt-4 rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity hover:opacity-90"
+            >
+              + Add your first category
+            </Link>
+          </div>
         ) : (
           <div className="mt-4 space-y-4">
             {progress.map(({ category, current, minutes, sessions }) => (

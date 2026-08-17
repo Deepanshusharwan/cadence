@@ -1,6 +1,7 @@
 "use client";
 
-import { Mark, MARKS } from "@/components/marks";
+import Image from "next/image";
+import Link from "next/link";
 import { useStore } from "@/lib/store";
 
 function ProgressBar({ value, className = "" }: { value: number; className?: string }) {
@@ -30,9 +31,25 @@ export default function ProgressPage() {
           This week
         </p>
         {state.categories.length === 0 ? (
-          <p className="mt-4 text-body-sm text-ink-black/50">
-            Nothing to show yet — add a category in Settings.
-          </p>
+          <div className="mt-2 flex flex-col items-center py-6 text-center">
+            <Image
+              src="/illustrations/empty-progress.png"
+              alt=""
+              width={340}
+              height={211}
+              className="h-auto w-full max-w-[220px]"
+            />
+            <p className="mt-4 text-body font-semibold text-ink-black">Nothing to show yet</p>
+            <p className="mt-1 max-w-xs text-body-sm text-ink-black/50">
+              Complete a session or two to see your progress grow.
+            </p>
+            <Link
+              href="/dashboard/settings"
+              className="mt-4 rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity hover:opacity-90"
+            >
+              Add a category
+            </Link>
+          </div>
         ) : (
           <div className="mt-4 space-y-4">
             {state.categories.map((c) => {
@@ -61,8 +78,7 @@ export default function ProgressPage() {
         )}
       </div>
 
-      <div className="mt-6 flex items-center gap-4 rounded-xl border border-dashed border-ink-black/15 p-6">
-        <Mark src={MARKS.profileMan} size={48} />
+      <div className="mt-6 rounded-xl border border-dashed border-ink-black/15 p-6">
         <p className="text-body-sm text-ink-black/60">
           Monthly totals, consistency %, and long-term trends land in a future update.
         </p>

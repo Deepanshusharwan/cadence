@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Mark, MARKS, type MarkKey } from "@/components/marks";
@@ -409,9 +410,15 @@ export default function SetupPage() {
         {step === 3 ? (
           <div className="animate-word-in text-center">
             <div className="mx-auto flex justify-center">
-              <Mark src={MARKS[avatar]} size={80} className="ring-4 ring-marigold" />
+              <Image
+                src="/illustrations/all-set.png"
+                alt=""
+                width={440}
+                height={394}
+                className="h-auto w-full max-w-[280px]"
+              />
             </div>
-            <div className="relative mt-4 inline-block">
+            <div className="relative mt-2 inline-block">
               <h1 className="text-heading-lg font-semibold text-ink-black">
                 You&apos;re all set, {name.trim() || "friend"}.
               </h1>

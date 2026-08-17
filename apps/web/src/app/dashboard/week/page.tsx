@@ -1,10 +1,16 @@
+import Image from "next/image";
 import Link from "next/link";
-import { Mark, MARKS } from "@/components/marks";
 
 export default function WeekPage() {
   return (
     <div className="mx-auto flex max-w-2xl flex-col items-center py-16 text-center">
-      <Mark src={MARKS.beanie} size={72} className="shadow-[0px_2px_6px_rgba(0,0,0,0.1)]" />
+      <Image
+        src="/illustrations/empty-week.png"
+        alt=""
+        width={340}
+        height={234}
+        className="h-auto w-full max-w-xs"
+      />
       <h1 className="mt-6 text-heading-lg font-semibold text-ink-black">
         The full week view is on its way
       </h1>
