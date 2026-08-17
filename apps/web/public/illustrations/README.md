@@ -21,8 +21,8 @@ characters.
 |---|---|---|
 | `404.png` | `src/app/not-found.tsx` | Lost — hiker + dog at a signpost |
 | `all-set.png` | `src/app/setup/page.tsx` (final step) | Done — celebratory jump |
-| `empty-categories.png` | `src/app/dashboard/page.tsx` (no categories yet) | Empty — box of items |
-| `empty-week.png` | `src/app/dashboard/week/page.tsx` (no sessions this week) | Empty — calendar desk scene |
+| `empty-categories.png` | `src/app/dashboard/page.tsx` and `src/app/dashboard/review/page.tsx` (no categories yet) | Empty — box of items |
+| `empty-week.png` | `src/app/dashboard/calendar/page.tsx` (Week view, no sessions this week) | Empty — calendar desk scene |
 | `empty-progress.png` | `src/app/dashboard/progress/page.tsx` (no categories yet) | Empty — easel with a chart |
 
 Each file is a resized PNG (long edge 340–480px) with real transparency

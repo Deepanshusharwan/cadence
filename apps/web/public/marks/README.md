@@ -30,7 +30,8 @@ dropped for that reason.
 Each is a 240×240px square PNG with its own colored ring/background already
 baked into the image — display them clipped to a circle (`rounded-full
 overflow-hidden`) and don't add another border on top. See the `Mark`
-component in `src/app/page.tsx` for the wrapper used everywhere on the page.
+component in `src/components/marks.tsx` for the shared wrapper used on the
+landing page and as the avatar picker in `/setup` and `/dashboard/settings`.
 
 ## Adding more
 

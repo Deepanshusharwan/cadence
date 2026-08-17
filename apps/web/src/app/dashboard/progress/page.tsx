@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useStore, type DayType } from "@/lib/store";
+import { LightbulbIcon } from "@/components/icons";
 
 function ProgressBar({ value, className = "" }: { value: number; className?: string }) {
   return (
@@ -98,6 +99,25 @@ export default function ProgressPage() {
   }, [state.sessions]);
 
   const maxTrendHours = Math.max(1, ...weeklyTrend.map((w) => w.hours));
+
+  const insights = store.insights();
+
+  const [historyQuery, setHistoryQuery] = useState("");
+  const [historyCategoryId, setHistoryCategoryId] = useState("");
+
+  const filteredHistory = useMemo(() => {
+    const query = historyQuery.trim().toLowerCase();
+    return [...state.sessions]
+      .filter((s) => {
+        if (historyCategoryId && s.categoryId !== historyCategoryId) return false;
+        if (!query) return true;
+        const category = state.categories.find((c) => c.id === s.categoryId);
+        const haystack = `${category?.name ?? ""} ${s.tags.join(" ")}`.toLowerCase();
+        return haystack.includes(query);
+      })
+      .sort((a, b) => b.date.localeCompare(a.date))
+      .slice(0, 100);
+  }, [state.sessions, state.categories, historyQuery, historyCategoryId]);
 
   return (
     <div className="mx-auto max-w-2xl">
@@ -234,6 +254,99 @@ export default function ProgressPage() {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Insights */}
+      {insights.length > 0 ? (
+        <div className="mt-6 rounded-xl border border-ink-black/8 bg-pure-white p-6">
+          <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">
+            Insights
+          </p>
+          <div className="mt-3 space-y-2.5">
+            {insights.map((insight) => (
+              <div key={insight.id} className="flex items-start gap-2.5">
+                <LightbulbIcon className="mt-0.5 h-4 w-4 shrink-0 text-marigold" />
+                <p className="text-body-sm text-ink-black">{insight.text}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
+      {/* Session history */}
+      <div className="mt-6 rounded-xl border border-ink-black/8 bg-pure-white p-6">
+        <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">
+          Session history
+        </p>
+        <div className="mt-3 flex gap-2">
+          <input
+            value={historyQuery}
+            onChange={(e) => setHistoryQuery(e.target.value)}
+            placeholder="Search category or tag…"
+            className="min-w-0 flex-1 rounded-lg border border-ink-black/12 bg-pure-white px-3 py-2 text-body-sm text-ink-black outline-none transition-colors focus:border-notion-blue"
+          />
+          <select
+            value={historyCategoryId}
+            onChange={(e) => setHistoryCategoryId(e.target.value)}
+            className="rounded-lg border border-ink-black/12 bg-pure-white px-2 py-2 text-body-sm text-ink-black"
+          >
+            <option value="">All categories</option>
+            {state.categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {filteredHistory.length === 0 ? (
+          <p className="mt-4 text-body-sm text-ink-black/40">
+            {state.sessions.length === 0 ? "No sessions logged yet." : "No sessions match that search."}
+          </p>
+        ) : (
+          <div className="mt-3 max-h-96 space-y-1.5 overflow-y-auto">
+            {filteredHistory.map((s) => {
+              const category = state.categories.find((c) => c.id === s.categoryId);
+              const dateLabel = new Date(s.date + "T00:00:00").toLocaleDateString(undefined, {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+              });
+              return (
+                <div
+                  key={s.id}
+                  className="flex items-center justify-between gap-2 rounded-lg border border-ink-black/8 px-3 py-2"
+                >
+                  <div className="min-w-0">
+                    <span className="flex items-center gap-2 text-body-sm text-ink-black">
+                      <span className={`h-2 w-2 shrink-0 rounded-full ${category?.color ?? "bg-ink-black/20"}`} />
+                      {category?.name ?? "Deleted category"}
+                      <span className="text-ink-black/40">· {dateLabel}</span>
+                    </span>
+                    {s.tags.length > 0 ? (
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {s.tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="rounded-full bg-ink-black/5 px-2 py-0.5 text-caption text-ink-black/50"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                  <span className="shrink-0 text-body-sm text-ink-black/50">
+                    {s.durationMinutes}m
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        {filteredHistory.length === 100 ? (
+          <p className="mt-2 text-caption text-ink-black/30">Showing the 100 most recent matches.</p>
+        ) : null}
       </div>
     </div>
   );

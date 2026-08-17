@@ -2,9 +2,17 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { useStore, todayISO, type DayType, type Session, type Category } from "@/lib/store";
+import {
+  useStore,
+  todayISO,
+  type DayType,
+  type Session,
+  type Category,
+  type CadenceEvent,
+  type EventType,
+} from "@/lib/store";
 import { useToast } from "@/components/toast";
-import { FlameIcon, SparkleIcon } from "@/components/icons";
+import { FlameIcon, SparkleIcon, PencilIcon } from "@/components/icons";
 
 type ViewMode = "day" | "week" | "month";
 
@@ -40,6 +48,18 @@ const DAY_TYPE_META: Record<
 
 const DAY_TYPE_ORDER: DayType[] = ["NORMAL", "REDUCED", "LEAVE", "MISSED"];
 const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+const EVENT_TYPE_LABELS: Record<EventType, string> = {
+  SCHOOL_OR_WORK: "School / Work",
+  SOCIAL: "Social",
+  PERSONAL: "Personal",
+  TRAVEL: "Travel",
+  OTHER: "Other",
+};
+const EVENT_TYPE_ORDER: EventType[] = ["SCHOOL_OR_WORK", "SOCIAL", "PERSONAL", "TRAVEL", "OTHER"];
+
+const dayFormInputClass =
+  "w-full rounded-lg border border-ink-black/12 bg-pure-white px-3 py-2 text-body-sm text-ink-black outline-none transition-colors focus:border-notion-blue";
 
 function toISO(d: Date) {
   const y = d.getFullYear();
@@ -165,9 +185,14 @@ export default function CalendarPage() {
           dayTypes={state.dayTypes}
           sessions={state.sessions}
           categories={state.categories}
+          events={state.events}
           onNavigate={navigate}
           onJumpToday={() => setAnchorDate(new Date())}
           onSetType={setDayTypeExplicit}
+          onUpdateSession={store.updateSession}
+          onDeleteSession={store.removeSession}
+          onAddEvent={store.addEvent}
+          onDeleteEvent={store.removeEvent}
         />
       ) : viewMode === "week" ? (
         <WeekView
@@ -208,15 +233,25 @@ function DayView({
   dayTypes,
   sessions,
   categories,
+  events,
   onNavigate,
   onJumpToday,
   onSetType,
+  onUpdateSession,
+  onDeleteSession,
+  onAddEvent,
+  onDeleteEvent,
 }: SharedDayProps & {
   date: Date;
   categories: Category[];
+  events: CadenceEvent[];
   onNavigate: (dir: 1 | -1) => void;
   onJumpToday: () => void;
   onSetType: (dateISO: string, type: DayType, label: string) => void;
+  onUpdateSession: (id: string, patch: Partial<Omit<Session, "id">>) => void;
+  onDeleteSession: (id: string) => void;
+  onAddEvent: (input: Omit<CadenceEvent, "id">) => void;
+  onDeleteEvent: (id: string) => void;
 }) {
   const dateISO = toISO(date);
   const isToday = dateISO === today;
@@ -228,6 +263,54 @@ function DayView({
     month: "long",
     day: "numeric",
   });
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editCategoryId, setEditCategoryId] = useState("");
+  const [editMinutes, setEditMinutes] = useState("");
+  const [editTags, setEditTags] = useState("");
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null);
+
+  function startEdit(s: Session) {
+    setEditingId(s.id);
+    setEditCategoryId(s.categoryId);
+    setEditMinutes(String(s.durationMinutes));
+    setEditTags(s.tags.join(", "));
+  }
+
+  function saveEdit(id: string) {
+    const minutes = Number(editMinutes);
+    onUpdateSession(id, {
+      categoryId: editCategoryId,
+      durationMinutes: minutes > 0 ? minutes : 1,
+      tags: editTags
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean),
+    });
+    setEditingId(null);
+  }
+
+  const dayEvents = events
+    .filter((e) => e.date === dateISO)
+    .sort((a, b) => a.start.localeCompare(b.start));
+  const [newEventTitle, setNewEventTitle] = useState("");
+  const [newEventStart, setNewEventStart] = useState("09:00");
+  const [newEventEnd, setNewEventEnd] = useState("10:00");
+  const [newEventType, setNewEventType] = useState<EventType>("PERSONAL");
+  const [confirmingDeleteEventId, setConfirmingDeleteEventId] = useState<string | null>(null);
+
+  function addEvent() {
+    if (!newEventTitle.trim()) return;
+    onAddEvent({
+      title: newEventTitle.trim(),
+      date: dateISO,
+      start: newEventStart,
+      end: newEventEnd,
+      type: newEventType,
+      notes: "",
+    });
+    setNewEventTitle("");
+  }
 
   return (
     <div className="mt-6 rounded-xl border border-ink-black/8 bg-pure-white p-6">
@@ -287,16 +370,114 @@ function DayView({
           <div className="mt-3 space-y-2">
             {daySessions.map((s) => {
               const category = categories.find((c) => c.id === s.categoryId);
+              if (editingId === s.id) {
+                return (
+                  <div key={s.id} className="space-y-2 rounded-lg border border-notion-blue/40 p-3">
+                    <div className="flex gap-2">
+                      <select
+                        value={editCategoryId}
+                        onChange={(e) => setEditCategoryId(e.target.value)}
+                        className={`${dayFormInputClass} flex-1`}
+                      >
+                        {categories.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="number"
+                        min={1}
+                        value={editMinutes}
+                        onChange={(e) => setEditMinutes(e.target.value)}
+                        className={`${dayFormInputClass} w-20`}
+                      />
+                    </div>
+                    <input
+                      value={editTags}
+                      onChange={(e) => setEditTags(e.target.value)}
+                      placeholder="Tags — comma separated"
+                      className={dayFormInputClass}
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => saveEdit(s.id)}
+                        className="rounded-lg bg-notion-blue px-3 py-1.5 text-caption font-medium text-pure-white hover:opacity-90"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => setEditingId(null)}
+                        className="rounded-lg px-3 py-1.5 text-caption font-medium text-ink-black/60 hover:bg-ink-black/5"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
               return (
                 <div
                   key={s.id}
-                  className="flex items-center justify-between rounded-lg border border-ink-black/8 px-4 py-2.5"
+                  className="flex items-center justify-between gap-2 rounded-lg border border-ink-black/8 px-4 py-2.5"
                 >
-                  <span className="flex items-center gap-2 text-body-sm text-ink-black">
-                    <span className={`h-2 w-2 rounded-full ${category?.color ?? "bg-ink-black/20"}`} />
-                    {category?.name ?? "Deleted category"}
-                  </span>
-                  <span className="text-body-sm text-ink-black/50">{s.durationMinutes}m</span>
+                  <div className="min-w-0">
+                    <span className="flex items-center gap-2 text-body-sm text-ink-black">
+                      <span className={`h-2 w-2 shrink-0 rounded-full ${category?.color ?? "bg-ink-black/20"}`} />
+                      {category?.name ?? "Deleted category"}
+                    </span>
+                    {s.tags.length > 0 ? (
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {s.tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="rounded-full bg-ink-black/5 px-2 py-0.5 text-caption text-ink-black/50"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1">
+                    <span className="text-body-sm text-ink-black/50">{s.durationMinutes}m</span>
+                    {confirmingDeleteId === s.id ? (
+                      <>
+                        <button
+                          onClick={() => {
+                            onDeleteSession(s.id);
+                            setConfirmingDeleteId(null);
+                          }}
+                          className="rounded-full bg-ink-black/15 px-2.5 py-1 text-caption font-semibold hover:bg-ink-black/25"
+                        >
+                          Yes, remove
+                        </button>
+                        <button
+                          onClick={() => setConfirmingDeleteId(null)}
+                          className="rounded-full px-2.5 py-1 text-caption font-medium hover:bg-ink-black/10"
+                        >
+                          Cancel
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button
+                          onClick={() => startEdit(s)}
+                          aria-label="Edit session"
+                          className="rounded-full p-1.5 text-ink-black/40 hover:bg-ink-black/5 hover:text-ink-black"
+                        >
+                          <PencilIcon className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => setConfirmingDeleteId(s.id)}
+                          aria-label="Delete session"
+                          className="rounded-full px-2 py-1 text-body-sm text-ink-black/40 hover:bg-ink-black/5 hover:text-ink-black"
+                        >
+                          ×
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -305,6 +486,100 @@ function DayView({
             </p>
           </div>
         )}
+      </div>
+
+      <div className="mt-6 border-t border-ink-black/8 pt-5">
+        <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">
+          Events
+        </p>
+        {dayEvents.length === 0 ? (
+          <p className="mt-3 text-body-sm text-ink-black/40">No events planned for this day.</p>
+        ) : (
+          <div className="mt-3 space-y-2">
+            {dayEvents.map((e) => (
+              <div
+                key={e.id}
+                className="flex items-center justify-between gap-2 rounded-lg border border-ink-black/8 px-4 py-2.5"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-body-sm font-medium text-ink-black">{e.title}</p>
+                  <p className="text-caption text-ink-black/40">
+                    {e.start}–{e.end} · {EVENT_TYPE_LABELS[e.type]}
+                  </p>
+                </div>
+                {confirmingDeleteEventId === e.id ? (
+                  <div className="flex shrink-0 items-center gap-1">
+                    <button
+                      onClick={() => {
+                        onDeleteEvent(e.id);
+                        setConfirmingDeleteEventId(null);
+                      }}
+                      className="rounded-full bg-ink-black/15 px-2.5 py-1 text-caption font-semibold hover:bg-ink-black/25"
+                    >
+                      Yes, remove
+                    </button>
+                    <button
+                      onClick={() => setConfirmingDeleteEventId(null)}
+                      className="rounded-full px-2.5 py-1 text-caption font-medium hover:bg-ink-black/10"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setConfirmingDeleteEventId(e.id)}
+                    aria-label={`Remove ${e.title}`}
+                    className="shrink-0 rounded-full px-2 py-1 text-body-sm text-ink-black/50 hover:bg-ink-black/10"
+                  >
+                    ×
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-3 space-y-2 rounded-xl border border-dashed border-ink-black/15 p-4">
+          <input
+            value={newEventTitle}
+            onChange={(e) => setNewEventTitle(e.target.value)}
+            placeholder="e.g. Dentist appointment"
+            className={dayFormInputClass}
+          />
+          <div className="flex items-center gap-2">
+            <input
+              type="time"
+              value={newEventStart}
+              onChange={(e) => setNewEventStart(e.target.value)}
+              className={dayFormInputClass}
+            />
+            <span className="shrink-0 text-ink-black/40">–</span>
+            <input
+              type="time"
+              value={newEventEnd}
+              onChange={(e) => setNewEventEnd(e.target.value)}
+              className={dayFormInputClass}
+            />
+          </div>
+          <select
+            value={newEventType}
+            onChange={(e) => setNewEventType(e.target.value as EventType)}
+            className={dayFormInputClass}
+          >
+            {EVENT_TYPE_ORDER.map((type) => (
+              <option key={type} value={type}>
+                {EVENT_TYPE_LABELS[type]}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={addEvent}
+            disabled={!newEventTitle.trim()}
+            className="rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity hover:opacity-90 disabled:opacity-40"
+          >
+            + Add event
+          </button>
+        </div>
       </div>
     </div>
   );

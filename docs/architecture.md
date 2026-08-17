@@ -70,4 +70,6 @@ Only `apps/web` is part of the pnpm workspace (`pnpm-workspace.yaml`) and Turbor
 
 ## 6. Status
 
-Scaffolding only. No application code has been written yet in any of `apps/web`, `apps/mobile/ios`, `apps/mobile/android`, or `backend` — each has a placeholder README describing its intended stack. The decisions above (stack per client, monorepo layout, Clerk, sync model) are settled; implementation is future work.
+`apps/web` now has a working app prototype (onboarding, dashboard, calendar, progress, review, settings) — see [`../apps/web/README.md`](../apps/web/README.md) for the detailed breakdown. It runs entirely client-side against `localStorage`, with the Planner-style deficit/priority logic (spec §74–76) implemented directly in `src/lib/store.tsx` — a deliberate prototype shortcut, not the target architecture. Per §2/§4 above, that logic is meant to live only in `backend`; migrating to the real architecture means moving it out of the client, not just adding an API layer underneath the current UI. No Clerk auth or backend calls are wired up yet.
+
+`apps/mobile/ios`, `apps/mobile/android`, and `backend` are still scaffolding only — each has a placeholder README describing its intended stack, and no application code has been written. The decisions above (stack per client, monorepo layout, Clerk, sync model) are settled; implementation is future work.

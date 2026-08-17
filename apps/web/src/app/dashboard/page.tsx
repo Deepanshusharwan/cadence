@@ -45,13 +45,14 @@ export default function DashboardPage() {
 
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    if (!state.timer) return;
+    if (!state.timer || state.timer.paused) return;
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, [state.timer]);
 
   const [manualCategoryId, setManualCategoryId] = useState("");
   const [manualMinutes, setManualMinutes] = useState("30");
+  const [manualTags, setManualTags] = useState("");
   const [timerCategoryId, setTimerCategoryId] = useState("");
 
   const progress = useMemo(
@@ -101,7 +102,7 @@ export default function DashboardPage() {
     });
   }
 
-  const scheduleBlocks = todaysAnchors.map((a) => {
+  const anchorBlocks = todaysAnchors.map((a) => {
     const pinnedCategories = a.categoryIds
       .map((id) => state.categories.find((c) => c.id === id))
       .filter((c): c is Category => !!c);
@@ -111,20 +112,37 @@ export default function DashboardPage() {
         pinnedCategories.length > 0
           ? `${a.label} (${pinnedCategories.map((c) => c.name).join(", ")})`
           : a.label;
-      return { time: `${a.start}–${a.end}`, label, dim: true };
+      return { start: a.start, time: `${a.start}–${a.end}`, label, dim: true, isEvent: false };
     }
     if (pinnedCategories.length > 0) {
       const [top] = rankCategories(pinnedCategories);
-      return { time: `${a.start}–${a.end}`, label: top.name };
+      return { start: a.start, time: `${a.start}–${a.end}`, label: top.name, dim: false, isEvent: false };
     }
     const focusIndex = unpinnedFocusBlocksToday.findIndex((x) => x.id === a.id);
     const pick =
       rankedForFocus.length > 0 ? rankedForFocus[focusIndex % rankedForFocus.length] : undefined;
     return {
+      start: a.start,
       time: `${a.start}–${a.end}`,
       label: pick?.category.name ?? "Add a category to plan this",
+      dim: false,
+      isEvent: false,
     };
   });
+
+  const todaysEventBlocks = state.events
+    .filter((e) => e.date === today)
+    .map((e) => ({
+      start: e.start,
+      time: `${e.start}–${e.end}`,
+      label: e.title,
+      dim: false,
+      isEvent: true,
+    }));
+
+  const scheduleBlocks = [...anchorBlocks, ...todaysEventBlocks].sort((a, b) =>
+    a.start.localeCompare(b.start)
+  );
 
   function startTimerFor(id: string) {
     if (!id) return;
@@ -164,19 +182,35 @@ export default function DashboardPage() {
       return;
     }
     const category = state.categories.find((c) => c.id === manualCategoryId);
+    const tags = manualTags
+      .split(",")
+      .map((t) => t.trim())
+      .filter(Boolean);
     checkCelebration(manualCategoryId, minutes);
-    store.logSessionManually(manualCategoryId, minutes);
+    store.logSessionManually(manualCategoryId, minutes, undefined, tags);
     setManualMinutes("30");
+    setManualTags("");
     show(`Logged ${minutes}m to ${category?.name ?? "category"}`);
+  }
+
+  function timerElapsedMs() {
+    if (!state.timer) return 0;
+    const running = state.timer.paused ? 0 : now - state.timer.startedAt;
+    return state.timer.accumulatedMs + running;
   }
 
   function handleStopTimer() {
     if (!state.timer) return;
     const category = state.categories.find((c) => c.id === state.timer!.categoryId);
-    const minutes = Math.max(1, Math.round((Date.now() - state.timer.startedAt) / 60000));
+    const minutes = Math.max(1, Math.round(timerElapsedMs() / 60000));
     checkCelebration(state.timer.categoryId, minutes);
     store.stopTimer();
     show(`Session saved — ${minutes}m added to ${category?.name ?? "category"}`);
+  }
+
+  function handleCancelTimer() {
+    store.cancelTimer();
+    show("Timer discarded");
   }
 
   const timerCategory = state.timer
@@ -262,15 +296,36 @@ export default function DashboardPage() {
           {state.timer && timerCategory ? (
             <div className="mt-4 text-center">
               <p className="text-body-sm font-medium text-ink-black">{timerCategory.name}</p>
-              <p className="mt-2 font-serif text-display-sm text-ink-black">
-                {formatElapsed(now - state.timer.startedAt)}
+              <p
+                className={`mt-2 font-serif text-display-sm text-ink-black ${state.timer.paused ? "opacity-40" : ""}`}
+              >
+                {formatElapsed(timerElapsedMs())}
               </p>
+              {state.timer.paused ? (
+                <p className="mt-1 text-caption font-medium uppercase tracking-wide text-ink-black/40">
+                  Paused
+                </p>
+              ) : null}
               <button
                 onClick={handleStopTimer}
                 className="mt-4 w-full rounded-lg bg-ink-black px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity hover:opacity-90"
               >
                 Stop session
               </button>
+              <div className="mt-2 flex gap-2">
+                <button
+                  onClick={() => (state.timer!.paused ? store.resumeTimer() : store.pauseTimer())}
+                  className="flex-1 rounded-lg bg-ink-black/5 px-4 py-2 text-body-sm font-medium text-ink-black hover:bg-ink-black/10"
+                >
+                  {state.timer.paused ? "Resume" : "Pause"}
+                </button>
+                <button
+                  onClick={handleCancelTimer}
+                  className="flex-1 rounded-lg bg-ink-black/5 px-4 py-2 text-body-sm font-medium text-ink-black/60 hover:bg-ink-black/10"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           ) : (
             <div className="mt-4">
@@ -333,6 +388,12 @@ export default function DashboardPage() {
                     Log
                   </button>
                 </div>
+                <input
+                  value={manualTags}
+                  onChange={(e) => setManualTags(e.target.value)}
+                  placeholder="Tags — comma separated, optional"
+                  className="mt-2 w-full rounded-lg border border-ink-black/12 bg-pure-white px-2 py-1.5 text-caption text-ink-black placeholder:text-ink-black/30"
+                />
               </div>
             </div>
           )}
@@ -347,13 +408,22 @@ export default function DashboardPage() {
             {scheduleBlocks.map((block, i) => (
               <div
                 key={i}
-                className="flex items-center justify-between rounded-lg border border-ink-black/8 px-4 py-3"
+                className={`flex items-center justify-between rounded-lg border px-4 py-3 ${
+                  block.isEvent ? "border-orchid/30 bg-orchid/5" : "border-ink-black/8"
+                }`}
               >
                 <span className="text-body-sm text-slate">{block.time}</span>
-                <span
-                  className={`text-body-sm font-medium ${block.dim ? "text-ink-black/40" : "text-ink-black"}`}
-                >
-                  {block.label}
+                <span className="flex items-center gap-2">
+                  {block.isEvent ? (
+                    <span className="rounded-full bg-orchid/20 px-2 py-0.5 text-caption font-medium text-orchid">
+                      Event
+                    </span>
+                  ) : null}
+                  <span
+                    className={`text-body-sm font-medium ${block.dim ? "text-ink-black/40" : "text-ink-black"}`}
+                  >
+                    {block.label}
+                  </span>
                 </span>
               </div>
             ))}

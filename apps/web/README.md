@@ -5,10 +5,11 @@ The website client: the marketing landing page, plus a working app (`/setup`, `/
 - **Stack:** Next.js (App Router) + TypeScript + Tailwind CSS v4
 - **Status:**
   - ✅ Landing page
-  - ✅ App prototype: onboarding (`/setup`), dashboard (`/dashboard`), calendar (`/dashboard/week`), progress (`/dashboard/progress`), settings (`/dashboard/settings`) — all real, backed by `src/lib/store.tsx` (a `localStorage`-persisted React context), not mockups
+  - ✅ App prototype: onboarding (`/setup`), dashboard (`/dashboard`), calendar (`/dashboard/calendar` — Day/Week/Month views), progress (`/dashboard/progress`), weekly review (`/dashboard/review`), settings (`/dashboard/settings`) — all real, backed by `src/lib/store.tsx` (a `localStorage`-persisted React context), not mockups
+  - ✅ Weekly Review, monthly/long-term Progress trends (consistency %, per-category monthly totals, 6-week trend), leave carry-forward, current/longest streak tracking
   - ❌ Auth (Clerk) — not wired up; today's "profile" is just a local browser record
-  - ❌ Backend/API integration — the app doesn't talk to `backend` yet
-  - ❌ Weekly Review, Projects, monthly/long-term Progress trends, leave carry-forward — spec'd but not built (see `docs/software-specification.md` §52, §70–71, §48–51, §14)
+  - ❌ Backend/API integration — the app doesn't talk to `backend` yet; the Planner-style deficit/priority logic (spec §74–76) currently lives client-side in `src/lib/store.tsx` as a prototype shortcut — see `docs/architecture.md` §6
+  - ❌ Projects — spec'd but not built (see `docs/software-specification.md` §70–71)
 
 The landing page follows the Notion-style visual language referenced in [`../../CLAUDE.md`](../../CLAUDE.md).
 

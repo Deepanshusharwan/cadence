@@ -57,6 +57,7 @@ export interface Session {
   categoryId: string;
   date: string; // YYYY-MM-DD
   durationMinutes: number;
+  tags: string[];
 }
 
 export type DayType = "NORMAL" | "REDUCED" | "LEAVE" | "MISSED";
@@ -66,9 +67,30 @@ export interface Profile {
   avatar: MarkKey;
 }
 
+// `accumulatedMs` holds time banked from prior run segments; `startedAt`
+// only marks the start of the *current* running segment, so pausing and
+// resuming never loses or double-counts elapsed time. While `paused`,
+// `startedAt` is stale and ignored by every reader.
 export interface Timer {
   categoryId: string;
   startedAt: number; // epoch ms
+  accumulatedMs: number;
+  paused: boolean;
+}
+
+export type EventType = "SCHOOL_OR_WORK" | "SOCIAL" | "PERSONAL" | "TRAVEL" | "OTHER";
+
+// A one-off external commitment (spec §57-58) — distinct from a recurring
+// ScheduleAnchor. Shown alongside the day's anchors but never auto-scheduled
+// into by the planner.
+export interface CadenceEvent {
+  id: string;
+  title: string;
+  date: string; // YYYY-MM-DD
+  start: string; // HH:MM
+  end: string; // HH:MM
+  type: EventType;
+  notes: string;
 }
 
 export interface WeeklyReview {
@@ -90,6 +112,7 @@ interface State {
   wakeEnd: string;
   anchors: ScheduleAnchor[];
   sessions: Session[];
+  events: CadenceEvent[];
   dayTypes: Record<string, DayType>;
   timer: Timer | null;
   settings: AppSettings;
@@ -156,13 +179,14 @@ const DEFAULT_STATE: State = {
   wakeEnd: "08:00",
   anchors: DEFAULT_ANCHORS,
   sessions: [],
+  events: [],
   dayTypes: {},
   timer: null,
   settings: DEFAULT_SETTINGS,
   reviews: {},
 };
 
-const STORAGE_KEY = "cadence-state-v4";
+const STORAGE_KEY = "cadence-state-v5";
 
 // Local calendar date as YYYY-MM-DD — deliberately not toISOString(),
 // which is UTC-based and rolls over to the "wrong" day for timezones
@@ -207,11 +231,23 @@ function loadState(): State {
           ...a,
         }))
       : DEFAULT_ANCHORS;
+    const sessions: Session[] = Array.isArray(parsed.sessions)
+      ? parsed.sessions.map((s: Partial<Session>) => ({ tags: [], ...s }))
+      : [];
+    const events: CadenceEvent[] = Array.isArray(parsed.events) ? parsed.events : [];
     return {
       ...DEFAULT_STATE,
       ...parsed,
       settings: { ...DEFAULT_SETTINGS, ...parsed.settings },
       anchors,
+      sessions,
+      events,
+      // A timer mid-run at save time can't be resumed correctly across a
+      // shape change (accumulatedMs/paused may not exist on old data), so
+      // rather than risk a corrupted elapsed-time read, just drop it —
+      // losing one in-progress timer on migration is better than silently
+      // wrong durations forever after.
+      timer: null,
     };
   } catch {
     return DEFAULT_STATE;
@@ -237,6 +273,11 @@ export interface StreakInfo {
   longest: StreakRun;
 }
 
+export interface Insight {
+  id: string;
+  text: string;
+}
+
 interface StoreValue {
   state: State;
   ready: boolean;
@@ -250,10 +291,23 @@ interface StoreValue {
   addAnchor: (input: Omit<ScheduleAnchor, "id">) => void;
   removeAnchor: (id: string) => void;
   updateAnchor: (id: string, patch: Partial<ScheduleAnchor>) => void;
+  addEvent: (input: Omit<CadenceEvent, "id">) => void;
+  removeEvent: (id: string) => void;
+  updateEvent: (id: string, patch: Partial<CadenceEvent>) => void;
   setDayType: (date: string, type: DayType) => void;
   startTimer: (categoryId: string) => void;
+  pauseTimer: () => void;
+  resumeTimer: () => void;
   stopTimer: () => void;
-  logSessionManually: (categoryId: string, minutes: number, date?: string) => void;
+  cancelTimer: () => void;
+  logSessionManually: (
+    categoryId: string,
+    minutes: number,
+    date?: string,
+    tags?: string[]
+  ) => void;
+  updateSession: (id: string, patch: Partial<Omit<Session, "id">>) => void;
+  removeSession: (id: string) => void;
   weeklyMinutes: (categoryId: string) => number;
   weeklySessionCount: (categoryId: string) => number;
   currentStreak: () => number;
@@ -261,6 +315,7 @@ interface StoreValue {
   leaveBalance: () => LeaveBalance;
   updateSettings: (patch: Partial<AppSettings>) => void;
   saveReview: (weekStartISO: string, patch: Partial<WeeklyReview>) => void;
+  insights: () => Insight[];
 }
 
 const StoreContext = createContext<StoreValue | null>(null);
@@ -343,40 +398,96 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  const addEvent = useCallback((input: Omit<CadenceEvent, "id">) => {
+    setState((s) => ({
+      ...s,
+      events: [...s.events, { ...input, id: crypto.randomUUID() }],
+    }));
+  }, []);
+
+  const removeEvent = useCallback((id: string) => {
+    setState((s) => ({ ...s, events: s.events.filter((e) => e.id !== id) }));
+  }, []);
+
+  const updateEvent = useCallback((id: string, patch: Partial<CadenceEvent>) => {
+    setState((s) => ({
+      ...s,
+      events: s.events.map((e) => (e.id === id ? { ...e, ...patch } : e)),
+    }));
+  }, []);
+
   const setDayType = useCallback((date: string, type: DayType) => {
     setState((s) => ({ ...s, dayTypes: { ...s.dayTypes, [date]: type } }));
   }, []);
 
   const startTimer = useCallback((categoryId: string) => {
-    setState((s) => ({ ...s, timer: { categoryId, startedAt: Date.now() } }));
+    setState((s) => ({
+      ...s,
+      timer: { categoryId, startedAt: Date.now(), accumulatedMs: 0, paused: false },
+    }));
+  }, []);
+
+  const pauseTimer = useCallback(() => {
+    setState((s) => {
+      if (!s.timer || s.timer.paused) return s;
+      const elapsed = Date.now() - s.timer.startedAt;
+      return {
+        ...s,
+        timer: { ...s.timer, accumulatedMs: s.timer.accumulatedMs + elapsed, paused: true },
+      };
+    });
+  }, []);
+
+  const resumeTimer = useCallback(() => {
+    setState((s) => {
+      if (!s.timer || !s.timer.paused) return s;
+      return { ...s, timer: { ...s.timer, startedAt: Date.now(), paused: false } };
+    });
   }, []);
 
   const stopTimer = useCallback(() => {
     setState((s) => {
       if (!s.timer) return s;
-      const minutes = Math.max(1, Math.round((Date.now() - s.timer.startedAt) / 60000));
+      const runningMs = s.timer.paused ? 0 : Date.now() - s.timer.startedAt;
+      const minutes = Math.max(1, Math.round((s.timer.accumulatedMs + runningMs) / 60000));
       const session: Session = {
         id: crypto.randomUUID(),
         categoryId: s.timer.categoryId,
         date: todayISO(),
         durationMinutes: minutes,
+        tags: [],
       };
       return { ...s, timer: null, sessions: [...s.sessions, session] };
     });
   }, []);
 
+  const cancelTimer = useCallback(() => {
+    setState((s) => ({ ...s, timer: null }));
+  }, []);
+
   const logSessionManually = useCallback(
-    (categoryId: string, minutes: number, date = todayISO()) => {
+    (categoryId: string, minutes: number, date = todayISO(), tags: string[] = []) => {
       setState((s) => ({
         ...s,
         sessions: [
           ...s.sessions,
-          { id: crypto.randomUUID(), categoryId, date, durationMinutes: minutes },
+          { id: crypto.randomUUID(), categoryId, date, durationMinutes: minutes, tags },
         ],
       }));
     },
     []
   );
+
+  const updateSession = useCallback((id: string, patch: Partial<Omit<Session, "id">>) => {
+    setState((s) => ({
+      ...s,
+      sessions: s.sessions.map((sess) => (sess.id === id ? { ...sess, ...patch } : sess)),
+    }));
+  }, []);
+
+  const removeSession = useCallback((id: string) => {
+    setState((s) => ({ ...s, sessions: s.sessions.filter((sess) => sess.id !== id) }));
+  }, []);
 
   const weeklyMinutes = useCallback(
     (categoryId: string) => {
@@ -522,6 +633,80 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
+  // Descriptive pattern insights (spec §92) — deliberately simple and
+  // read-only: "this category has been behind for 3 weeks," "this weekday
+  // has a high missed-day rate." Never prescriptive, and silent unless
+  // there's actually enough data to say something meaningful.
+  const insights = useCallback((): Insight[] => {
+    const results: Insight[] = [];
+    const thisWeekStart = startOfWeekISO();
+
+    for (const category of state.categories) {
+      if (category.weeklyTarget === null) continue;
+      let behindStreak = true;
+      for (let weeksAgo = 1; weeksAgo <= 3; weeksAgo++) {
+        const weekStart = new Date(thisWeekStart);
+        weekStart.setDate(weekStart.getDate() - weeksAgo * 7);
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekEnd.getDate() + 7);
+        const weekSessions = state.sessions.filter((s) => {
+          if (s.categoryId !== category.id) return false;
+          const d = parseLocalDate(s.date);
+          return d >= weekStart && d < weekEnd;
+        });
+        const total =
+          category.trackingMode === "hours"
+            ? weekSessions.reduce((sum, s) => sum + s.durationMinutes, 0) / 60
+            : weekSessions.filter((s) => s.durationMinutes >= 45).length;
+        if (total >= category.weeklyTarget) {
+          behindStreak = false;
+          break;
+        }
+      }
+      if (behindStreak) {
+        results.push({
+          id: `behind-${category.id}`,
+          text: `${category.name} has been below target for 3 weeks running.`,
+        });
+      }
+    }
+
+    const WEEKDAY_NAMES = [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday",
+    ];
+    const byWeekday = Array.from({ length: 7 }, () => ({ total: 0, missed: 0 }));
+    for (const [dateStr, type] of Object.entries(state.dayTypes)) {
+      const day = parseLocalDate(dateStr).getDay();
+      byWeekday[day].total++;
+      if (type === "MISSED") byWeekday[day].missed++;
+    }
+    let worstDay = -1;
+    let worstRate = 0;
+    for (let day = 0; day < 7; day++) {
+      const { total, missed } = byWeekday[day];
+      if (total < 3) continue;
+      const rate = missed / total;
+      if (rate > worstRate) {
+        worstRate = rate;
+        worstDay = day;
+      }
+    }
+    if (worstDay !== -1 && worstRate >= 0.4) {
+      results.push({
+        id: `missed-weekday-${worstDay}`,
+        text: `${WEEKDAY_NAMES[worstDay]}s have a high missed-day rate (${Math.round(worstRate * 100)}%).`,
+      });
+    }
+
+    return results;
+  }, [state.categories, state.sessions, state.dayTypes]);
+
   const value = useMemo<StoreValue>(
     () => ({
       state,
@@ -536,10 +721,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       addAnchor,
       removeAnchor,
       updateAnchor,
+      addEvent,
+      removeEvent,
+      updateEvent,
       setDayType,
       startTimer,
+      pauseTimer,
+      resumeTimer,
       stopTimer,
+      cancelTimer,
       logSessionManually,
+      updateSession,
+      removeSession,
       weeklyMinutes,
       weeklySessionCount,
       currentStreak,
@@ -547,6 +740,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       leaveBalance,
       updateSettings,
       saveReview,
+      insights,
     }),
     [
       state,
@@ -561,10 +755,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       addAnchor,
       removeAnchor,
       updateAnchor,
+      addEvent,
+      removeEvent,
+      updateEvent,
       setDayType,
       startTimer,
+      pauseTimer,
+      resumeTimer,
       stopTimer,
+      cancelTimer,
       logSessionManually,
+      updateSession,
+      removeSession,
       weeklyMinutes,
       weeklySessionCount,
       currentStreak,
@@ -572,6 +774,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       leaveBalance,
       updateSettings,
       saveReview,
+      insights,
     ]
   );
 
