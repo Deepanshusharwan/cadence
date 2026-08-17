@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { useStore, todayISO, type DayType, type Session, type Category } from "@/lib/store";
 import { useToast } from "@/components/toast";
+import { FlameIcon, SparkleIcon } from "@/components/icons";
 
 type ViewMode = "day" | "week" | "month";
 
@@ -93,6 +94,9 @@ export default function CalendarPage() {
 
   const today = todayISO();
   const balance = store.leaveBalance();
+  const streaks = store.streakInfo();
+  const currentStreakDates = new Set(streaks.current.dates);
+  const longestStreakDates = new Set(streaks.longest.dates);
 
   function cycleDayType(dateISO: string, current: DayType, dateLabel: string) {
     const idx = DAY_TYPE_ORDER.indexOf(current);
@@ -125,6 +129,16 @@ export default function CalendarPage() {
           <p className="mt-1 text-body-sm text-ink-black/50">
             {balance.remaining} / {balance.totalAvailable} leave units left
             {balance.carried > 0 ? ` (${balance.carried} carried)` : ""}
+          </p>
+          <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-body-sm text-ink-black/50">
+            <span className="inline-flex items-center gap-1">
+              <FlameIcon className="h-3.5 w-3.5 text-marigold" />
+              {streaks.current.length}-day current streak
+            </span>
+            <span className="inline-flex items-center gap-1">
+              <SparkleIcon className="h-3.5 w-3.5 text-orchid" />
+              {streaks.longest.length}-day best streak
+            </span>
           </p>
         </div>
         <div className="flex items-center gap-1 rounded-lg bg-ink-black/5 p-1">
@@ -172,6 +186,8 @@ export default function CalendarPage() {
           today={today}
           dayTypes={state.dayTypes}
           sessions={state.sessions}
+          currentStreakDates={currentStreakDates}
+          longestStreakDates={longestStreakDates}
           onNavigate={navigate}
           onSelectDay={goToDay}
         />
@@ -352,7 +368,7 @@ function WeekView({
         </div>
       ) : null}
 
-      <div className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3 md:grid-cols-7">
+      <div className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-3">
         {days.map((d) => {
           const dateISO = toISO(d);
           const isToday = dateISO === today;
@@ -434,10 +450,14 @@ function MonthView({
   today,
   dayTypes,
   sessions,
+  currentStreakDates,
+  longestStreakDates,
   onNavigate,
   onSelectDay,
 }: SharedDayProps & {
   date: Date;
+  currentStreakDates: Set<string>;
+  longestStreakDates: Set<string>;
   onNavigate: (dir: 1 | -1) => void;
   onSelectDay: (d: Date) => void;
 }) {
@@ -476,12 +496,14 @@ function MonthView({
           const isToday = dateISO === today;
           const dayType = dayTypes[dateISO];
           const totalMinutes = totalMinutesFor(sessions, dateISO);
+          const inCurrentStreak = currentStreakDates.has(dateISO);
+          const inLongestStreak = longestStreakDates.has(dateISO);
 
           return (
             <button
               key={dateISO}
               onClick={() => onSelectDay(d)}
-              className={`flex aspect-square flex-col items-center justify-center gap-0.5 rounded-lg border p-1 transition-colors hover:bg-ink-black/5 ${
+              className={`relative flex aspect-square flex-col items-center justify-center gap-0.5 rounded-lg border p-1 transition-colors hover:bg-ink-black/5 ${
                 isToday
                   ? "border-notion-blue ring-1 ring-notion-blue"
                   : inMonth
@@ -489,6 +511,16 @@ function MonthView({
                     : "border-transparent"
               } ${!inMonth ? "opacity-30" : ""}`}
             >
+              {inCurrentStreak ? (
+                <span className="absolute -right-1 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-pure-white ring-1 ring-ink-black/8">
+                  <FlameIcon className="h-2.5 w-2.5 text-marigold" />
+                </span>
+              ) : null}
+              {inLongestStreak ? (
+                <span className="absolute -left-1 -top-1 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-pure-white ring-1 ring-ink-black/8">
+                  <SparkleIcon className="h-2.5 w-2.5 text-orchid" />
+                </span>
+              ) : null}
               <span className="text-caption text-ink-black">{d.getDate()}</span>
               {dayType ? (
                 <span

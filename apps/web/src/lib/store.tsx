@@ -227,6 +227,16 @@ interface LeaveBalance {
   cap: number;
 }
 
+export interface StreakRun {
+  length: number; // count of "kept" days in the run — leave days don't add to this
+  dates: string[]; // every ISO date spanned by the run, including bridging leave days
+}
+
+export interface StreakInfo {
+  current: StreakRun;
+  longest: StreakRun;
+}
+
 interface StoreValue {
   state: State;
   ready: boolean;
@@ -247,6 +257,7 @@ interface StoreValue {
   weeklyMinutes: (categoryId: string) => number;
   weeklySessionCount: (categoryId: string) => number;
   currentStreak: () => number;
+  streakInfo: () => StreakInfo;
   leaveBalance: () => LeaveBalance;
   updateSettings: (patch: Partial<AppSettings>) => void;
   saveReview: (weekStartISO: string, patch: Partial<WeeklyReview>) => void;
@@ -392,35 +403,67 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   // Forgiving streak: a day is "kept" if anything was logged that day, or
   // it was explicitly marked Reduced — not "every target hit." Leave days
-  // are skipped (neither kept nor breaking). Today doesn't break the streak
-  // just because it isn't over yet — it only counts once something's kept.
-  const currentStreak = useCallback(() => {
+  // are skipped (neither kept nor breaking) but still bridge a run, so they
+  // show up as part of an unbroken span on the calendar. Today doesn't
+  // break the streak just because it isn't over yet — a still-open run only
+  // counts through today once something's kept, otherwise it stops at
+  // yesterday. Walks forward once across the whole history (instead of
+  // walking backward from today) so the current run and the best-ever run
+  // — including its date range for calendar marking — come out of the same
+  // pass and can never disagree with each other.
+  const streakInfo = useCallback((): StreakInfo => {
     const loggedDates = new Set(state.sessions.map((s) => s.date));
     const isKept = (iso: string) => loggedDates.has(iso) || state.dayTypes[iso] === "REDUCED";
     const isLeave = (iso: string) => state.dayTypes[iso] === "LEAVE";
 
-    const cursor = new Date();
-    const todayStr = todayISO(cursor);
+    const knownDates = [...loggedDates, ...Object.keys(state.dayTypes)];
+    const empty: StreakInfo = { current: { length: 0, dates: [] }, longest: { length: 0, dates: [] } };
+    if (knownDates.length === 0) return empty;
+
+    const earliest = knownDates.reduce((min, iso) => (iso < min ? iso : min));
+    const cursor = parseLocalDate(earliest);
+
+    const todayStr = todayISO();
+    const lastDate = new Date();
     if (!isKept(todayStr) && !isLeave(todayStr)) {
-      cursor.setDate(cursor.getDate() - 1);
+      lastDate.setDate(lastDate.getDate() - 1);
     }
 
-    let streak = 0;
-    for (let i = 0; i < 400; i++) {
+    let runDates: string[] = [];
+    let runKept = 0;
+    let bestDates: string[] = [];
+    let bestKept = 0;
+
+    while (cursor <= lastDate) {
       const iso = todayISO(cursor);
       if (isLeave(iso)) {
-        cursor.setDate(cursor.getDate() - 1);
-        continue;
+        if (runDates.length > 0) runDates.push(iso);
+      } else if (isKept(iso)) {
+        runDates.push(iso);
+        runKept++;
+      } else if (runKept > bestKept) {
+        bestKept = runKept;
+        bestDates = runDates;
+        runDates = [];
+        runKept = 0;
+      } else {
+        runDates = [];
+        runKept = 0;
       }
-      if (isKept(iso)) {
-        streak++;
-        cursor.setDate(cursor.getDate() - 1);
-        continue;
-      }
-      break;
+      cursor.setDate(cursor.getDate() + 1);
     }
-    return streak;
+    if (runKept > bestKept) {
+      bestKept = runKept;
+      bestDates = runDates;
+    }
+
+    return {
+      current: { length: runKept, dates: runDates },
+      longest: { length: bestKept, dates: bestDates },
+    };
   }, [state.sessions, state.dayTypes]);
+
+  const currentStreak = useCallback(() => streakInfo().current.length, [streakInfo]);
 
   const leaveUsedInMonth = useCallback(
     (monthPrefix: string) => {
@@ -500,6 +543,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       weeklyMinutes,
       weeklySessionCount,
       currentStreak,
+      streakInfo,
       leaveBalance,
       updateSettings,
       saveReview,
@@ -524,6 +568,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       weeklyMinutes,
       weeklySessionCount,
       currentStreak,
+      streakInfo,
       leaveBalance,
       updateSettings,
       saveReview,
