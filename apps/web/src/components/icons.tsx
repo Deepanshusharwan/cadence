@@ -1,6 +1,8 @@
-import type { SVGProps } from "react";
+import type { ComponentType, SVGProps } from "react";
 
 type IconProps = SVGProps<SVGSVGElement>;
+
+export type IconComponent = ComponentType<IconProps>;
 
 const baseProps: IconProps = {
   viewBox: "0 0 24 24",
@@ -128,6 +130,15 @@ export function CalendarMinusIcon(props: IconProps) {
   );
 }
 
+export function CalendarIcon(props: IconProps) {
+  return (
+    <svg {...baseProps} {...props}>
+      <rect x="3.5" y="5" width="17" height="15.5" rx="1.5" />
+      <path d="M3.5 9.5h17M8 3v3.5M16 3v3.5" />
+    </svg>
+  );
+}
+
 export function SwapIcon(props: IconProps) {
   return (
     <svg {...baseProps} {...props}>
@@ -141,6 +152,37 @@ export function BarChartIcon(props: IconProps) {
   return (
     <svg {...baseProps} {...props}>
       <path d="M5 20V10M12 20V4M19 20v-7" />
+    </svg>
+  );
+}
+
+export function HomeIcon(props: IconProps) {
+  return (
+    <svg {...baseProps} {...props}>
+      <path d="M4 11.5 12 4l8 7.5" />
+      <path d="M6 10v9.5a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V10" />
+      <path d="M9.5 20.5V14h5v6.5" />
+    </svg>
+  );
+}
+
+export function SettingsIcon(props: IconProps) {
+  return (
+    <svg {...baseProps} {...props}>
+      <path d="M4 7h9M17 7h3" />
+      <circle cx="14" cy="7" r="2.2" />
+      <path d="M4 12h3M11 12h9" />
+      <circle cx="8" cy="12" r="2.2" />
+      <path d="M4 17h9M17 17h3" />
+      <circle cx="14" cy="17" r="2.2" />
+    </svg>
+  );
+}
+
+export function ChevronLeftIcon(props: IconProps) {
+  return (
+    <svg {...baseProps} {...props}>
+      <path d="M14.5 5.5 8 12l6.5 6.5" />
     </svg>
   );
 }
