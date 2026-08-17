@@ -23,19 +23,33 @@ export interface Category {
   color: string; // bg-* class from the shared accent palette
 }
 
-export interface Anchors {
-  wakeStart: string;
-  wakeEnd: string;
-  morningAnchorEnabled: boolean;
-  morningAnchorStart: string;
-  morningAnchorEnd: string;
-  morningAnchorCategoryId: string | null;
-  fixedStart: string;
-  fixedEnd: string;
-  eveningBlock1Start: string;
-  eveningBlock1End: string;
-  eveningBlock2Start: string;
-  eveningBlock2End: string;
+// A single schedule block. `date === null` means it recurs every day;
+// otherwise it applies only on that one date (e.g. a one-off commitment).
+// `isFocusBlock` distinguishes a flexible block the planner assigns a
+// category to (§35 "soft anchor") from a fixed/external commitment that's
+// just displayed as-is (§35 "hard block"). `categoryIds` optionally pins one
+// or more categories to the block — for a focus block this overrides the
+// deficit/priority auto-pick (manual "swapping", §36), rotating through the
+// pinned categories if there's more than one; for a fixed block it's just an
+// informational tag (e.g. "Gym" tagged with "Fitness").
+export type AnchorRecurrence = "daily" | "weekly" | "once";
+
+export interface ScheduleAnchor {
+  id: string;
+  label: string;
+  start: string; // HH:MM
+  end: string; // HH:MM
+  recurrence: AnchorRecurrence;
+  daysOfWeek: number[]; // 0 = Sunday .. 6 = Saturday; used when recurrence === "weekly"
+  date: string | null; // YYYY-MM-DD; used when recurrence === "once"
+  isFocusBlock: boolean;
+  categoryIds: string[];
+}
+
+export function anchorAppliesOn(anchor: ScheduleAnchor, dateISO: string, dayOfWeek: number) {
+  if (anchor.recurrence === "once") return anchor.date === dateISO;
+  if (anchor.recurrence === "weekly") return anchor.daysOfWeek.includes(dayOfWeek);
+  return true; // daily
 }
 
 export interface Session {
@@ -57,14 +71,29 @@ export interface Timer {
   startedAt: number; // epoch ms
 }
 
+export interface WeeklyReview {
+  wins: string;
+  problems: string;
+  nextWeekChanges: string;
+}
+
+export interface AppSettings {
+  leaveMonthlyAllowance: number;
+  leaveCarryCap: number; // max total accumulated balance (this month + carried)
+}
+
 interface State {
   onboarded: boolean;
   profile: Profile;
   categories: Category[];
-  anchors: Anchors;
+  wakeStart: string;
+  wakeEnd: string;
+  anchors: ScheduleAnchor[];
   sessions: Session[];
   dayTypes: Record<string, DayType>;
   timer: Timer | null;
+  settings: AppSettings;
+  reviews: Record<string, WeeklyReview>; // keyed by week-start YYYY-MM-DD
 }
 
 const ACCENT_CLASSES = [
@@ -76,32 +105,64 @@ const ACCENT_CLASSES = [
   "bg-midnight-ink",
 ];
 
-const DEFAULT_ANCHORS: Anchors = {
-  wakeStart: "06:00",
-  wakeEnd: "08:00",
-  morningAnchorEnabled: false,
-  morningAnchorStart: "08:00",
-  morningAnchorEnd: "09:00",
-  morningAnchorCategoryId: null,
-  fixedStart: "10:00",
-  fixedEnd: "18:00",
-  eveningBlock1Start: "19:00",
-  eveningBlock1End: "21:00",
-  eveningBlock2Start: "21:30",
-  eveningBlock2End: "23:30",
+const DEFAULT_ANCHORS: ScheduleAnchor[] = [
+  {
+    id: "default-fixed",
+    label: "Fixed commitment",
+    start: "10:00",
+    end: "18:00",
+    recurrence: "daily",
+    daysOfWeek: [],
+    date: null,
+    isFocusBlock: false,
+    categoryIds: [],
+  },
+  {
+    id: "default-evening-1",
+    label: "Evening focus",
+    start: "19:00",
+    end: "21:00",
+    recurrence: "daily",
+    daysOfWeek: [],
+    date: null,
+    isFocusBlock: true,
+    categoryIds: [],
+  },
+  {
+    id: "default-evening-2",
+    label: "Evening focus",
+    start: "21:30",
+    end: "23:30",
+    recurrence: "daily",
+    daysOfWeek: [],
+    date: null,
+    isFocusBlock: true,
+    categoryIds: [],
+  },
+];
+
+const EMPTY_REVIEW: WeeklyReview = { wins: "", problems: "", nextWeekChanges: "" };
+
+const DEFAULT_SETTINGS: AppSettings = {
+  leaveMonthlyAllowance: 7,
+  leaveCarryCap: 14,
 };
 
 const DEFAULT_STATE: State = {
   onboarded: false,
   profile: { name: "", avatar: "cat" },
   categories: [],
+  wakeStart: "06:00",
+  wakeEnd: "08:00",
   anchors: DEFAULT_ANCHORS,
   sessions: [],
   dayTypes: {},
   timer: null,
+  settings: DEFAULT_SETTINGS,
+  reviews: {},
 };
 
-const STORAGE_KEY = "cadence-state-v1";
+const STORAGE_KEY = "cadence-state-v4";
 
 // Local calendar date as YYYY-MM-DD — deliberately not toISOString(),
 // which is UTC-based and rolls over to the "wrong" day for timezones
@@ -138,10 +199,32 @@ function loadState(): State {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (!raw) return DEFAULT_STATE;
     const parsed = JSON.parse(raw);
-    return { ...DEFAULT_STATE, ...parsed, anchors: { ...DEFAULT_ANCHORS, ...parsed.anchors } };
+    const anchors: ScheduleAnchor[] = Array.isArray(parsed.anchors)
+      ? parsed.anchors.map((a: Partial<ScheduleAnchor>) => ({
+          recurrence: "daily",
+          daysOfWeek: [],
+          categoryIds: [],
+          ...a,
+        }))
+      : DEFAULT_ANCHORS;
+    return {
+      ...DEFAULT_STATE,
+      ...parsed,
+      settings: { ...DEFAULT_SETTINGS, ...parsed.settings },
+      anchors,
+    };
   } catch {
     return DEFAULT_STATE;
   }
+}
+
+interface LeaveBalance {
+  monthlyAllowance: number;
+  carried: number;
+  totalAvailable: number;
+  used: number;
+  remaining: number;
+  cap: number;
 }
 
 interface StoreValue {
@@ -153,14 +236,19 @@ interface StoreValue {
   addCategory: (input: Omit<Category, "id" | "color">) => void;
   removeCategory: (id: string) => void;
   updateCategory: (id: string, patch: Partial<Category>) => void;
-  setAnchors: (patch: Partial<Anchors>) => void;
+  setWakeWindow: (start: string, end: string) => void;
+  addAnchor: (input: Omit<ScheduleAnchor, "id">) => void;
+  removeAnchor: (id: string) => void;
+  updateAnchor: (id: string, patch: Partial<ScheduleAnchor>) => void;
   setDayType: (date: string, type: DayType) => void;
   startTimer: (categoryId: string) => void;
   stopTimer: () => void;
   logSessionManually: (categoryId: string, minutes: number, date?: string) => void;
   weeklyMinutes: (categoryId: string) => number;
   weeklySessionCount: (categoryId: string) => number;
-  leaveBalance: () => { used: number; monthly: number };
+  leaveBalance: () => LeaveBalance;
+  updateSettings: (patch: Partial<AppSettings>) => void;
+  saveReview: (weekStartISO: string, patch: Partial<WeeklyReview>) => void;
 }
 
 const StoreContext = createContext<StoreValue | null>(null);
@@ -221,8 +309,26 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }));
   }, []);
 
-  const setAnchors = useCallback((patch: Partial<Anchors>) => {
-    setState((s) => ({ ...s, anchors: { ...s.anchors, ...patch } }));
+  const setWakeWindow = useCallback((start: string, end: string) => {
+    setState((s) => ({ ...s, wakeStart: start, wakeEnd: end }));
+  }, []);
+
+  const addAnchor = useCallback((input: Omit<ScheduleAnchor, "id">) => {
+    setState((s) => ({
+      ...s,
+      anchors: [...s.anchors, { ...input, id: crypto.randomUUID() }],
+    }));
+  }, []);
+
+  const removeAnchor = useCallback((id: string) => {
+    setState((s) => ({ ...s, anchors: s.anchors.filter((a) => a.id !== id) }));
+  }, []);
+
+  const updateAnchor = useCallback((id: string, patch: Partial<ScheduleAnchor>) => {
+    setState((s) => ({
+      ...s,
+      anchors: s.anchors.map((a) => (a.id === id ? { ...a, ...patch } : a)),
+    }));
   }, []);
 
   const setDayType = useCallback((date: string, type: DayType) => {
@@ -283,17 +389,62 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [state.sessions]
   );
 
-  const leaveBalance = useCallback(() => {
+  const leaveUsedInMonth = useCallback(
+    (monthPrefix: string) => {
+      let used = 0;
+      for (const [date, type] of Object.entries(state.dayTypes)) {
+        if (!date.startsWith(monthPrefix)) continue;
+        if (type === "REDUCED") used += 1;
+        if (type === "LEAVE") used += 2;
+      }
+      return used;
+    },
+    [state.dayTypes]
+  );
+
+  const leaveBalance = useCallback((): LeaveBalance => {
     const now = new Date();
-    const monthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-    let used = 0;
-    for (const [date, type] of Object.entries(state.dayTypes)) {
-      if (!date.startsWith(monthPrefix)) continue;
-      if (type === "REDUCED") used += 1;
-      if (type === "LEAVE") used += 2;
-    }
-    return { used, monthly: 7 };
-  }, [state.dayTypes]);
+    const thisMonthPrefix = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const lastMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastMonthPrefix = `${lastMonthDate.getFullYear()}-${String(lastMonthDate.getMonth() + 1).padStart(2, "0")}`;
+
+    const { leaveMonthlyAllowance: monthlyAllowance, leaveCarryCap: cap } = state.settings;
+    const usedLastMonth = leaveUsedInMonth(lastMonthPrefix);
+    // Unused balance from last month carries forward for one additional
+    // month only — it never compounds further back than that — and the
+    // carry itself is capped so this month's total never exceeds `cap`.
+    const rawCarry = Math.max(0, monthlyAllowance - usedLastMonth);
+    const maxCarry = Math.max(0, cap - monthlyAllowance);
+    const carried = Math.min(rawCarry, maxCarry);
+    const totalAvailable = monthlyAllowance + carried;
+    const used = leaveUsedInMonth(thisMonthPrefix);
+
+    return {
+      monthlyAllowance,
+      carried,
+      totalAvailable,
+      used,
+      remaining: totalAvailable - used,
+      cap,
+    };
+  }, [state.settings, leaveUsedInMonth]);
+
+  const updateSettings = useCallback((patch: Partial<AppSettings>) => {
+    setState((s) => ({ ...s, settings: { ...s.settings, ...patch } }));
+  }, []);
+
+  const saveReview = useCallback((weekStartISO: string, patch: Partial<WeeklyReview>) => {
+    setState((s) => ({
+      ...s,
+      reviews: {
+        ...s.reviews,
+        [weekStartISO]: {
+          ...(s.reviews[weekStartISO] ?? EMPTY_REVIEW),
+          ...patch,
+        },
+      },
+    }));
+  }, []);
 
   const value = useMemo<StoreValue>(
     () => ({
@@ -305,7 +456,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       addCategory,
       removeCategory,
       updateCategory,
-      setAnchors,
+      setWakeWindow,
+      addAnchor,
+      removeAnchor,
+      updateAnchor,
       setDayType,
       startTimer,
       stopTimer,
@@ -313,6 +467,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       weeklyMinutes,
       weeklySessionCount,
       leaveBalance,
+      updateSettings,
+      saveReview,
     }),
     [
       state,
@@ -323,7 +479,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       addCategory,
       removeCategory,
       updateCategory,
-      setAnchors,
+      setWakeWindow,
+      addAnchor,
+      removeAnchor,
+      updateAnchor,
       setDayType,
       startTimer,
       stopTimer,
@@ -331,6 +490,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       weeklyMinutes,
       weeklySessionCount,
       leaveBalance,
+      updateSettings,
+      saveReview,
     ]
   );
 

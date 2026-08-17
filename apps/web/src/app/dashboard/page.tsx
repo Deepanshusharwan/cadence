@@ -5,13 +5,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { Mark, MARKS } from "@/components/marks";
 import { PlayIcon } from "@/components/icons";
-import { useStore, todayISO, type Category, type DayType } from "@/lib/store";
+import { useStore, todayISO, anchorAppliesOn, type Category, type DayType } from "@/lib/store";
 import { useToast } from "@/components/toast";
 
 const DAY_TYPE_META: Record<DayType, { label: string; cost: string }> = {
   NORMAL: { label: "Normal", cost: "0 units" },
   REDUCED: { label: "Reduced", cost: "1 unit" },
-  LEAVE: { label: "Full leave", cost: "2 units" },
+  LEAVE: { label: "Full Leave", cost: "2 units" },
   MISSED: { label: "Missed", cost: "0 units" },
 };
 
@@ -73,29 +73,53 @@ export default function DashboardPage() {
     [progress]
   );
 
-  const upNext = rankedForFocus.find((p) => p.deficit > 0) ?? rankedForFocus[0];
-  const upNextSecond = rankedForFocus.find((p) => p.category.id !== upNext?.category.id);
+  // Focus blocks are assigned a category in priority/deficit order, one
+  // per unpinned block — the 1st gets the highest-deficit category, the
+  // 2nd the next, and so on, cycling back through if there are more
+  // blocks than categories. A block with a pinned category (manual
+  // "swapping", §36) always uses that category instead.
+  const todayDayOfWeek = new Date().getDay();
+  const todaysAnchors = state.anchors
+    .filter((a) => anchorAppliesOn(a, today, todayDayOfWeek))
+    .sort((a, b) => a.start.localeCompare(b.start));
 
-  const scheduleBlocks: { time: string; label: string; dim?: boolean }[] = [];
-  if (state.anchors.morningAnchorEnabled) {
-    const cat = state.categories.find((c) => c.id === state.anchors.morningAnchorCategoryId);
-    scheduleBlocks.push({
-      time: `${state.anchors.morningAnchorStart}–${state.anchors.morningAnchorEnd}`,
-      label: cat?.name ?? upNext?.category.name ?? "Morning priority",
+  const unpinnedFocusBlocksToday = todaysAnchors.filter(
+    (a) => a.isFocusBlock && a.categoryIds.length === 0
+  );
+
+  function rankCategories(cats: Category[]) {
+    return [...cats].sort((a, b) => {
+      const tierDiff = a.priorityTier - b.priorityTier;
+      if (tierDiff !== 0) return tierDiff;
+      const deficitA = progress.find((p) => p.category.id === a.id)?.deficit ?? 0;
+      const deficitB = progress.find((p) => p.category.id === b.id)?.deficit ?? 0;
+      return deficitB - deficitA;
     });
   }
-  scheduleBlocks.push({
-    time: `${state.anchors.fixedStart}–${state.anchors.fixedEnd}`,
-    label: "Fixed commitment",
-    dim: true,
-  });
-  scheduleBlocks.push({
-    time: `${state.anchors.eveningBlock1Start}–${state.anchors.eveningBlock1End}`,
-    label: upNext?.category.name ?? "Add a category to plan this",
-  });
-  scheduleBlocks.push({
-    time: `${state.anchors.eveningBlock2Start}–${state.anchors.eveningBlock2End}`,
-    label: upNextSecond?.category.name ?? upNext?.category.name ?? "Add a category to plan this",
+
+  const scheduleBlocks = todaysAnchors.map((a) => {
+    const pinnedCategories = a.categoryIds
+      .map((id) => state.categories.find((c) => c.id === id))
+      .filter((c): c is Category => !!c);
+
+    if (!a.isFocusBlock) {
+      const label =
+        pinnedCategories.length > 0
+          ? `${a.label} (${pinnedCategories.map((c) => c.name).join(", ")})`
+          : a.label;
+      return { time: `${a.start}–${a.end}`, label, dim: true };
+    }
+    if (pinnedCategories.length > 0) {
+      const [top] = rankCategories(pinnedCategories);
+      return { time: `${a.start}–${a.end}`, label: top.name };
+    }
+    const focusIndex = unpinnedFocusBlocksToday.findIndex((x) => x.id === a.id);
+    const pick =
+      rankedForFocus.length > 0 ? rankedForFocus[focusIndex % rankedForFocus.length] : undefined;
+    return {
+      time: `${a.start}–${a.end}`,
+      label: pick?.category.name ?? "Add a category to plan this",
+    };
   });
 
   function startTimerFor(id: string) {
@@ -172,7 +196,7 @@ export default function DashboardPage() {
           </button>
         ))}
         <span className="ml-auto rounded-full bg-ink-black/5 px-3 py-1.5 text-caption font-medium text-ink-black/60">
-          {balance.monthly - balance.used} / {balance.monthly} leave units left
+          {balance.remaining} / {balance.totalAvailable} leave units left
         </span>
       </div>
 

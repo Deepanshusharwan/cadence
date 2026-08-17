@@ -123,7 +123,8 @@ export default function CalendarPage() {
         <div>
           <h1 className="text-heading font-semibold text-ink-black">Calendar</h1>
           <p className="mt-1 text-body-sm text-ink-black/50">
-            {balance.monthly - balance.used} / {balance.monthly} leave units left this month
+            {balance.remaining} / {balance.totalAvailable} leave units left
+            {balance.carried > 0 ? ` (${balance.carried} carried)` : ""}
           </p>
         </div>
         <div className="flex items-center gap-1 rounded-lg bg-ink-black/5 p-1">

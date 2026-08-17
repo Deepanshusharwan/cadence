@@ -418,9 +418,9 @@ export default function Home() {
                 Leave that doesn&apos;t need an excuse
               </h2>
               <p className="mt-4 text-body text-graphite">
-                7 leave units a month, carried forward for one additional month, capped
-                at 14. Reduced and full-leave days cost units on purpose — but a missed
-                day is never quietly converted into leave, and leave never counts against
+                Set your own monthly leave allowance and carry-forward cap — Cadence doesn&apos;t
+                pick the number for you. Reduced and full-leave days cost units on purpose, but a
+                missed day is never quietly converted into leave, and leave never counts against
                 your consistency score.
               </p>
               <div className="mt-6 divide-y divide-ink-black/8 rounded-xl border border-ink-black/8 bg-pure-white">
@@ -458,6 +458,9 @@ export default function Home() {
               </div>
               <p className="mt-6 rounded-lg bg-pure-white/10 px-4 py-3 text-body-sm text-pure-white/80">
                 3 carried units expire at month end
+              </p>
+              <p className="mt-3 text-caption text-pure-white/40">
+                Example allowance shown — set your own in Settings
               </p>
             </div>
           </div>

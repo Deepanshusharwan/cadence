@@ -6,11 +6,35 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Mark, MARKS, type MarkKey } from "@/components/marks";
 import { SparkleIcon } from "@/components/icons";
-import { useStore, type TrackingMode } from "@/lib/store";
+import { useStore, type TrackingMode, type AnchorRecurrence } from "@/lib/store";
 
 const STEPS = ["Identity", "Categories", "Schedule", "Review"] as const;
 
 const TIER_LABELS = ["Tier 1", "Tier 2", "Tier 3", "Tier 4", "Tier 5"];
+
+const RANDOM_NAMES = ["Alex", "Sam", "Jordan", "Riley", "Casey", "Morgan", "Taylor", "Avery"];
+
+// JS Date.getDay() order (0 = Sunday), displayed Monday-first.
+const WEEKDAY_OPTIONS = [
+  { day: 1, label: "M" },
+  { day: 2, label: "T" },
+  { day: 3, label: "W" },
+  { day: 4, label: "T" },
+  { day: 5, label: "F" },
+  { day: 6, label: "S" },
+  { day: 0, label: "S" },
+];
+
+function describeRecurrence(a: { recurrence: AnchorRecurrence; date: string | null; daysOfWeek: number[] }) {
+  if (a.recurrence === "once") return a.date ?? "one-off";
+  if (a.recurrence === "weekly") {
+    if (a.daysOfWeek.length === 0) return "weekly";
+    return WEEKDAY_OPTIONS.filter((w) => a.daysOfWeek.includes(w.day))
+      .map((w) => w.label)
+      .join("");
+  }
+  return "every day";
+}
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -38,9 +62,29 @@ export default function SetupPage() {
   const [newCatTier, setNewCatTier] = useState(1);
   const [newCatWeekend, setNewCatWeekend] = useState(false);
 
-  const [anchors, setAnchorsLocal] = useState(store.state.anchors);
+  const [newAnchorLabel, setNewAnchorLabel] = useState("");
+  const [newAnchorStart, setNewAnchorStart] = useState("09:00");
+  const [newAnchorEnd, setNewAnchorEnd] = useState("10:00");
+  const [newAnchorRecurrence, setNewAnchorRecurrence] = useState<AnchorRecurrence>("daily");
+  const [newAnchorDaysOfWeek, setNewAnchorDaysOfWeek] = useState<number[]>([]);
+  const [newAnchorDate, setNewAnchorDate] = useState("");
+  const [newAnchorFocus, setNewAnchorFocus] = useState(true);
+  const [newAnchorCategoryIds, setNewAnchorCategoryIds] = useState<string[]>([]);
 
   const categories = store.state.categories;
+  const anchors = store.state.anchors;
+
+  function toggleNewAnchorDay(day: number) {
+    setNewAnchorDaysOfWeek((days) =>
+      days.includes(day) ? days.filter((d) => d !== day) : [...days, day]
+    );
+  }
+
+  function toggleNewAnchorCategory(id: string) {
+    setNewAnchorCategoryIds((ids) =>
+      ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]
+    );
+  }
 
   function addCategory() {
     if (!newCatName.trim()) return;
@@ -57,9 +101,38 @@ export default function SetupPage() {
     setNewCatWeekend(false);
   }
 
+  function addAnchor() {
+    if (!newAnchorLabel.trim()) return;
+    if (newAnchorRecurrence === "once" && !newAnchorDate) return;
+    if (newAnchorRecurrence === "weekly" && newAnchorDaysOfWeek.length === 0) return;
+    store.addAnchor({
+      label: newAnchorLabel.trim(),
+      start: newAnchorStart,
+      end: newAnchorEnd,
+      recurrence: newAnchorRecurrence,
+      daysOfWeek: newAnchorDaysOfWeek,
+      date: newAnchorRecurrence === "once" ? newAnchorDate : null,
+      isFocusBlock: newAnchorFocus,
+      categoryIds: newAnchorCategoryIds,
+    });
+    setNewAnchorLabel("");
+    setNewAnchorRecurrence("daily");
+    setNewAnchorDaysOfWeek([]);
+    setNewAnchorDate("");
+    setNewAnchorCategoryIds([]);
+  }
+
   function finish() {
     store.setProfile({ name: name.trim() || "there", avatar });
-    store.setAnchors(anchors);
+    store.completeOnboarding();
+    router.push("/dashboard");
+  }
+
+  function skipSetup() {
+    const randomName = RANDOM_NAMES[Math.floor(Math.random() * RANDOM_NAMES.length)];
+    const keys = Object.keys(MARKS) as MarkKey[];
+    const randomAvatar = keys[Math.floor(Math.random() * keys.length)];
+    store.setProfile({ name: randomName, avatar: randomAvatar });
     store.completeOnboarding();
     router.push("/dashboard");
   }
@@ -73,12 +146,13 @@ export default function SetupPage() {
         <Link href="/" className="text-heading-sm font-bold tracking-[-0.242px] text-ink-black">
           Cadence
         </Link>
-        <Link
-          href="/dashboard"
+        <button
+          type="button"
+          onClick={skipSetup}
           className="text-body-sm font-medium text-ink-black/40 hover:text-ink-black"
         >
           Skip for now
-        </Link>
+        </button>
       </header>
 
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-6 pb-16">
@@ -270,138 +344,175 @@ export default function SetupPage() {
               When&apos;s your day actually free?
             </h1>
             <p className="mt-3 font-serif text-body text-graphite">
-              Fill in your real anchors — these are yours to set, not ours to assume.
+              Fill in your real anchors — these are yours to set, not ours to assume. Add as many
+              as you need, and remove any that don&apos;t apply to you.
             </p>
 
-            <div className="mt-8 space-y-6">
-              <div>
-                <p className="text-body-sm font-medium text-ink-black">Wake window</p>
-                <div className="mt-2 grid grid-cols-2 gap-4">
-                  <Field label="From">
-                    <input
-                      type="time"
-                      value={anchors.wakeStart}
-                      onChange={(e) => setAnchorsLocal((a) => ({ ...a, wakeStart: e.target.value }))}
-                      className={inputClass}
-                    />
-                  </Field>
-                  <Field label="To">
-                    <input
-                      type="time"
-                      value={anchors.wakeEnd}
-                      onChange={(e) => setAnchorsLocal((a) => ({ ...a, wakeEnd: e.target.value }))}
-                      className={inputClass}
-                    />
-                  </Field>
-                </div>
-              </div>
-
-              <div>
-                <p className="text-body-sm font-medium text-ink-black">
-                  Fixed commitment block (job, school, etc.)
-                </p>
-                <div className="mt-2 grid grid-cols-2 gap-4">
-                  <Field label="Starts">
-                    <input
-                      type="time"
-                      value={anchors.fixedStart}
-                      onChange={(e) => setAnchorsLocal((a) => ({ ...a, fixedStart: e.target.value }))}
-                      className={inputClass}
-                    />
-                  </Field>
-                  <Field label="Ends">
-                    <input
-                      type="time"
-                      value={anchors.fixedEnd}
-                      onChange={(e) => setAnchorsLocal((a) => ({ ...a, fixedEnd: e.target.value }))}
-                      className={inputClass}
-                    />
-                  </Field>
-                </div>
-              </div>
-
-              <div>
-                <label className="flex items-center gap-2 text-body-sm font-medium text-ink-black">
+            <div className="mt-6">
+              <p className="text-body-sm font-medium text-ink-black">Wake window</p>
+              <div className="mt-2 grid grid-cols-2 gap-4">
+                <Field label="From">
                   <input
-                    type="checkbox"
-                    checked={anchors.morningAnchorEnabled}
-                    onChange={(e) =>
-                      setAnchorsLocal((a) => ({ ...a, morningAnchorEnabled: e.target.checked }))
-                    }
-                    className="h-4 w-4 rounded border-ink-black/20"
+                    type="time"
+                    value={store.state.wakeStart}
+                    onChange={(e) => store.setWakeWindow(e.target.value, store.state.wakeEnd)}
+                    className={inputClass}
                   />
-                  I want a morning priority block
-                </label>
-                {anchors.morningAnchorEnabled ? (
-                  <div className="mt-2 grid grid-cols-2 gap-4">
-                    <Field label="Starts">
-                      <input
-                        type="time"
-                        value={anchors.morningAnchorStart}
-                        onChange={(e) =>
-                          setAnchorsLocal((a) => ({ ...a, morningAnchorStart: e.target.value }))
-                        }
-                        className={inputClass}
-                      />
-                    </Field>
-                    <Field label="Ends">
-                      <input
-                        type="time"
-                        value={anchors.morningAnchorEnd}
-                        onChange={(e) =>
-                          setAnchorsLocal((a) => ({ ...a, morningAnchorEnd: e.target.value }))
-                        }
-                        className={inputClass}
-                      />
-                    </Field>
+                </Field>
+                <Field label="To">
+                  <input
+                    type="time"
+                    value={store.state.wakeEnd}
+                    onChange={(e) => store.setWakeWindow(store.state.wakeStart, e.target.value)}
+                    className={inputClass}
+                  />
+                </Field>
+              </div>
+            </div>
+
+            <div className="mt-6">
+              <p className="text-body-sm font-medium text-ink-black">Schedule anchors</p>
+              <div className="mt-2 space-y-2">
+                {anchors.map((a) => (
+                  <div
+                    key={a.id}
+                    className="flex items-center justify-between gap-2 rounded-lg border border-ink-black/8 px-3 py-2.5"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-body-sm font-medium text-ink-black">
+                        {a.label}
+                        {a.categoryIds.length > 0
+                          ? ` (${a.categoryIds
+                              .map((id) => categories.find((c) => c.id === id)?.name ?? "?")
+                              .join(", ")})`
+                          : ""}
+                      </p>
+                      <p className="text-caption text-ink-black/40">
+                        {a.start}–{a.end} · {describeRecurrence(a)} ·{" "}
+                        {a.isFocusBlock ? "focus block" : "fixed"}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => store.removeAnchor(a.id)}
+                      className="shrink-0 rounded-full px-2 py-1 text-body-sm text-ink-black/50 hover:bg-ink-black/10"
+                      aria-label={`Remove ${a.label}`}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-3 space-y-3 rounded-xl border border-dashed border-ink-black/15 p-4">
+                <input
+                  value={newAnchorLabel}
+                  onChange={(e) => setNewAnchorLabel(e.target.value)}
+                  placeholder="e.g. Gym, Class, Evening focus"
+                  className={inputClass}
+                />
+
+                <div className="flex items-center gap-2">
+                  <input
+                    type="time"
+                    value={newAnchorStart}
+                    onChange={(e) => setNewAnchorStart(e.target.value)}
+                    className={inputClass}
+                  />
+                  <span className="shrink-0 text-ink-black/40">–</span>
+                  <input
+                    type="time"
+                    value={newAnchorEnd}
+                    onChange={(e) => setNewAnchorEnd(e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+
+                <div>
+                  <span className="text-body-sm font-medium text-ink-black">Repeats</span>
+                  <select
+                    value={newAnchorRecurrence}
+                    onChange={(e) => setNewAnchorRecurrence(e.target.value as AnchorRecurrence)}
+                    className={`${inputClass} mt-1.5`}
+                  >
+                    <option value="daily">Every day</option>
+                    <option value="weekly">Specific days of the week</option>
+                    <option value="once">One-off, specific date</option>
+                  </select>
+                </div>
+
+                {newAnchorRecurrence === "weekly" ? (
+                  <div className="flex gap-1.5">
+                    {WEEKDAY_OPTIONS.map((w) => (
+                      <button
+                        key={w.day}
+                        type="button"
+                        onClick={() => toggleNewAnchorDay(w.day)}
+                        className={`h-8 w-8 shrink-0 rounded-full text-caption font-semibold transition-colors ${
+                          newAnchorDaysOfWeek.includes(w.day)
+                            ? "bg-notion-blue text-pure-white"
+                            : "bg-ink-black/5 text-ink-black/50 hover:bg-ink-black/10"
+                        }`}
+                      >
+                        {w.label}
+                      </button>
+                    ))}
                   </div>
                 ) : null}
-              </div>
 
-              <div>
-                <p className="text-body-sm font-medium text-ink-black">Evening focus blocks</p>
-                <div className="mt-2 grid grid-cols-2 gap-4">
-                  <Field label="Block 1 starts">
-                    <input
-                      type="time"
-                      value={anchors.eveningBlock1Start}
-                      onChange={(e) =>
-                        setAnchorsLocal((a) => ({ ...a, eveningBlock1Start: e.target.value }))
-                      }
-                      className={inputClass}
-                    />
-                  </Field>
-                  <Field label="Block 1 ends">
-                    <input
-                      type="time"
-                      value={anchors.eveningBlock1End}
-                      onChange={(e) =>
-                        setAnchorsLocal((a) => ({ ...a, eveningBlock1End: e.target.value }))
-                      }
-                      className={inputClass}
-                    />
-                  </Field>
-                  <Field label="Block 2 starts">
-                    <input
-                      type="time"
-                      value={anchors.eveningBlock2Start}
-                      onChange={(e) =>
-                        setAnchorsLocal((a) => ({ ...a, eveningBlock2Start: e.target.value }))
-                      }
-                      className={inputClass}
-                    />
-                  </Field>
-                  <Field label="Block 2 ends">
-                    <input
-                      type="time"
-                      value={anchors.eveningBlock2End}
-                      onChange={(e) =>
-                        setAnchorsLocal((a) => ({ ...a, eveningBlock2End: e.target.value }))
-                      }
-                      className={inputClass}
-                    />
-                  </Field>
+                {newAnchorRecurrence === "once" ? (
+                  <input
+                    type="date"
+                    value={newAnchorDate}
+                    onChange={(e) => setNewAnchorDate(e.target.value)}
+                    className={inputClass}
+                  />
+                ) : null}
+
+                <label className="flex items-center gap-2 text-body-sm text-ink-black">
+                  <input
+                    type="checkbox"
+                    checked={newAnchorFocus}
+                    onChange={(e) => setNewAnchorFocus(e.target.checked)}
+                    className="h-4 w-4 rounded border-ink-black/20"
+                  />
+                  Flexible focus block (planner assigns a category)
+                </label>
+
+                <div>
+                  <span className="text-body-sm font-medium text-ink-black">
+                    Pin categories (optional)
+                  </span>
+                  {categories.length === 0 ? (
+                    <p className="mt-1.5 text-body-sm text-ink-black/40">Add a category first.</p>
+                  ) : (
+                    <div className="mt-1.5 flex flex-wrap gap-1.5">
+                      {categories.map((c) => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => toggleNewAnchorCategory(c.id)}
+                          className={`rounded-full px-3 py-1.5 text-caption font-medium transition-colors ${
+                            newAnchorCategoryIds.includes(c.id)
+                              ? "bg-notion-blue text-pure-white"
+                              : "bg-ink-black/5 text-ink-black/60 hover:bg-ink-black/10"
+                          }`}
+                        >
+                          {c.name}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
+
+                <button
+                  type="button"
+                  onClick={addAnchor}
+                  disabled={!newAnchorLabel.trim()}
+                  className="rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity hover:opacity-90 disabled:opacity-40"
+                >
+                  + Add anchor
+                </button>
               </div>
             </div>
           </div>
@@ -425,7 +536,8 @@ export default function SetupPage() {
               <SparkleIcon className="pointer-events-none absolute -right-7 -top-2 h-5 w-5 text-marigold" />
             </div>
             <p className="mx-auto mt-3 max-w-md font-serif text-body text-graphite">
-              {categories.length} categor{categories.length === 1 ? "y" : "ies"} configured. Your
+              {categories.length} categor{categories.length === 1 ? "y" : "ies"} and{" "}
+              {anchors.length} schedule anchor{anchors.length === 1 ? "" : "s"} configured. Your
               dashboard is ready whenever you are — nothing here is locked in, you can change any
               of it later.
             </p>
@@ -436,15 +548,13 @@ export default function SetupPage() {
               </p>
               <ul className="mt-3 space-y-1.5 text-body-sm text-ink-black">
                 <li>
-                  Fixed commitment: {anchors.fixedStart}–{anchors.fixedEnd}
+                  Wake window: {store.state.wakeStart}–{store.state.wakeEnd}
                 </li>
-                <li>
-                  Wake window: {anchors.wakeStart}–{anchors.wakeEnd}
-                </li>
-                <li>
-                  Evening focus: {anchors.eveningBlock1Start}–{anchors.eveningBlock1End} &amp;{" "}
-                  {anchors.eveningBlock2Start}–{anchors.eveningBlock2End}
-                </li>
+                {anchors.map((a) => (
+                  <li key={a.id}>
+                    {a.label}: {a.start}–{a.end} ({describeRecurrence(a)})
+                  </li>
+                ))}
               </ul>
             </div>
           </div>
