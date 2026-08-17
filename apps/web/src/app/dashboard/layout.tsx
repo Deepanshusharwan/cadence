@@ -35,7 +35,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="flex min-h-screen bg-paper-warmth">
-      <aside className="hidden w-56 shrink-0 flex-col border-r border-ink-black/8 px-4 py-6 sm:flex">
+      <aside className="sticky top-0 hidden h-screen w-56 shrink-0 flex-col border-r border-ink-black/8 px-4 py-6 sm:flex">
         <Link href="/" className="px-2 text-heading-sm font-bold tracking-[-0.242px] text-ink-black">
           Cadence
         </Link>

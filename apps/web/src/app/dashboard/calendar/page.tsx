@@ -352,7 +352,7 @@ function WeekView({
         </div>
       ) : null}
 
-      <div className="mt-4 grid gap-3 md:grid-cols-7">
+      <div className="mt-4 grid grid-cols-[repeat(auto-fill,minmax(150px,1fr))] gap-3 md:grid-cols-7">
         {days.map((d) => {
           const dateISO = toISO(d);
           const isToday = dateISO === today;
