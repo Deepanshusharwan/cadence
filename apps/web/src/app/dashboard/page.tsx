@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Mark, MARKS } from "@/components/marks";
 import { PlayIcon } from "@/components/icons";
 import { useStore, todayISO, type Category, type DayType } from "@/lib/store";
+import { useToast } from "@/components/toast";
 
 const DAY_TYPE_META: Record<DayType, { label: string; cost: string }> = {
   NORMAL: { label: "Normal", cost: "0 units" },
@@ -36,6 +37,7 @@ function formatElapsed(ms: number) {
 export default function DashboardPage() {
   const store = useStore();
   const { state } = store;
+  const { show } = useToast();
   const today = todayISO();
   const dayType = state.dayTypes[today] ?? "NORMAL";
   const balance = store.leaveBalance();
@@ -99,13 +101,32 @@ export default function DashboardPage() {
   function startTimerFor(id: string) {
     if (!id) return;
     store.startTimer(id);
+    const category = state.categories.find((c) => c.id === id);
+    show(`Timer started — ${category?.name ?? "session"}`);
   }
 
   function logManual() {
     const minutes = Number(manualMinutes);
-    if (!manualCategoryId || !minutes) return;
+    if (!manualCategoryId) {
+      show("Pick a category to log against first");
+      return;
+    }
+    if (!minutes) {
+      show("Enter how many minutes to log");
+      return;
+    }
+    const category = state.categories.find((c) => c.id === manualCategoryId);
     store.logSessionManually(manualCategoryId, minutes);
     setManualMinutes("30");
+    show(`Logged ${minutes}m to ${category?.name ?? "category"}`);
+  }
+
+  function handleStopTimer() {
+    if (!state.timer) return;
+    const category = state.categories.find((c) => c.id === state.timer!.categoryId);
+    const minutes = Math.max(1, Math.round((Date.now() - state.timer.startedAt) / 60000));
+    store.stopTimer();
+    show(`Session saved — ${minutes}m added to ${category?.name ?? "category"}`);
   }
 
   const timerCategory = state.timer
@@ -136,7 +157,11 @@ export default function DashboardPage() {
         {(Object.keys(DAY_TYPE_META) as DayType[]).map((type) => (
           <button
             key={type}
-            onClick={() => store.setDayType(today, type)}
+            onClick={() => {
+              if (type === dayType) return;
+              store.setDayType(today, type);
+              show(`Today marked ${DAY_TYPE_META[type].label}`);
+            }}
             className={`rounded-full px-3 py-1.5 text-caption font-medium uppercase tracking-wide transition-colors ${
               dayType === type
                 ? "bg-notion-blue text-pure-white"
@@ -164,7 +189,7 @@ export default function DashboardPage() {
                 {formatElapsed(now - state.timer.startedAt)}
               </p>
               <button
-                onClick={() => store.stopTimer()}
+                onClick={handleStopTimer}
                 className="mt-4 w-full rounded-lg bg-ink-black px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity hover:opacity-90"
               >
                 Stop session

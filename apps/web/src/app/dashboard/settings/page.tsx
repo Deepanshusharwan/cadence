@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { Mark, MARKS, type MarkKey } from "@/components/marks";
 import { useStore, type TrackingMode } from "@/lib/store";
+import { useToast } from "@/components/toast";
 
 const TIER_LABELS = ["Tier 1", "Tier 2", "Tier 3", "Tier 4", "Tier 5"];
 
@@ -13,6 +14,7 @@ const inputClass =
 export default function SettingsPage() {
   const store = useStore();
   const { state } = store;
+  const { show } = useToast();
 
   const [name, setName] = useState(state.profile.name);
   const [newCatName, setNewCatName] = useState("");
@@ -22,8 +24,9 @@ export default function SettingsPage() {
 
   function addCategory() {
     if (!newCatName.trim()) return;
+    const categoryName = newCatName.trim();
     store.addCategory({
-      name: newCatName.trim(),
+      name: categoryName,
       trackingMode: newCatMode,
       weeklyTarget: newCatTarget.trim() === "" ? null : Number(newCatTarget),
       priorityTier: newCatTier,
@@ -31,6 +34,12 @@ export default function SettingsPage() {
     });
     setNewCatName("");
     setNewCatTarget("");
+    show(`Added ${categoryName}`);
+  }
+
+  function removeCategory(id: string, categoryName: string) {
+    store.removeCategory(id);
+    show(`Removed ${categoryName}`);
   }
 
   return (
@@ -84,7 +93,7 @@ export default function SettingsPage() {
             >
               <span className="font-semibold">{c.name}</span>
               <button
-                onClick={() => store.removeCategory(c.id)}
+                onClick={() => removeCategory(c.id, c.name)}
                 className="rounded-full px-2 py-1 text-body-sm text-ink-black/50 hover:bg-ink-black/10"
               >
                 ×
