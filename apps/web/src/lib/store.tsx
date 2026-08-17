@@ -246,6 +246,7 @@ interface StoreValue {
   logSessionManually: (categoryId: string, minutes: number, date?: string) => void;
   weeklyMinutes: (categoryId: string) => number;
   weeklySessionCount: (categoryId: string) => number;
+  currentStreak: () => number;
   leaveBalance: () => LeaveBalance;
   updateSettings: (patch: Partial<AppSettings>) => void;
   saveReview: (weekStartISO: string, patch: Partial<WeeklyReview>) => void;
@@ -389,6 +390,38 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [state.sessions]
   );
 
+  // Forgiving streak: a day is "kept" if anything was logged that day, or
+  // it was explicitly marked Reduced — not "every target hit." Leave days
+  // are skipped (neither kept nor breaking). Today doesn't break the streak
+  // just because it isn't over yet — it only counts once something's kept.
+  const currentStreak = useCallback(() => {
+    const loggedDates = new Set(state.sessions.map((s) => s.date));
+    const isKept = (iso: string) => loggedDates.has(iso) || state.dayTypes[iso] === "REDUCED";
+    const isLeave = (iso: string) => state.dayTypes[iso] === "LEAVE";
+
+    const cursor = new Date();
+    const todayStr = todayISO(cursor);
+    if (!isKept(todayStr) && !isLeave(todayStr)) {
+      cursor.setDate(cursor.getDate() - 1);
+    }
+
+    let streak = 0;
+    for (let i = 0; i < 400; i++) {
+      const iso = todayISO(cursor);
+      if (isLeave(iso)) {
+        cursor.setDate(cursor.getDate() - 1);
+        continue;
+      }
+      if (isKept(iso)) {
+        streak++;
+        cursor.setDate(cursor.getDate() - 1);
+        continue;
+      }
+      break;
+    }
+    return streak;
+  }, [state.sessions, state.dayTypes]);
+
   const leaveUsedInMonth = useCallback(
     (monthPrefix: string) => {
       let used = 0;
@@ -466,6 +499,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       logSessionManually,
       weeklyMinutes,
       weeklySessionCount,
+      currentStreak,
       leaveBalance,
       updateSettings,
       saveReview,
@@ -489,6 +523,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       logSessionManually,
       weeklyMinutes,
       weeklySessionCount,
+      currentStreak,
       leaveBalance,
       updateSettings,
       saveReview,

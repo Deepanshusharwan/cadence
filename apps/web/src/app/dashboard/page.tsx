@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Mark, MARKS } from "@/components/marks";
-import { PlayIcon } from "@/components/icons";
+import { FlameIcon, PlayIcon, TrendingUpIcon } from "@/components/icons";
 import { useStore, todayISO, anchorAppliesOn, type Category, type DayType } from "@/lib/store";
 import { useToast } from "@/components/toast";
 
@@ -37,10 +37,11 @@ function formatElapsed(ms: number) {
 export default function DashboardPage() {
   const store = useStore();
   const { state } = store;
-  const { show } = useToast();
+  const { show, celebrate } = useToast();
   const today = todayISO();
   const dayType = state.dayTypes[today] ?? "NORMAL";
   const balance = store.leaveBalance();
+  const streak = store.currentStreak();
 
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -72,6 +73,9 @@ export default function DashboardPage() {
         .sort((a, b) => a.category.priorityTier - b.category.priorityTier || b.deficit - a.deficit),
     [progress]
   );
+
+  const categoriesWithTarget = progress.filter((p) => p.category.weeklyTarget !== null);
+  const onTrackCount = categoriesWithTarget.filter((p) => p.deficit <= 0).length;
 
   // Focus blocks are assigned a category in priority/deficit order, one
   // per unpinned block — the 1st gets the highest-deficit category, the
@@ -129,6 +133,26 @@ export default function DashboardPage() {
     show(`Timer started — ${category?.name ?? "session"}`);
   }
 
+  // Compares the category's pre-log standing against what it'll be right
+  // after this session is added, so a target-crossing celebration fires
+  // exactly once — the moment "on track" or "well beyond" becomes true.
+  function checkCelebration(categoryId: string, addedMinutes: number) {
+    const category = state.categories.find((c) => c.id === categoryId);
+    if (!category || category.weeklyTarget === null) return;
+    const p = progress.find((x) => x.category.id === categoryId);
+    if (!p) return;
+    const target = category.weeklyTarget;
+    const addedUnits =
+      category.trackingMode === "hours" ? addedMinutes / 60 : addedMinutes >= 45 ? 1 : 0;
+    const before = p.current;
+    const after = before + addedUnits;
+    if (before < target * 1.5 && after >= target * 1.5) {
+      celebrate(`${category.name} — smashed this week's target!`, "exceeded");
+    } else if (before < target && after >= target) {
+      celebrate(`${category.name} — weekly target hit!`, "met");
+    }
+  }
+
   function logManual() {
     const minutes = Number(manualMinutes);
     if (!manualCategoryId) {
@@ -140,6 +164,7 @@ export default function DashboardPage() {
       return;
     }
     const category = state.categories.find((c) => c.id === manualCategoryId);
+    checkCelebration(manualCategoryId, minutes);
     store.logSessionManually(manualCategoryId, minutes);
     setManualMinutes("30");
     show(`Logged ${minutes}m to ${category?.name ?? "category"}`);
@@ -149,6 +174,7 @@ export default function DashboardPage() {
     if (!state.timer) return;
     const category = state.categories.find((c) => c.id === state.timer!.categoryId);
     const minutes = Math.max(1, Math.round((Date.now() - state.timer.startedAt) / 60000));
+    checkCelebration(state.timer.categoryId, minutes);
     store.stopTimer();
     show(`Session saved — ${minutes}m added to ${category?.name ?? "category"}`);
   }
@@ -174,6 +200,33 @@ export default function DashboardPage() {
             })}
           </p>
         </div>
+      </div>
+
+      {/* Status strip */}
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        {streak > 0 ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-marigold px-3 py-1.5 text-caption font-semibold text-ink-black">
+            <FlameIcon className="h-3.5 w-3.5" />
+            {streak}-day streak
+          </span>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-ink-black/5 px-3 py-1.5 text-caption font-medium text-ink-black/50">
+            <FlameIcon className="h-3.5 w-3.5" />
+            Log something today to start a streak
+          </span>
+        )}
+        {categoriesWithTarget.length > 0 ? (
+          <span
+            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-caption font-medium ${
+              onTrackCount === categoriesWithTarget.length
+                ? "bg-signal-blue/15 text-signal-blue"
+                : "bg-ink-black/5 text-ink-black/60"
+            }`}
+          >
+            <TrendingUpIcon className="h-3.5 w-3.5" />
+            {onTrackCount}/{categoriesWithTarget.length} categories on track this week
+          </span>
+        ) : null}
       </div>
 
       {/* Day type + leave balance */}
