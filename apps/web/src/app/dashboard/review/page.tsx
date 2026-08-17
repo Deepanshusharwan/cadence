@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
 import { useStore, type DayType } from "@/lib/store";
 import { useToast } from "@/components/toast";
 
@@ -106,7 +108,25 @@ export default function ReviewPage() {
           Progress
         </p>
         {categoryProgress.length === 0 ? (
-          <p className="mt-3 text-body-sm text-ink-black/40">No categories yet.</p>
+          <div className="mt-2 flex flex-col items-center py-6 text-center">
+            <Image
+              src="/illustrations/empty-categories.png"
+              alt=""
+              width={340}
+              height={253}
+              className="h-auto w-full max-w-[220px]"
+            />
+            <p className="mt-4 text-body font-semibold text-ink-black">No categories yet</p>
+            <p className="mt-1 max-w-xs text-body-sm text-ink-black/50">
+              Add a category to start tracking progress week over week.
+            </p>
+            <Link
+              href="/dashboard/settings"
+              className="mt-4 rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity hover:opacity-90"
+            >
+              + Add your first category
+            </Link>
+          </div>
         ) : (
           <div className="mt-3 space-y-2">
             {categoryProgress.map(({ category, minutes, sessionCount, hasTarget, met }) => (
