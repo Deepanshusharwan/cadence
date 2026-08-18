@@ -15,14 +15,15 @@ export const MARKS = {
 
 export type MarkKey = keyof typeof MARKS;
 
-// A larger avatar set reserved for Pro subscribers — kept as a separate
-// export (not merged into MARKS) so the free/paid split lives in the data
-// itself. Picker UIs (setup, dashboard/settings) only offer these when
-// store.state.profile.plan === "pro"; use markSrc() below, not MARKS[key]
-// directly, wherever a *stored* avatar value needs resolving back to an
-// image, since that value may come from either set regardless of the
-// viewer's current plan (a Pro user who gets downgraded still has a
-// PRO_MARKS avatar saved until they change it).
+// A larger avatar set unlocked at Plus and above (kept named PRO_MARKS for
+// historical reasons — "custom avatars" is a Plus-tier perk per /pricing,
+// not Pro-exclusive) — kept as a separate export (not merged into MARKS) so
+// the free/paid split lives in the data itself. Picker UIs (setup,
+// dashboard/settings) only offer these when store.state.profile.plan !==
+// "free"; use markSrc() below, not MARKS[key] directly, wherever a *stored*
+// avatar value needs resolving back to an image, since that value may come
+// from either set regardless of the viewer's current plan (a user who gets
+// downgraded still has a PRO_MARKS avatar saved until they change it).
 export const PRO_MARKS = {
   headphones: "/marks/pro/headphones.png",
   curlyHeadphones: "/marks/pro/curly-headphones.png",

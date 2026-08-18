@@ -408,10 +408,10 @@ export default function SettingsPage() {
               ))}
             </div>
 
-            {state.profile.plan === "pro" ? (
+            {state.profile.plan !== "free" ? (
               <>
                 <p className="mt-4 text-caption font-medium uppercase tracking-wide text-accent">
-                  Pro avatars
+                  Plus avatars
                 </p>
                 <div className="mt-2 flex flex-wrap gap-3">
                   {(Object.keys(PRO_MARKS) as ProMarkKey[]).map((key) => (
@@ -433,7 +433,7 @@ export default function SettingsPage() {
             ) : (
               <p className="mt-4 text-caption text-ink-black/40">
                 <Link href="/pricing" className="text-accent hover:opacity-80">
-                  Upgrade to Pro
+                  Upgrade to Plus
                 </Link>{" "}
                 to unlock 24 more avatars.
               </p>
