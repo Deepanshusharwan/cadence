@@ -10,7 +10,7 @@ import { useStore, type TrackingMode, type AnchorRecurrence } from "@/lib/store"
 import { textOnCategoryColor } from "@/lib/category-color";
 import { SuspendedScreen } from "@/components/suspended-screen";
 
-const STEPS = ["Identity", "Categories", "Schedule", "Review"] as const;
+const STEPS = ["Identity", "Items", "Schedule", "Review"] as const;
 
 const TIER_LABELS = ["Tier 1", "Tier 2", "Tier 3", "Tier 4", "Tier 5"];
 
@@ -286,7 +286,7 @@ export default function SetupPage() {
 
             <div className="mt-6 rounded-xl border border-dashed border-ink-black/15 p-5">
               <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Category name">
+                <Field label="Item name">
                   <input
                     value={newCatName}
                     onChange={(e) => setNewCatName(e.target.value)}
@@ -341,7 +341,7 @@ export default function SetupPage() {
                 Weekend-preferred
               </label>
               <p className="mt-1 pl-6 text-caption text-ink-black/40">
-                The planner favors scheduling this category on weekends when it&apos;s picking
+                The planner favors scheduling this item on weekends when it&apos;s picking
                 what fills your flexible time.
               </p>
               <button
@@ -350,7 +350,7 @@ export default function SetupPage() {
                 disabled={!newCatName.trim()}
                 className="mt-4 rounded-lg bg-accent px-4 py-2 text-body-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
               >
-                + Add category
+                + Add item
               </button>
             </div>
           </div>
@@ -498,7 +498,7 @@ export default function SetupPage() {
                     onChange={(e) => setNewAnchorFocus(e.target.checked)}
                     className="h-4 w-4 rounded border-ink-black/20"
                   />
-                  Flexible focus block (planner assigns a category)
+                  Flexible focus block (planner assigns an item)
                 </label>
                 <p className="pl-6 text-caption text-ink-black/40">
                   On: this time is open, and Cadence decides what to work on each day. Off: it&apos;s
@@ -508,10 +508,10 @@ export default function SetupPage() {
 
                 <div>
                   <span className="text-body-sm font-medium text-ink-black">
-                    Pin categories (optional)
+                    Pin items (optional)
                   </span>
                   {categories.length === 0 ? (
-                    <p className="mt-1.5 text-body-sm text-ink-black/40">Add a category first.</p>
+                    <p className="mt-1.5 text-body-sm text-ink-black/40">Add an item first.</p>
                   ) : (
                     <div className="mt-1.5 flex flex-wrap gap-1.5">
                       {categories.map((c) => (
@@ -563,7 +563,7 @@ export default function SetupPage() {
               <SparkleIcon className="pointer-events-none absolute -right-7 -top-2 h-5 w-5 text-marigold" />
             </div>
             <p className="mx-auto mt-3 max-w-md font-serif text-body text-graphite">
-              {categories.length} categor{categories.length === 1 ? "y" : "ies"} and{" "}
+              {categories.length} item{categories.length === 1 ? "" : "s"} and{" "}
               {anchors.length} schedule block{anchors.length === 1 ? "" : "s"} configured. Your
               dashboard is ready whenever you are — nothing here is locked in, you can change any
               of it later.

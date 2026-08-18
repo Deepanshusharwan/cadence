@@ -347,7 +347,7 @@ export default function Home() {
           <SectionHeader
             eyebrow="Philosophy"
             title="Structure without rigidity"
-            body="“You completed a two-hour focused block. Your top-priority category is healthy, and a secondary category could use more attention this week.” Not: “You failed your 7 PM task.”"
+            body="“You completed a two-hour focused block. Your top-priority item is healthy, and a secondary item could use more attention this week.” Not: “You failed your 7 PM task.”"
           />
           <div className="mt-12 grid gap-6 md:grid-cols-3">
             {PHILOSOPHY_CARDS.map((card) => (
@@ -374,20 +374,20 @@ export default function Home() {
           <div className="grid items-center gap-12 md:grid-cols-2">
             <div>
               <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">
-                Categories
+                Items
               </p>
               <h2 className="mt-3 text-heading-lg font-semibold text-ink-black">
-                Your categories. Your priorities.
+                Your items. Your priorities.
               </h2>
               <p className="mt-4 text-body text-graphite">
-                Cadence ships with no built-in categories — you define what you&apos;re
-                building toward and how important each part is. Two categories can share
+                Cadence ships with no built-in items — you define what you&apos;re
+                building toward and how important each part is. Two items can share
                 top priority; the planner won&apos;t quietly favor one. Session-based
-                categories get a weekly target instead of a daily requirement, and
-                no-minimum categories stay flexible on purpose.
+                items get a weekly target instead of a daily requirement, and
+                no-minimum items stay flexible on purpose.
               </p>
               <p className="mt-4 text-caption font-medium uppercase tracking-wide text-ink-black/40">
-                Example categories shown — yours will look different
+                Example items shown — yours will look different
               </p>
 
               {/* Category avatar row */}

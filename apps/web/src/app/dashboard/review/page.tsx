@@ -121,15 +121,15 @@ export default function ReviewPage() {
               height={253}
               className="h-auto w-full max-w-[220px]"
             />
-            <p className="mt-4 text-body font-semibold text-ink-black">No categories yet</p>
+            <p className="mt-4 text-body font-semibold text-ink-black">No items yet</p>
             <p className="mt-1 max-w-xs text-body-sm text-ink-black/50">
-              Add a category to start tracking progress week over week.
+              Add an item to start tracking progress week over week.
             </p>
             <Link
               href="/dashboard/settings"
               className="mt-4 rounded-lg bg-accent px-4 py-2 text-body-sm font-medium text-white transition-opacity hover:opacity-90"
             >
-              + Add your first category
+              + Add your first item
             </Link>
           </div>
         ) : (

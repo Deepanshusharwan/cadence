@@ -232,7 +232,7 @@ export default function PricingPage() {
             The planner stays free.
           </h1>
           <p className="mx-auto mt-6 max-w-xl font-serif text-subheading leading-[1.56] text-graphite">
-            Categories, targets, the timer, leave, weekly review — the whole point of
+            Items, targets, the timer, leave, weekly review — the whole point of
             Cadence is free forever. Paid tiers add sync, insight, and eventually an
             assistant that helps you set it all up.
           </p>
@@ -313,7 +313,7 @@ export default function PricingPage() {
               </Link>
 
               <ul className="mt-6 space-y-3">
-                <Feature>Full planner — categories, targets, timer, leave, weekly review</Feature>
+                <Feature>Full planner — items, targets, timer, leave, weekly review</Feature>
                 <Feature>Web and mobile, no device limit</Feature>
                 <Feature>Each device keeps its own data — not merged across devices</Feature>
                 <Feature>Feature requests taken</Feature>
@@ -380,6 +380,7 @@ export default function PricingPage() {
                 <Feature>Descriptive insights and Long Term analytics</Feature>
                 <Feature>Home-screen widgets</Feature>
                 <Feature>Custom avatars and themes</Feature>
+                <Feature>Alternate watch faces and fullscreen timer</Feature>
                 <Feature>Calendar integration</Feature>
                 <Feature>Read-only progress sharing</Feature>
                 <Feature>Data export</Feature>

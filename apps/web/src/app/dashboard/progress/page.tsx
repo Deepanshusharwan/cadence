@@ -162,7 +162,7 @@ export default function ProgressPage() {
               href="/dashboard/settings"
               className="mt-4 rounded-lg bg-accent px-4 py-2 text-body-sm font-medium text-white transition-opacity hover:opacity-90"
             >
-              Add a category
+              Add an item
             </Link>
           </div>
         ) : (
@@ -232,7 +232,7 @@ export default function ProgressPage() {
           This month
         </p>
         {monthlyTotals.length === 0 ? (
-          <p className="mt-3 text-body-sm text-ink-black/40">No categories yet.</p>
+          <p className="mt-3 text-body-sm text-ink-black/40">No items yet.</p>
         ) : (
           <div className="mt-3 space-y-2">
             {monthlyTotals.map(({ category, minutes, sessionCount }) => (
@@ -273,7 +273,7 @@ export default function ProgressPage() {
       <PlusGate
         plan={state.profile.plan}
         title="Long-term trend"
-        description="Consistency and category totals trended across months, not just this week and this month."
+        description="Consistency and item totals trended across months, not just this week and this month."
       >
         <div className="mt-6 rounded-xl border border-ink-black/8 bg-pure-white p-6">
           <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">
@@ -323,7 +323,7 @@ export default function ProgressPage() {
         <PlusGate
           plan={state.profile.plan}
           title="Insights"
-          description="Descriptive patterns pulled from your own history — like a category falling behind, or a weekday with a high missed-day rate."
+          description="Descriptive patterns pulled from your own history — like an item falling behind, or a weekday with a high missed-day rate."
         >
           {null}
         </PlusGate>
@@ -352,7 +352,7 @@ export default function ProgressPage() {
           <input
             value={historyQuery}
             onChange={(e) => setHistoryQuery(e.target.value)}
-            placeholder="Search category or tag…"
+            placeholder="Search item or tag…"
             className="min-w-0 flex-1 rounded-lg border border-ink-black/12 bg-pure-white px-3 py-2 text-body-sm text-ink-black outline-none transition-colors focus:border-accent"
           />
           <select
@@ -360,7 +360,7 @@ export default function ProgressPage() {
             onChange={(e) => setHistoryCategoryId(e.target.value)}
             className="rounded-lg border border-ink-black/12 bg-pure-white px-2 py-2 text-body-sm text-ink-black"
           >
-            <option value="">All categories</option>
+            <option value="">All items</option>
             {state.categories.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
@@ -390,7 +390,7 @@ export default function ProgressPage() {
                   <div className="min-w-0">
                     <span className="flex items-center gap-2 text-body-sm text-ink-black">
                       <span className={`h-2 w-2 shrink-0 rounded-full ${category?.color ?? "bg-ink-black/20"}`} />
-                      {category?.name ?? "Deleted category"}
+                      {category?.name ?? "Deleted item"}
                       <span className="text-ink-black/40">· {dateLabel}</span>
                     </span>
                     {s.tags.length > 0 ? (

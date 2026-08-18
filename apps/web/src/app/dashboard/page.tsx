@@ -4,7 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Mark, markSrc } from "@/components/marks";
-import { FlameIcon, PlayIcon, TrendingUpIcon } from "@/components/icons";
+import { AnalogTimer } from "@/components/analog-timer";
+import { RetroTimer } from "@/components/retro-timer";
+import { FlameIcon, PlayIcon, TrendingUpIcon, ExpandIcon, CollapseIcon } from "@/components/icons";
 import { useStore, todayISO, type Category, type DayType } from "@/lib/store";
 import { useToast } from "@/components/toast";
 
@@ -14,6 +16,9 @@ const DAY_TYPE_META: Record<DayType, { label: string; cost: string }> = {
   LEAVE: { label: "Full Leave", cost: "2 units" },
   MISSED: { label: "Missed", cost: "0 units" },
 };
+
+type WatchFace = "chronograph" | "retro";
+const WATCH_FACE_KEY = "cadence:watch-face";
 
 function ProgressBar({ value, className = "" }: { value: number; className?: string }) {
   return (
@@ -71,6 +76,35 @@ export default function DashboardPage() {
   const [manualMinutes, setManualMinutes] = useState("30");
   const [manualTags, setManualTags] = useState("");
   const [timerCategoryId, setTimerCategoryId] = useState("");
+  const [showQuickAddItem, setShowQuickAddItem] = useState(false);
+  const [quickAddItemName, setQuickAddItemName] = useState("");
+  const [showQuickAddBlock, setShowQuickAddBlock] = useState(false);
+  const [quickAddBlockLabel, setQuickAddBlockLabel] = useState("");
+  const [quickAddBlockStart, setQuickAddBlockStart] = useState("09:00");
+  const [quickAddBlockEnd, setQuickAddBlockEnd] = useState("10:00");
+  const [watchFace, setWatchFace] = useState<WatchFace>("chronograph");
+  const [timerFullscreen, setTimerFullscreen] = useState(false);
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem(WATCH_FACE_KEY);
+    if (stored === "chronograph" || stored === "retro") {
+      queueMicrotask(() => setWatchFace(stored));
+    }
+  }, []);
+
+  function selectWatchFace(face: WatchFace) {
+    setWatchFace(face);
+    window.localStorage.setItem(WATCH_FACE_KEY, face);
+  }
+
+  useEffect(() => {
+    if (!timerFullscreen) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setTimerFullscreen(false);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [timerFullscreen]);
 
   // Sessions-tracked categories only count a logged block toward the
   // weekly total once it's >= 45 minutes (same rule store.weeklySessionCount
@@ -133,7 +167,7 @@ export default function DashboardPage() {
   function logManual() {
     const minutes = Number(manualMinutes);
     if (!manualCategoryId) {
-      show("Pick a category to log against first");
+      show("Pick an item to log against first");
       return;
     }
     if (!minutes) {
@@ -149,7 +183,7 @@ export default function DashboardPage() {
     store.logSessionManually(manualCategoryId, minutes, undefined, tags);
     setManualMinutes("30");
     setManualTags("");
-    show(`Logged ${minutes}m to ${category?.name ?? "category"}`);
+    show(`Logged ${minutes}m to ${category?.name ?? "item"}`);
   }
 
   function timerElapsedMs() {
@@ -164,7 +198,7 @@ export default function DashboardPage() {
     const minutes = Math.max(1, Math.round(timerElapsedMs() / 60000));
     checkCelebration(state.timer.categoryId, minutes);
     store.stopTimer();
-    show(`Session saved — ${minutes}m added to ${category?.name ?? "category"}`);
+    show(`Session saved — ${minutes}m added to ${category?.name ?? "item"}`);
   }
 
   function handleCancelTimer() {
@@ -172,9 +206,69 @@ export default function DashboardPage() {
     show("Timer discarded");
   }
 
+  async function handleQuickAddItem() {
+    const name = quickAddItemName.trim();
+    if (!name) return;
+    const category = await store.addCategory({
+      name,
+      trackingMode: "hours",
+      weeklyTarget: null,
+      priorityTier: 3,
+      weekendPreferred: false,
+    });
+    if (category) {
+      setTimerCategoryId(category.id);
+      show(`Added ${category.name} — ready to start`);
+    }
+    setQuickAddItemName("");
+    setShowQuickAddItem(false);
+  }
+
+  async function handleQuickAddBlock() {
+    const label = quickAddBlockLabel.trim();
+    if (!label || !quickAddBlockStart || !quickAddBlockEnd) return;
+    const anchor = await store.addAnchor({
+      label,
+      start: quickAddBlockStart,
+      end: quickAddBlockEnd,
+      recurrence: "once",
+      daysOfWeek: [],
+      date: today,
+      // Fixed, not flexible: a named one-off block ("Guitar lesson") should
+      // show its own label -- a focus block instead hands the slot to the
+      // planner's auto-pick, silently overwriting the label with whatever
+      // category it assigns.
+      isFocusBlock: false,
+      categoryIds: [],
+    });
+    if (anchor) show(`Added ${anchor.label} to today`);
+    setQuickAddBlockLabel("");
+    setQuickAddBlockStart("09:00");
+    setQuickAddBlockEnd("10:00");
+    setShowQuickAddBlock(false);
+  }
+
   const timerCategory = state.timer
     ? state.categories.find((c) => c.id === state.timer!.categoryId)
     : null;
+
+  const isPlus = state.profile.plan !== "free";
+
+  function renderWatchFace(size?: number) {
+    if (!state.timer || !timerCategory) return null;
+    if (isPlus && watchFace === "retro") {
+      return (
+        <RetroTimer
+          elapsedMs={timerElapsedMs()}
+          paused={state.timer.paused}
+          itemLabel={timerCategory.name}
+          timeLabel={formatElapsed(timerElapsedMs())}
+          size={size}
+        />
+      );
+    }
+    return <AnalogTimer elapsedMs={timerElapsedMs()} paused={state.timer.paused} size={size} />;
+  }
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -223,7 +317,7 @@ export default function DashboardPage() {
             }`}
           >
             <TrendingUpIcon className="h-3.5 w-3.5" />
-            {onTrackCount}/{categoriesWithTarget.length} categories on track this week
+            {onTrackCount}/{categoriesWithTarget.length} items on track this week
           </span>
         ) : null}
       </div>
@@ -252,17 +346,55 @@ export default function DashboardPage() {
         </span>
       </div>
 
-      <div className="mt-8 grid gap-6 lg:grid-cols-3">
-        {/* Timer */}
-        <div className="rounded-xl border border-ink-black/8 bg-pure-white p-6 lg:col-span-1">
+      {/* Timer */}
+      <div className="mt-8 rounded-xl border border-ink-black/8 bg-pure-white p-6">
+        <div className="flex items-center justify-between">
           <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">
             Timer
           </p>
           {state.timer && timerCategory ? (
-            <div className="mt-4 text-center">
+            isPlus ? (
+              <div className="flex items-center gap-2">
+                <div className="inline-flex items-stretch gap-1 rounded-lg border border-ink-black/10 bg-paper-warmth p-1">
+                  {(["chronograph", "retro"] as WatchFace[]).map((face) => (
+                    <button
+                      key={face}
+                      type="button"
+                      onClick={() => selectWatchFace(face)}
+                      className={`rounded-md px-2.5 py-1 text-caption font-medium capitalize transition-colors ${
+                        watchFace === face
+                          ? "bg-accent text-white"
+                          : "text-ink-black/50 hover:bg-ink-black/5"
+                      }`}
+                    >
+                      {face}
+                    </button>
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setTimerFullscreen(true)}
+                  aria-label="Fullscreen"
+                  title="Fullscreen"
+                  className="rounded-lg p-1.5 text-ink-black/50 hover:bg-ink-black/10"
+                >
+                  <ExpandIcon className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <Link href="/pricing" className="text-caption font-medium text-accent hover:opacity-80">
+                More watch faces with Plus →
+              </Link>
+            )
+          ) : null}
+        </div>
+        {state.timer && timerCategory ? (
+          <div className="mt-4 flex flex-col items-center gap-6 sm:flex-row sm:justify-center">
+            {renderWatchFace()}
+            <div className="w-full max-w-xs text-center sm:text-left">
               <p className="text-body-sm font-medium text-ink-black">{timerCategory.name}</p>
               <p
-                className={`mt-2 font-serif text-display-sm text-ink-black ${state.timer.paused ? "opacity-40" : ""}`}
+                className={`mt-1 font-serif text-display-sm text-ink-black ${state.timer.paused ? "opacity-40" : ""}`}
               >
                 {formatElapsed(timerElapsedMs())}
               </p>
@@ -297,26 +429,72 @@ export default function DashboardPage() {
                 </button>
               </div>
             </div>
-          ) : (
-            <div className="mt-4">
-              {state.categories.length === 0 ? (
-                <p className="text-body-sm text-ink-black/50">
-                  Add a category in Settings to start a timer.
-                </p>
+          </div>
+        ) : (
+          <div className="mx-auto mt-4 max-w-sm">
+            {showQuickAddItem ? (
+                <div className="flex gap-2">
+                  <input
+                    autoFocus
+                    value={quickAddItemName}
+                    onChange={(e) => setQuickAddItemName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleQuickAddItem();
+                      if (e.key === "Escape") {
+                        setShowQuickAddItem(false);
+                        setQuickAddItemName("");
+                      }
+                    }}
+                    placeholder="Item name — e.g. Guitar"
+                    className="min-w-0 flex-1 rounded-lg border border-ink-black/12 bg-pure-white px-3 py-2 text-body-sm text-ink-black placeholder:text-ink-black/30"
+                  />
+                  <button
+                    onClick={handleQuickAddItem}
+                    disabled={!quickAddItemName.trim()}
+                    className="shrink-0 rounded-lg bg-accent px-3 py-2 text-body-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+                  >
+                    Create
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowQuickAddItem(false);
+                      setQuickAddItemName("");
+                    }}
+                    aria-label="Cancel"
+                    className="shrink-0 rounded-lg px-2.5 py-2 text-body-sm text-ink-black/50 hover:bg-ink-black/10"
+                  >
+                    ×
+                  </button>
+                </div>
+              ) : state.categories.length === 0 ? (
+                <button
+                  onClick={() => setShowQuickAddItem(true)}
+                  className="flex w-full items-center justify-center gap-1 rounded-lg border border-dashed border-ink-black/20 px-4 py-2 text-body-sm font-medium text-ink-black/60 hover:bg-ink-black/5"
+                >
+                  + New item to start timing
+                </button>
               ) : (
                 <>
-                  <select
-                    value={timerCategoryId}
-                    onChange={(e) => setTimerCategoryId(e.target.value)}
-                    className="w-full rounded-lg border border-ink-black/12 bg-pure-white px-3 py-2 text-body-sm text-ink-black"
-                  >
-                    <option value="">Choose a category…</option>
-                    {state.categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="flex gap-2">
+                    <select
+                      value={timerCategoryId}
+                      onChange={(e) => setTimerCategoryId(e.target.value)}
+                      className="min-w-0 flex-1 rounded-lg border border-ink-black/12 bg-pure-white px-3 py-2 text-body-sm text-ink-black"
+                    >
+                      <option value="">Choose an item…</option>
+                      {state.categories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button
+                      onClick={() => setShowQuickAddItem(true)}
+                      className="shrink-0 rounded-lg px-3 py-2 text-body-sm font-medium text-ink-black/50 hover:bg-ink-black/10"
+                    >
+                      + New
+                    </button>
+                  </div>
                   <button
                     onClick={() => startTimerFor(timerCategoryId)}
                     disabled={!timerCategoryId}
@@ -336,7 +514,7 @@ export default function DashboardPage() {
                     onChange={(e) => setManualCategoryId(e.target.value)}
                     className="min-w-0 flex-1 rounded-lg border border-ink-black/12 bg-pure-white px-2 py-1.5 text-caption text-ink-black"
                   >
-                    <option value="">Category…</option>
+                    <option value="">Item…</option>
                     {state.categories.map((c) => (
                       <option key={c.id} value={c.id}>
                         {c.name}
@@ -375,11 +553,62 @@ export default function DashboardPage() {
           )}
         </div>
 
-        {/* Today's schedule */}
-        <div className="rounded-xl border border-ink-black/8 bg-pure-white p-6 lg:col-span-2">
-          <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">
-            Today
-          </p>
+      {timerFullscreen && state.timer && timerCategory ? (
+        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-paper-warmth p-6">
+          <button
+            onClick={() => setTimerFullscreen(false)}
+            aria-label="Exit fullscreen"
+            title="Exit fullscreen (Esc)"
+            className="absolute right-6 top-6 rounded-lg p-2 text-ink-black/50 hover:bg-ink-black/10"
+          >
+            <CollapseIcon className="h-5 w-5" />
+          </button>
+          {renderWatchFace(420)}
+          <div className="text-center">
+            <p className="text-body font-medium text-ink-black">{timerCategory.name}</p>
+            <p
+              className={`mt-1 font-serif text-display text-ink-black ${state.timer.paused ? "opacity-40" : ""}`}
+            >
+              {formatElapsed(timerElapsedMs())}
+            </p>
+            {state.timer.paused ? (
+              <p className="mt-1 text-caption font-medium uppercase tracking-wide text-ink-black/40">
+                Paused
+              </p>
+            ) : null}
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => (state.timer!.paused ? store.resumeTimer() : store.pauseTimer())}
+              className="rounded-lg bg-ink-black/5 px-5 py-2 text-body-sm font-medium text-ink-black hover:bg-ink-black/10"
+            >
+              {state.timer.paused ? "Resume" : "Pause"}
+            </button>
+            <button
+              onClick={handleStopTimer}
+              className="rounded-lg bg-ink-black px-5 py-2 text-body-sm font-medium text-pure-white transition-opacity hover:opacity-90"
+            >
+              Stop session
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Today's schedule */}
+      <div className="mt-6 rounded-xl border border-ink-black/8 bg-pure-white p-6">
+          <div className="flex items-center justify-between">
+            <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">
+              Today
+            </p>
+            {!showQuickAddBlock ? (
+              <button
+                onClick={() => setShowQuickAddBlock(true)}
+                className="text-caption font-medium text-ink-black/50 hover:text-ink-black"
+              >
+                + Add block
+              </button>
+            ) : null}
+          </div>
           <div className="mt-4 space-y-2">
             {scheduleBlocks.map((block, i) => (
               <div
@@ -404,7 +633,52 @@ export default function DashboardPage() {
               </div>
             ))}
           </div>
-        </div>
+          {showQuickAddBlock ? (
+            <div className="mt-3 rounded-lg border border-dashed border-ink-black/15 p-3">
+              <input
+                autoFocus
+                value={quickAddBlockLabel}
+                onChange={(e) => setQuickAddBlockLabel(e.target.value)}
+                placeholder="Block name — e.g. Gym"
+                className="w-full rounded-lg border border-ink-black/12 bg-pure-white px-3 py-2 text-body-sm text-ink-black placeholder:text-ink-black/30"
+              />
+              <div className="mt-2 flex items-center gap-2">
+                <input
+                  type="time"
+                  value={quickAddBlockStart}
+                  onChange={(e) => setQuickAddBlockStart(e.target.value)}
+                  className="rounded-lg border border-ink-black/12 bg-pure-white px-2 py-1.5 text-caption text-ink-black"
+                />
+                <span className="text-caption text-ink-black/40">to</span>
+                <input
+                  type="time"
+                  value={quickAddBlockEnd}
+                  onChange={(e) => setQuickAddBlockEnd(e.target.value)}
+                  className="rounded-lg border border-ink-black/12 bg-pure-white px-2 py-1.5 text-caption text-ink-black"
+                />
+                <button
+                  onClick={handleQuickAddBlock}
+                  disabled={!quickAddBlockLabel.trim()}
+                  className="ml-auto shrink-0 rounded-lg bg-accent px-3 py-1.5 text-caption font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+                >
+                  Add
+                </button>
+                <button
+                  onClick={() => {
+                    setShowQuickAddBlock(false);
+                    setQuickAddBlockLabel("");
+                  }}
+                  aria-label="Cancel"
+                  className="shrink-0 rounded-lg px-2 py-1.5 text-caption text-ink-black/50 hover:bg-ink-black/10"
+                >
+                  ×
+                </button>
+              </div>
+              <p className="mt-1.5 text-caption text-ink-black/40">
+                Just for today — for recurring blocks, use Settings.
+              </p>
+            </div>
+          ) : null}
       </div>
 
       {/* Weekly progress */}
@@ -421,15 +695,15 @@ export default function DashboardPage() {
               height={253}
               className="h-auto w-full max-w-[220px]"
             />
-            <p className="mt-4 text-body font-semibold text-ink-black">No categories yet</p>
+            <p className="mt-4 text-body font-semibold text-ink-black">No items yet</p>
             <p className="mt-1 max-w-xs text-body-sm text-ink-black/50">
-              Add your first category to start organizing your week around it.
+              Add your first item to start organizing your week around it.
             </p>
             <Link
               href="/dashboard/settings"
               className="mt-4 rounded-lg bg-accent px-4 py-2 text-body-sm font-medium text-white transition-opacity hover:opacity-90"
             >
-              + Add your first category
+              + Add your first item
             </Link>
           </div>
         ) : (

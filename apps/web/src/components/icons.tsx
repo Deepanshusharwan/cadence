@@ -215,6 +215,28 @@ export function CloseIcon(props: IconProps) {
   );
 }
 
+export function ExpandIcon(props: IconProps) {
+  return (
+    <svg {...baseProps} {...props}>
+      <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+      <path d="M16 3h3a2 2 0 0 1 2 2v3" />
+      <path d="M8 21H5a2 2 0 0 1-2-2v-3" />
+      <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
+    </svg>
+  );
+}
+
+export function CollapseIcon(props: IconProps) {
+  return (
+    <svg {...baseProps} {...props}>
+      <path d="M3 9h3a2 2 0 0 0 2-2V4" />
+      <path d="M21 9h-3a2 2 0 0 1-2-2V4" />
+      <path d="M3 15h3a2 2 0 0 1 2 2v3" />
+      <path d="M21 15h-3a2 2 0 0 0-2 2v3" />
+    </svg>
+  );
+}
+
 export function CheckIcon(props: IconProps) {
   return (
     <svg {...baseProps} {...props}>

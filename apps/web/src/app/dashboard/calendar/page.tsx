@@ -424,7 +424,7 @@ function DayView({
                   <div className="min-w-0">
                     <span className="flex items-center gap-2 text-body-sm text-ink-black">
                       <span className={`h-2 w-2 shrink-0 rounded-full ${category?.color ?? "bg-ink-black/20"}`} />
-                      {category?.name ?? "Deleted category"}
+                      {category?.name ?? "Deleted item"}
                     </span>
                     {s.tags.length > 0 ? (
                       <div className="mt-1 flex flex-wrap gap-1">
@@ -696,7 +696,7 @@ function WeekView({
                           className={`h-1.5 w-1.5 shrink-0 rounded-full ${category?.color ?? "bg-ink-black/20"}`}
                         />
                         <span className="min-w-0 flex-1 truncate text-caption text-ink-black">
-                          {category?.name ?? "Deleted category"}
+                          {category?.name ?? "Deleted item"}
                         </span>
                         <span className="shrink-0 text-caption text-ink-black/40">
                           {s.durationMinutes}m

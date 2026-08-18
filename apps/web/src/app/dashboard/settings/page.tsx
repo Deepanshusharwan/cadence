@@ -314,7 +314,7 @@ export default function SettingsPage() {
       priorityTier: editCatTier,
     });
     setEditingCategoryId(null);
-    show("Category updated");
+    show("Item updated");
   }
 
   function addAnchor() {
@@ -608,7 +608,7 @@ export default function SettingsPage() {
           {/* Categories */}
           <section className="mt-6 rounded-xl border border-ink-black/8 bg-pure-white p-6">
             <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">
-              Categories
+              Items
             </p>
             <div className="mt-4 space-y-2">
               {state.categories.map((c) => {
@@ -632,8 +632,8 @@ export default function SettingsPage() {
                             disabled={hasSessions}
                             title={
                               hasSessions
-                                ? "Locked — this category already has logged sessions"
-                                : "How you'll measure progress in this category — hours logged, or number of sessions completed"
+                                ? "Locked — this item already has logged sessions"
+                                : "How you'll measure progress in this item — hours logged, or number of sessions completed"
                             }
                             className={`${inputClass} bg-pure-white ${hasSessions ? "opacity-50" : ""}`}
                           >
@@ -652,7 +652,7 @@ export default function SettingsPage() {
                         <select
                           value={editCatTier}
                           onChange={(e) => setEditCatTier(Number(e.target.value))}
-                          title="How this category gets prioritized when your week doesn't have room for everything — Tier 1 goes first"
+                          title="How this item gets prioritized when your week doesn't have room for everything — Tier 1 goes first"
                           className={`${inputClass} bg-pure-white`}
                         >
                           {TIER_LABELS.map((label, i) => (
@@ -663,8 +663,8 @@ export default function SettingsPage() {
                         </select>
                         {hasSessions ? (
                           <p className="text-caption text-ink-black/70">
-                            Hours/sessions tracking is locked once a category has logged
-                            sessions — create a new category instead if you need to switch.
+                            Hours/sessions tracking is locked once an item has logged
+                            sessions — create a new item instead if you need to switch.
                           </p>
                         ) : null}
                         <div className="flex gap-2">
@@ -739,13 +739,13 @@ export default function SettingsPage() {
               <input
                 value={newCatName}
                 onChange={(e) => setNewCatName(e.target.value)}
-                placeholder="New category name"
+                placeholder="New item name"
                 className={inputClass}
               />
               <select
                 value={newCatMode}
                 onChange={(e) => setNewCatMode(e.target.value as TrackingMode)}
-                title="How you'll measure progress in this category — hours logged, or number of sessions completed"
+                title="How you'll measure progress in this item — hours logged, or number of sessions completed"
                 className={inputClass}
               >
                 <option value="hours">Hours per week</option>
@@ -762,7 +762,7 @@ export default function SettingsPage() {
               <select
                 value={newCatTier}
                 onChange={(e) => setNewCatTier(Number(e.target.value))}
-                title="How this category gets prioritized when your week doesn't have room for everything — Tier 1 goes first"
+                title="How this item gets prioritized when your week doesn't have room for everything — Tier 1 goes first"
                 className={inputClass}
               >
                 {TIER_LABELS.map((label, i) => (
@@ -777,7 +777,7 @@ export default function SettingsPage() {
               disabled={!newCatName.trim()}
               className="mt-3 rounded-lg bg-accent px-4 py-2 text-body-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
             >
-              + Add category
+              + Add item
             </button>
           </section>
 
@@ -852,7 +852,7 @@ export default function SettingsPage() {
             <p className="mt-1 text-caption text-ink-black/40">
               A schedule block is any recurring or one-off chunk of time on your calendar — class, a
               shift, the gym. Add as many as you need — every day, specific weekdays, or a one-off
-              date. Pin a category to any of them if you want to fix what fills it.
+              date. Pin an item to any of them if you want to fix what fills it.
             </p>
 
             <div className="mt-4 space-y-2">
@@ -982,7 +982,7 @@ export default function SettingsPage() {
                   onChange={(e) => setNewAnchorFocus(e.target.checked)}
                   className="h-4 w-4 rounded border-ink-black/20"
                 />
-                Flexible focus block (planner assigns a category)
+                Flexible focus block (planner assigns an item)
               </label>
               <p className="pl-6 text-caption text-ink-black/40">
                 On: this time is open, and Cadence decides what to work on each day. Off: it&apos;s a
@@ -991,10 +991,10 @@ export default function SettingsPage() {
 
               <div>
                 <span className="text-body-sm font-medium text-ink-black">
-                  Pin categories (optional)
+                  Pin items (optional)
                 </span>
                 {state.categories.length === 0 ? (
-                  <p className="mt-1.5 text-body-sm text-ink-black/40">Add a category first.</p>
+                  <p className="mt-1.5 text-body-sm text-ink-black/40">Add an item first.</p>
                 ) : (
                   <div className="mt-1.5 flex flex-wrap gap-1.5">
                     {state.categories.map((c) => (
@@ -1040,7 +1040,7 @@ export default function SettingsPage() {
                 Export data
               </p>
               <p className="mt-2 text-body-sm text-ink-black/50">
-                Everything you&apos;ve logged, yours to keep — sessions, categories, weekly reviews,
+                Everything you&apos;ve logged, yours to keep — sessions, items, weekly reviews,
                 events, and day markers.
               </p>
               <div className="mt-4 flex gap-2">
@@ -1068,14 +1068,14 @@ export default function SettingsPage() {
           <PlusGate
             plan={state.profile.plan}
             title="Share your progress"
-            description="Get a read-only link showing your streaks and category progress — no session details, no login required to view."
+            description="Get a read-only link showing your streaks and item progress — no session details, no login required to view."
           >
             <section className="mt-6 rounded-xl border border-ink-black/8 bg-pure-white p-6">
               <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">
                 Share your progress
               </p>
               <p className="mt-2 text-body-sm text-ink-black/50">
-                A read-only link showing your streaks and this week&apos;s category progress — never
+                A read-only link showing your streaks and this week&apos;s item progress — never
                 your raw session history.
               </p>
 

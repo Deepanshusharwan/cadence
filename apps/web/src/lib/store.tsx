@@ -215,11 +215,11 @@ interface StoreValue {
   setProfile: (patch: Partial<Profile>) => void;
   refreshProfile: () => Promise<void>;
   completeOnboarding: () => void;
-  addCategory: (input: Omit<Category, "id" | "color">) => void;
+  addCategory: (input: Omit<Category, "id" | "color">) => Promise<Category | undefined>;
   removeCategory: (id: string) => void;
   updateCategory: (id: string, patch: Partial<Category>) => void;
   setWakeWindow: (start: string, end: string) => void;
-  addAnchor: (input: Omit<ScheduleAnchor, "id">) => void;
+  addAnchor: (input: Omit<ScheduleAnchor, "id">) => Promise<ScheduleAnchor | undefined>;
   removeAnchor: (id: string) => void;
   updateAnchor: (id: string, patch: Partial<ScheduleAnchor>) => void;
   addEvent: (input: Omit<CadenceEvent, "id">) => void;
@@ -403,8 +403,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     try {
       const category = await api.createCategory(input);
       setState((s) => ({ ...s, categories: [...s.categories, category] }));
+      return category;
     } catch (err) {
       console.error("addCategory failed", err);
+      return undefined;
     }
   }, []);
 
@@ -428,14 +430,27 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       .catch((err) => console.error("setWakeWindow failed", err));
   }, []);
 
-  const addAnchor = useCallback(async (input: Omit<ScheduleAnchor, "id">) => {
-    try {
-      const anchor = await api.createAnchor(input);
-      setState((s) => ({ ...s, anchors: [...s.anchors, anchor] }));
-    } catch (err) {
-      console.error("addAnchor failed", err);
-    }
-  }, []);
+  const addAnchor = useCallback(
+    async (input: Omit<ScheduleAnchor, "id">) => {
+      try {
+        const anchor = await api.createAnchor(input);
+        setState((s) => ({ ...s, anchors: [...s.anchors, anchor] }));
+        // A same-day "once" anchor's date is set client-side (local calendar
+        // day) while the server's default "today" for GET /today falls back
+        // to its own system clock -- those can disagree right around local
+        // midnight in timezones ahead of UTC, silently hiding what was just
+        // created. Only override for that exact case: a one-off anchor for a
+        // *different* day should never make todaySchedule show non-today data.
+        const isTodayOnce = input.recurrence === "once" && input.date === todayISO();
+        await refreshComputed(isTodayOnce ? input.date! : undefined);
+        return anchor;
+      } catch (err) {
+        console.error("addAnchor failed", err);
+        return undefined;
+      }
+    },
+    [refreshComputed]
+  );
 
   const removeAnchor = useCallback((id: string) => {
     setState((s) => ({ ...s, anchors: s.anchors.filter((a) => a.id !== id) }));

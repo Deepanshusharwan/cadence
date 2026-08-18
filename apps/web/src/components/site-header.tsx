@@ -5,7 +5,7 @@ import { CadenceMark } from "@/components/logo";
 // (e.g. /pricing) — kept in one place so they can't drift apart.
 export const NAV_LINKS = [
   { href: "/#philosophy", label: "Philosophy" },
-  { href: "/#categories", label: "Categories" },
+  { href: "/#categories", label: "Items" },
   { href: "/#leave", label: "Leave" },
   { href: "/#screens", label: "Screens" },
   { href: "/pricing", label: "Pricing" },
