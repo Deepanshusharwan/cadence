@@ -563,6 +563,12 @@ export const api = {
       body: JSON.stringify({ banned }),
     }).then(adminUserFromWire),
 
+  createCheckout: (variantId: string) =>
+    apiFetch<{ url: string }>("/billing/checkout", {
+      method: "POST",
+      body: JSON.stringify({ variant_id: variantId }),
+    }),
+
   getLeaveBalance: () => apiFetch<WireLeaveBalance>("/leave").then(leaveFromWire),
   getStreakInfo: () => apiFetch<WireStreakInfo>("/streaks").then(streakInfoFromWire),
   getInsights: () => apiFetch<ApiInsight[]>("/insights"),

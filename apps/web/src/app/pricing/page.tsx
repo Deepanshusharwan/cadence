@@ -3,10 +3,13 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useUser } from "@clerk/nextjs";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { Mark, MARKS } from "@/components/marks";
 import { CheckIcon, SparkleIcon, SquiggleArrowIcon } from "@/components/icons";
+import { api } from "@/lib/api";
 
 type Cadence = "monthly" | "quarterly" | "annual" | "lifetime";
 type Region = "US" | "IN";
@@ -18,15 +21,35 @@ const CADENCES: { key: Cadence; label: string }[] = [
   { key: "lifetime", label: "Lifetime" },
 ];
 
-// Real-market anchors per region, not a flat currency conversion — India's
-// numbers in particular come from comparable-app research, not a percentage
-// of the US price (see the pricing-plan discussion this page is built from).
+// Lemon Squeezy bills every customer in USD — there's no per-variant
+// currency override on the store, so "India pricing" is a genuinely
+// cheaper USD variant (matching the real-market anchor research from the
+// pricing-plan discussion this page is built from), not a different
+// currency. Both regions are $ amounts; India's is just the lower one.
 const PRICING: Record<
   Region,
-  { symbol: string; monthly: number; quarterly: number; annual: number; lifetime: number }
+  { monthly: number; quarterly: number; annual: number; lifetime: number }
 > = {
-  US: { symbol: "$", monthly: 4.99, quarterly: 12.99, annual: 49.99, lifetime: 99 },
-  IN: { symbol: "₹", monthly: 149, quarterly: 399, annual: 799, lifetime: 1999 },
+  US: { monthly: 4.99, quarterly: 12.99, annual: 49.99, lifetime: 99 },
+  IN: { monthly: 1.59, quarterly: 4.19, annual: 8.39, lifetime: 20.99 },
+};
+
+// Approximate USD -> INR rate, used only to show a convenience estimate of
+// what the India price feels like in rupees. Not what's actually charged —
+// Lemon Squeezy always charges the USD amount above, then localizes the
+// display/charge to the buyer's card currency at checkout using whatever
+// the live rate is at that moment, which will drift from this constant.
+const APPROX_INR_RATE = 95.7;
+
+function approxInr(usd: number): string {
+  return `₹${Math.round(usd * APPROX_INR_RATE).toLocaleString("en-IN")}`;
+}
+
+// Lemon Squeezy variant ids (Store #454802, product "Cadence" for the three
+// subscription cadences + product "Cadence Lifetime" for the one-time tier).
+const VARIANT_IDS: Record<Region, Record<Cadence, string>> = {
+  US: { monthly: "2032070", quarterly: "2031988", annual: "2032041", lifetime: "2032076" },
+  IN: { monthly: "2032049", quarterly: "2032054", annual: "2032060", lifetime: "2032091" },
 };
 
 const CADENCE_SUFFIX: Record<Cadence, string> = {
@@ -49,7 +72,7 @@ const MONTHS_COVERED: Record<Cadence, number> = {
 function formatPrice(region: Region, cadence: Cadence): string {
   const price = PRICING[region][cadence];
   const isWhole = Number.isInteger(price);
-  return `${PRICING[region].symbol}${isWhole ? price : price.toFixed(2)}`;
+  return `$${isWhole ? price : price.toFixed(2)}`;
 }
 
 /** % saved vs. paying the monthly price every month for that period. null for monthly/lifetime, which aren't discounts off themselves. */
@@ -102,6 +125,26 @@ function Feature({ children, muted = false }: { children: React.ReactNode; muted
 export default function PricingPage() {
   const [cadence, setCadence] = useState<Cadence>("annual");
   const [region, setRegion] = useState<Region>("US");
+  const [checkoutError, setCheckoutError] = useState<string | null>(null);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const router = useRouter();
+  const { isSignedIn } = useUser();
+
+  async function handleStartPlus() {
+    if (!isSignedIn) {
+      router.push("/sign-in");
+      return;
+    }
+    setCheckoutError(null);
+    setCheckoutLoading(true);
+    try {
+      const { url } = await api.createCheckout(VARIANT_IDS[region][cadence]);
+      window.location.href = url;
+    } catch {
+      setCheckoutError("Couldn't start checkout — please try again in a moment.");
+      setCheckoutLoading(false);
+    }
+  }
 
   return (
     <div className="flex min-h-screen flex-col overflow-x-hidden bg-paper-warmth">
@@ -161,21 +204,22 @@ export default function PricingPage() {
 
             <label className="inline-flex items-center gap-2 text-body-sm text-ink-black/60">
               <span className="text-caption font-medium uppercase tracking-wide text-ink-black/40">
-                Viewing in
+                Pricing for
               </span>
               <select
                 value={region}
                 onChange={(e) => setRegion(e.target.value as Region)}
                 className="rounded-lg border border-ink-black/12 bg-pure-white px-3 py-1.5 text-body-sm font-medium text-ink-black outline-none focus:border-notion-blue"
               >
-                <option value="US">USD ($)</option>
-                <option value="IN">INR (₹)</option>
+                <option value="US">International</option>
+                <option value="IN">India</option>
               </select>
             </label>
           </div>
           <p className="mt-3 text-caption text-ink-black/35">
-            Display currency only — what you&apos;re actually charged follows your
-            payment method&apos;s billing country.
+            Prices are billed in USD everywhere — India pricing is a lower USD rate,
+            not a different currency. Your card statement will show the equivalent in
+            your own currency at checkout.
           </p>
         </section>
 
@@ -187,9 +231,7 @@ export default function PricingPage() {
               <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">
                 Free
               </p>
-              <p className="mt-3 text-heading font-semibold text-ink-black">
-                {PRICING[region].symbol}0
-              </p>
+              <p className="mt-3 text-heading font-semibold text-ink-black">$0</p>
               <p className="mt-1 text-body-sm text-ink-black/40">forever</p>
 
               <Link
@@ -228,13 +270,27 @@ export default function PricingPage() {
                 </span>
               </p>
               <p className="mt-1 text-body-sm text-ink-black/50">{priceSubline(region, cadence)}</p>
+              {region === "IN" ? (
+                <p className="mt-0.5 text-caption text-ink-black/35">
+                  ≈ {approxInr(PRICING.IN[cadence])} at today&apos;s rate
+                </p>
+              ) : null}
 
-              <Link
-                href="/sign-in"
-                className="mt-6 block rounded-lg bg-notion-blue px-4 py-2 text-center text-body-sm font-medium text-pure-white transition-opacity duration-200 ease-out hover:opacity-90"
+              <button
+                type="button"
+                onClick={handleStartPlus}
+                disabled={checkoutLoading}
+                className="mt-6 block w-full rounded-lg bg-notion-blue px-4 py-2 text-center text-body-sm font-medium text-pure-white transition-opacity duration-200 ease-out hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
               >
-                {cadence === "lifetime" ? "Buy Plus Lifetime" : "Start Plus"}
-              </Link>
+                {checkoutLoading
+                  ? "Redirecting…"
+                  : cadence === "lifetime"
+                    ? "Buy Plus Lifetime"
+                    : "Start Plus"}
+              </button>
+              {checkoutError ? (
+                <p className="mt-2 text-caption text-vermillion">{checkoutError}</p>
+              ) : null}
 
               <ul className="mt-6 space-y-3">
                 <Feature>Everything in Free</Feature>

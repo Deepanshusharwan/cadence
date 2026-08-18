@@ -55,6 +55,16 @@ class Settings(BaseSettings):
     # grants access.
     lemonsqueezy_variant_plans: dict[str, str] = {}
 
+    # Settings -> API in the Lemon Squeezy dashboard. Used server-side only,
+    # to create checkout sessions via the API (POST /billing/checkout)
+    # instead of static hosted checkout links — that's what lets us pass
+    # `skip_trial` per-request based on our own trial_used record (see
+    # models.User.trial_used), which a static link can't do.
+    lemonsqueezy_api_key: str = ""
+    # Settings -> Store in the Lemon Squeezy dashboard. Required by the
+    # Checkout API's `store` relationship alongside the variant id.
+    lemonsqueezy_store_id: str = ""
+
 
 @lru_cache
 def get_settings() -> Settings:

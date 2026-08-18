@@ -5,6 +5,7 @@ from .config import get_settings
 from .routers import (
     admin,
     anchors,
+    billing,
     categories,
     computed,
     day_types,
@@ -43,4 +44,5 @@ app.include_router(reviews.router)
 app.include_router(feedback.router)
 app.include_router(admin.router)
 app.include_router(webhooks.router)
+app.include_router(billing.router)
 app.include_router(computed.router)

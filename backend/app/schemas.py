@@ -54,6 +54,14 @@ class BannedUpdate(BaseModel):
     banned: bool
 
 
+class CheckoutCreate(BaseModel):
+    variant_id: str
+
+
+class CheckoutOut(BaseModel):
+    url: str
+
+
 # --- Category ------------------------------------------------------------
 
 

@@ -625,6 +625,49 @@ def test_webhook_cancelled_does_not_revoke_immediately(client, monkeypatch):
         get_settings.cache_clear()
 
 
+def test_webhook_subscription_created_marks_trial_used(client, db_session, monkeypatch):
+    from app import models
+
+    client.get("/me")
+    payload = {
+        "meta": {"event_name": "subscription_created", "custom_data": {"user_id": "test-user"}},
+        "data": {"type": "subscriptions", "attributes": {"variant_id": 111, "status": "on_trial"}},
+    }
+    resp, get_settings = _signed_webhook(client, monkeypatch, payload)
+    try:
+        assert resp.status_code == 200
+        assert db_session.get(models.User, "test-user").trial_used is True
+    finally:
+        get_settings.cache_clear()
+
+
+def test_billing_checkout_requires_config(client):
+    client.get("/me")
+    resp = client.post("/billing/checkout", json={"variant_id": "111"})
+    assert resp.status_code == 500
+
+
+def test_billing_checkout_returns_url_and_skips_trial_when_already_used(client, monkeypatch):
+    import app.routers.billing as billing
+
+    client.get("/me")
+
+    captured = {}
+
+    def fake_create_checkout(variant_id, user_id, skip_trial):
+        captured["variant_id"] = variant_id
+        captured["user_id"] = user_id
+        captured["skip_trial"] = skip_trial
+        return "https://example.lemonsqueezy.com/checkout/abc"
+
+    monkeypatch.setattr(billing, "create_checkout", fake_create_checkout)
+
+    resp = client.post("/billing/checkout", json={"variant_id": "111"})
+    assert resp.status_code == 200
+    assert resp.json()["url"] == "https://example.lemonsqueezy.com/checkout/abc"
+    assert captured == {"variant_id": "111", "user_id": "test-user", "skip_trial": False}
+
+
 def test_review_upsert_and_get(client):
     week_start = date.today() - timedelta(days=date.today().weekday())
     resp = client.get(f"/weekly-review/{week_start.isoformat()}")

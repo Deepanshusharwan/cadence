@@ -89,6 +89,14 @@ async def lemonsqueezy_webhook(request: Request, db: Session = Depends(get_db)):
         logger.warning("Lemon Squeezy webhook %s referenced unknown user %s", event_name, user_id)
         return {"ok": True}
 
+    # Marks that this user has ever started a subscription, regardless of
+    # variant/cadence -- POST /billing/checkout reads this to force
+    # skip_trial on any future checkout, so a cancel-and-resubscribe on a
+    # different variant can't harvest a second free trial.
+    if event_name == "subscription_created" and not user.trial_used:
+        user.trial_used = True
+        db.commit()
+
     if event_name in _REVOKE_EVENTS:
         user.plan = "free"
         db.commit()

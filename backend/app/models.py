@@ -38,6 +38,12 @@ class User(Base):
     # (raises 403 there) so every endpoint is blocked uniformly, not just
     # ones that happen to check it themselves.
     banned: Mapped[bool] = mapped_column(Boolean, default=False)
+    # True the first time a subscription_created webhook is ever seen for
+    # this user, regardless of which variant/cadence — used to force
+    # `skip_trial` on any later checkout (see app/lemonsqueezy.py,
+    # POST /billing/checkout) so trialing Monthly, cancelling, then
+    # trialing Quarterly doesn't grant a second free trial period.
+    trial_used: Mapped[bool] = mapped_column(Boolean, default=False)
     timezone: Mapped[str] = mapped_column(String, default="UTC")
     wake_start: Mapped[str] = mapped_column(String, default="06:00")
     wake_end: Mapped[str] = mapped_column(String, default="08:00")
