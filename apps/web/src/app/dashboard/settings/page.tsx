@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Mark, MARKS, PRO_MARKS, markSrc, type MarkKey, type ProMarkKey } from "@/components/marks";
 import { PencilIcon } from "@/components/icons";
@@ -74,6 +74,15 @@ export default function SettingsPage() {
   const { state } = store;
   const { show } = useToast();
   const timezoneOptions = listTimezones();
+
+  // The plan can change out-of-band (e.g. an admin granting it via
+  // /dashboard/users, or a Lemon Squeezy webhook landing after checkout) --
+  // bootstrap only fetches /me once, so re-fetch on every visit here rather
+  // than showing a plan badge that can silently go stale.
+  useEffect(() => {
+    store.refreshProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [name, setName] = useState(state.profile.name);
   const [isEditingProfile, setIsEditingProfile] = useState(false);

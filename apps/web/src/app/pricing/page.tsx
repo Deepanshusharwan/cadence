@@ -41,6 +41,11 @@ const PRICING: Record<
 // the live rate is at that moment, which will drift from this constant.
 const APPROX_INR_RATE = 95.7;
 
+// Matches the free-trial length set on each subscription variant in the
+// Lemon Squeezy dashboard. Lifetime is a one-time purchase, so it has no
+// trial — see the cadence !== "lifetime" checks below.
+const TRIAL_DAYS = 30;
+
 function approxInr(usd: number): string {
   return `₹${Math.round(usd * APPROX_INR_RATE).toLocaleString("en-IN")}`;
 }
@@ -307,7 +312,7 @@ export default function PricingPage() {
                 Plus
               </p>
               <p className="mt-3 text-heading font-semibold text-ink-black">
-                {formatPrice(region, cadence)}
+                {region === "IN" ? approxInr(PRICING.IN[cadence]) : formatPrice(region, cadence)}
                 <span className="text-body-sm font-normal text-ink-black/50">
                   {CADENCE_SUFFIX[cadence]}
                 </span>
@@ -315,7 +320,13 @@ export default function PricingPage() {
               <p className="mt-1 text-body-sm text-ink-black/50">{priceSubline(region, cadence)}</p>
               {region === "IN" ? (
                 <p className="mt-0.5 text-caption text-ink-black/35">
-                  ≈ {approxInr(PRICING.IN[cadence])} at today&apos;s rate
+                  Charged as {formatPrice(region, cadence)} (USD) — rupee amount is an estimate at
+                  today&apos;s rate
+                </p>
+              ) : null}
+              {cadence !== "lifetime" ? (
+                <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-marigold/25 px-2.5 py-1 text-caption font-medium text-[#6b4700]">
+                  Try free for {TRIAL_DAYS} days — you won&apos;t pay a penny until it ends
                 </p>
               ) : null}
 
@@ -329,8 +340,13 @@ export default function PricingPage() {
                   ? "Redirecting…"
                   : cadence === "lifetime"
                     ? "Buy Plus Lifetime"
-                    : "Start Plus"}
+                    : "Start free trial"}
               </button>
+              {cadence !== "lifetime" ? (
+                <p className="mt-2 text-center text-caption text-ink-black/35">
+                  Cancel before day {TRIAL_DAYS} and you won&apos;t be charged.
+                </p>
+              ) : null}
               {checkoutError ? (
                 <p className="mt-2 text-caption text-vermillion">{checkoutError}</p>
               ) : null}
