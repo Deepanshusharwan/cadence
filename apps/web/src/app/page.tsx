@@ -104,6 +104,28 @@ const SCREENS = [
   { name: "Progress", body: "This week, this month, long term — no single meaningless score." },
 ];
 
+const WEEK_DAYS = [
+  { label: "Mon", blocks: ["bg-marigold", "bg-terracotta"] },
+  { label: "Tue", blocks: ["bg-signal-blue", "bg-marigold"] },
+  { label: "Wed", blocks: ["bg-marigold", "bg-marigold", "bg-terracotta"] },
+  { label: "Thu", blocks: ["bg-terracotta", "bg-signal-blue"] },
+  { label: "Fri", blocks: ["bg-marigold"] },
+  { label: "Sat", blocks: ["bg-midnight-ink"] },
+  { label: "Sun", blocks: ["bg-sky-wash", "bg-terracotta"] },
+];
+
+const PROGRESS_ROWS = [
+  { label: "Study", value: "9.0 / 8h", pct: 100, bar: "bg-marigold" },
+  { label: "Career Growth", value: "6.5 / 6h", pct: 100, bar: "bg-terracotta" },
+  { label: "Fitness", value: "3 / 4 sessions", pct: 75, bar: "bg-signal-blue" },
+];
+
+const PROGRESS_STATS = [
+  { label: "Active days", value: "24" },
+  { label: "Leave used", value: "4" },
+  { label: "Missed", value: "1" },
+];
+
 function Pill({ children, className = "" }: { children: ReactNode; className?: string }) {
   return (
     <span
@@ -330,7 +352,8 @@ export default function Home() {
         </section>
 
         {/* Quick actions */}
-        <section className="mx-auto max-w-[1760px] px-4 sm:px-6 pb-20">
+        <section className="relative mx-auto max-w-[1760px] px-4 sm:px-6 pb-20">
+          <SparkleIcon className="pointer-events-none absolute left-16 top-2 hidden h-4 w-4 text-signal-blue md:block" />
           <p className="text-center text-caption font-medium uppercase tracking-wide text-ink-black/40">
             What using it feels like
           </p>
@@ -381,7 +404,12 @@ export default function Home() {
         </section>
 
         {/* Categories */}
-        <section id="categories" className="mx-auto max-w-[1760px] px-4 sm:px-6 py-20">
+        <section id="categories" className="relative mx-auto max-w-[1760px] px-4 sm:px-6 py-20">
+          <Mark
+            src={MARKS.pinkHair}
+            size={44}
+            className="pointer-events-none absolute right-10 top-6 hidden shadow-[0px_2px_6px_rgba(0,0,0,0.1)] lg:block"
+          />
           <div className="grid items-center gap-12 md:grid-cols-2">
             <div>
               <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">
@@ -430,6 +458,59 @@ export default function Home() {
                   <p className="mt-1 text-body-sm opacity-80">{category.target}</p>
                 </div>
               ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Week mockup */}
+        <section id="week" className="relative mx-auto max-w-[1760px] px-4 sm:px-6 py-20">
+          <Mark
+            src={MARKS.signpost}
+            size={40}
+            className="pointer-events-none absolute left-10 top-8 hidden shadow-[0px_2px_6px_rgba(0,0,0,0.1)] lg:block"
+          />
+          <div className="grid items-center gap-12 md:grid-cols-2">
+            <div className="order-2 md:order-1">
+              <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">
+                Week
+              </p>
+              <h2 className="mt-3 text-heading-lg font-semibold text-ink-black">
+                See the whole week before you&apos;re in it
+              </h2>
+              <p className="mt-4 text-body text-graphite">
+                Planned and actual sessions live side by side, Monday through Sunday.
+                Swap a block, log a session late, mark a day reduced — the week
+                updates immediately, with no separate reconciliation step.
+              </p>
+            </div>
+
+            <div className="relative order-1 md:order-2">
+              <SquiggleArrowIcon className="pointer-events-none absolute -right-16 -top-6 hidden h-8 w-14 text-ink-black/20 xl:block" />
+              <Mark
+                src={MARKS.cat}
+                size={40}
+                className="pointer-events-none absolute -bottom-4 -right-4 hidden shadow-[0px_2px_6px_rgba(0,0,0,0.12)] lg:block"
+              />
+              <div className="rounded-xl border border-ink-black/8 bg-pure-white p-6 shadow-[0px_4px_12px_rgba(0,0,0,0.1)]">
+                <div className="flex items-center justify-between">
+                  <span className="text-heading-sm font-semibold text-ink-black">This Week</span>
+                  <Pill className="bg-sky-tint text-notion-blue">18.5 / 24h</Pill>
+                </div>
+                <div className="mt-6 grid grid-cols-7 gap-2">
+                  {WEEK_DAYS.map((day) => (
+                    <div key={day.label} className="flex flex-col items-center gap-1.5">
+                      <span className="text-caption font-medium text-ink-black/40">
+                        {day.label}
+                      </span>
+                      <div className="flex w-full flex-col gap-1">
+                        {day.blocks.map((bg, i) => (
+                          <div key={i} className={`h-6 w-full rounded-md ${bg}`} />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </section>
@@ -493,6 +574,66 @@ export default function Home() {
               </p>
               <p className="mt-3 text-caption text-pure-white/40">
                 Example allowance shown — set your own in Settings
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Progress mockup */}
+        <section id="progress" className="relative mx-auto max-w-[1760px] px-4 sm:px-6 py-20">
+          <Mark
+            src={MARKS.profileMan}
+            size={44}
+            className="pointer-events-none absolute right-10 top-10 hidden shadow-[0px_2px_6px_rgba(0,0,0,0.1)] lg:block"
+          />
+          <div className="grid items-center gap-12 md:grid-cols-2">
+            <div className="relative">
+              <SparkleIcon className="pointer-events-none absolute -left-6 -top-6 hidden h-5 w-5 text-marigold md:block" />
+              <Mark
+                src={MARKS.folder}
+                size={40}
+                className="pointer-events-none absolute -bottom-4 -left-4 hidden shadow-[0px_2px_6px_rgba(0,0,0,0.12)] lg:block"
+              />
+              <div className="rounded-xl border border-ink-black/8 bg-pure-white p-6 shadow-[0px_4px_12px_rgba(0,0,0,0.1)]">
+                <div className="flex items-center justify-between">
+                  <span className="text-heading-sm font-semibold text-ink-black">This Month</span>
+                  <Pill className="bg-sky-tint text-notion-blue">89% consistency</Pill>
+                </div>
+                <div className="mt-6 space-y-4">
+                  {PROGRESS_ROWS.map((row) => (
+                    <div key={row.label}>
+                      <div className="flex justify-between text-caption text-ink-black/60">
+                        <span>{row.label}</span>
+                        <span>{row.value}</span>
+                      </div>
+                      <div className="mt-1">
+                        <ProgressBar value={row.pct} className={row.bar} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-6 grid grid-cols-3 gap-3 border-t border-ink-black/8 pt-5">
+                  {PROGRESS_STATS.map((stat) => (
+                    <div key={stat.label}>
+                      <p className="text-caption text-ink-black/40">{stat.label}</p>
+                      <p className="mt-1 text-heading-sm font-bold text-ink-black">{stat.value}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">
+                Progress
+              </p>
+              <h2 className="mt-3 text-heading-lg font-semibold text-ink-black">
+                No single meaningless score
+              </h2>
+              <p className="mt-4 text-body text-graphite">
+                Consistency, target adherence, and total time stay separate — so
+                a strong week and a busy week both tell you something true,
+                instead of a single blended number you have to interpret.
               </p>
             </div>
           </div>
