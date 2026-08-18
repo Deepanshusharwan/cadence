@@ -13,7 +13,7 @@ ACCENT_CLASSES = [
     "bg-signal-blue",
     "bg-sky-wash",
     "bg-orchid",
-    "bg-midnight-ink",
+    # "bg-midnight-ink",  # excluded for now — kept out of the rotation by request
 ]
 
 
