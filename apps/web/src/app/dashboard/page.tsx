@@ -6,6 +6,12 @@ import Link from "next/link";
 import { Mark, markSrc } from "@/components/marks";
 import { AnalogTimer } from "@/components/analog-timer";
 import { RetroTimer } from "@/components/retro-timer";
+import { ProgressRingTimer } from "@/components/progress-ring-timer";
+import { SundialTimer } from "@/components/sundial-timer";
+import { PipRingTimer } from "@/components/pip-ring-timer";
+import { EightBitTimer } from "@/components/eight-bit-timer";
+import { HeritageTimer } from "@/components/heritage-timer";
+import { BrandTimer } from "@/components/brand-timer";
 import { FlameIcon, PlayIcon, TrendingUpIcon, ExpandIcon, CollapseIcon } from "@/components/icons";
 import { useStore, todayISO, type Category, type DayType } from "@/lib/store";
 import { useToast } from "@/components/toast";
@@ -17,7 +23,27 @@ const DAY_TYPE_META: Record<DayType, { label: string; cost: string }> = {
   MISSED: { label: "Missed", cost: "0 units" },
 };
 
-type WatchFace = "chronograph" | "retro";
+const WATCH_FACES = [
+  "chronograph",
+  "retro",
+  "progress-ring",
+  "sundial",
+  "pip-ring",
+  "8bit",
+  "heritage",
+  "brand",
+] as const;
+type WatchFace = (typeof WATCH_FACES)[number];
+const WATCH_FACE_LABELS: Record<WatchFace, string> = {
+  chronograph: "Chronograph",
+  retro: "Retro",
+  "progress-ring": "Progress Ring",
+  sundial: "Sundial",
+  "pip-ring": "Pip Ring",
+  "8bit": "8-Bit",
+  heritage: "Heritage",
+  brand: "Cadence",
+};
 const WATCH_FACE_KEY = "cadence:watch-face";
 
 function ProgressBar({ value, className = "" }: { value: number; className?: string }) {
@@ -87,8 +113,8 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const stored = window.localStorage.getItem(WATCH_FACE_KEY);
-    if (stored === "chronograph" || stored === "retro") {
-      queueMicrotask(() => setWatchFace(stored));
+    if (stored && (WATCH_FACES as readonly string[]).includes(stored)) {
+      queueMicrotask(() => setWatchFace(stored as WatchFace));
     }
   }, []);
 
@@ -254,20 +280,50 @@ export default function DashboardPage() {
 
   const isPlus = state.profile.plan !== "free";
 
+  const timerProgressPct = (() => {
+    if (!timerCategory) return 0;
+    const p = progress.find((x) => x.category.id === timerCategory.id);
+    if (!p || p.category.weeklyTarget === null) return 0;
+    return Math.min(150, (p.current / p.category.weeklyTarget) * 100);
+  })();
+
   function renderWatchFace(size?: number) {
     if (!state.timer || !timerCategory) return null;
-    if (isPlus && watchFace === "retro") {
-      return (
-        <RetroTimer
-          elapsedMs={timerElapsedMs()}
-          paused={state.timer.paused}
-          itemLabel={timerCategory.name}
-          timeLabel={formatElapsed(timerElapsedMs())}
-          size={size}
-        />
-      );
+    const face = isPlus ? watchFace : "chronograph";
+    const elapsedMs = timerElapsedMs();
+    const paused = state.timer.paused;
+    const timeLabel = formatElapsed(elapsedMs);
+    const itemLabel = timerCategory.name;
+
+    switch (face) {
+      case "retro":
+        return <RetroTimer elapsedMs={elapsedMs} paused={paused} itemLabel={itemLabel} timeLabel={timeLabel} size={size} />;
+      case "progress-ring":
+        return (
+          <ProgressRingTimer
+            elapsedMs={elapsedMs}
+            paused={paused}
+            itemLabel={itemLabel}
+            timeLabel={timeLabel}
+            progressPct={timerProgressPct}
+            size={size}
+          />
+        );
+      case "sundial":
+        return <SundialTimer elapsedMs={elapsedMs} paused={paused} itemLabel={itemLabel} timeLabel={timeLabel} size={size} />;
+      case "pip-ring":
+        return <PipRingTimer elapsedMs={elapsedMs} paused={paused} itemLabel={itemLabel} timeLabel={timeLabel} size={size} />;
+      case "8bit":
+        return (
+          <EightBitTimer paused={paused} itemLabel={itemLabel} timeLabel={timeLabel} streak={streak} size={size} />
+        );
+      case "heritage":
+        return <HeritageTimer elapsedMs={elapsedMs} paused={paused} itemLabel={itemLabel} timeLabel={timeLabel} size={size} />;
+      case "brand":
+        return <BrandTimer elapsedMs={elapsedMs} paused={paused} itemLabel={itemLabel} size={size} />;
+      default:
+        return <AnalogTimer elapsedMs={elapsedMs} paused={paused} size={size} />;
     }
-    return <AnalogTimer elapsedMs={timerElapsedMs()} paused={state.timer.paused} size={size} />;
   }
 
   return (
@@ -355,22 +411,17 @@ export default function DashboardPage() {
           {state.timer && timerCategory ? (
             isPlus ? (
               <div className="flex items-center gap-2">
-                <div className="inline-flex items-stretch gap-1 rounded-lg border border-ink-black/10 bg-paper-warmth p-1">
-                  {(["chronograph", "retro"] as WatchFace[]).map((face) => (
-                    <button
-                      key={face}
-                      type="button"
-                      onClick={() => selectWatchFace(face)}
-                      className={`rounded-md px-2.5 py-1 text-caption font-medium capitalize transition-colors ${
-                        watchFace === face
-                          ? "bg-accent text-white"
-                          : "text-ink-black/50 hover:bg-ink-black/5"
-                      }`}
-                    >
-                      {face}
-                    </button>
+                <select
+                  value={watchFace}
+                  onChange={(e) => selectWatchFace(e.target.value as WatchFace)}
+                  className="rounded-lg border border-ink-black/10 bg-paper-warmth px-2.5 py-1.5 text-caption font-medium text-ink-black"
+                >
+                  {WATCH_FACES.map((face) => (
+                    <option key={face} value={face}>
+                      {WATCH_FACE_LABELS[face]}
+                    </option>
                   ))}
-                </div>
+                </select>
                 <button
                   type="button"
                   onClick={() => setTimerFullscreen(true)}
