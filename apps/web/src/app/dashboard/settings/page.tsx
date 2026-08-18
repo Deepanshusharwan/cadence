@@ -284,6 +284,33 @@ export default function SettingsPage() {
         )}
       </section>
 
+      {/* Plan */}
+      <section className="mt-6 rounded-xl border border-ink-black/8 bg-pure-white p-6">
+        <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">
+          Plan
+        </p>
+        <div className="mt-4 flex items-center justify-between gap-4">
+          <div>
+            <p className="text-body font-medium capitalize text-ink-black">
+              {state.profile.plan}
+            </p>
+            <p className="mt-0.5 text-caption text-ink-black/40">
+              {state.profile.plan === "free"
+                ? "Cross-device sync, extended analytics, and more are on Plus."
+                : state.profile.plan === "plus"
+                  ? "Cross-device sync and extended analytics are active."
+                  : "Full access, including AI features as they ship."}
+            </p>
+          </div>
+          <Link
+            href="/pricing"
+            className="shrink-0 rounded-lg bg-notion-blue px-4 py-2 text-center text-body-sm font-medium text-pure-white transition-opacity hover:opacity-90"
+          >
+            {state.profile.plan === "free" ? "Upgrade" : "Manage plan"}
+          </Link>
+        </div>
+      </section>
+
       {/* Categories */}
       <section className="mt-6 rounded-xl border border-ink-black/8 bg-pure-white p-6">
         <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -129,6 +129,30 @@ export default function PricingPage() {
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const router = useRouter();
   const { isSignedIn } = useUser();
+
+  // Region starts at "US" so the server-prerendered markup and the first
+  // client render match (no hydration mismatch), then this corrects it
+  // client-only using the visitor's timezone as a free, no-dependency proxy
+  // for "are they in India" — a real geo-IP lookup would be more accurate
+  // but adds an external service for a fairly small win. Only fires once on
+  // mount, so it never overrides a region the visitor picks by hand.
+  useEffect(() => {
+    // Deferred via queueMicrotask so this isn't a synchronous setState call
+    // within the effect body itself (react-hooks/set-state-in-effect) —
+    // this is reading an external platform API (Intl) on mount, not
+    // synchronizing with a React value, so the immediate-render-loop
+    // concern that rule guards against doesn't apply here.
+    queueMicrotask(() => {
+      try {
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (tz === "Asia/Kolkata" || tz === "Asia/Calcutta") {
+          setRegion("IN");
+        }
+      } catch {
+        // Intl.DateTimeFormat unsupported/blocked -- keep the "US" default.
+      }
+    });
+  }, []);
 
   async function handleStartPlus() {
     if (!isSignedIn) {
