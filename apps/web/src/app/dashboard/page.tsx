@@ -72,6 +72,15 @@ export default function DashboardPage() {
   const [manualTags, setManualTags] = useState("");
   const [timerCategoryId, setTimerCategoryId] = useState("");
 
+  // Sessions-tracked categories only count a logged block toward the
+  // weekly total once it's >= 45 minutes (same rule store.weeklySessionCount
+  // and the backend's insights use) -- the manual-log form defaults to 30,
+  // so without this warning someone logs the default, the row is created,
+  // and their weekly count silently never moves.
+  const manualCategory = state.categories.find((c) => c.id === manualCategoryId);
+  const manualBelowSessionThreshold =
+    manualCategory?.trackingMode === "sessions" && Number(manualMinutes) < 45 && manualMinutes !== "";
+
   const progress = useMemo(
     () =>
       state.categories.map((c) => {
@@ -257,6 +266,11 @@ export default function DashboardPage() {
               >
                 {formatElapsed(timerElapsedMs())}
               </p>
+              {timerCategory.trackingMode === "sessions" && timerElapsedMs() < 45 * 60000 ? (
+                <p className="mt-1 text-caption text-coral">
+                  {timerCategory.name} counts sessions — needs 45+ min to count toward this week.
+                </p>
+              ) : null}
               {state.timer.paused ? (
                 <p className="mt-1 text-caption font-medium uppercase tracking-wide text-ink-black/40">
                   Paused
@@ -344,6 +358,12 @@ export default function DashboardPage() {
                     Log
                   </button>
                 </div>
+                {manualBelowSessionThreshold ? (
+                  <p className="mt-1.5 text-caption text-coral">
+                    {manualCategory?.name} counts sessions, and this is under 45 minutes — it&apos;ll
+                    be logged, but won&apos;t count toward this week&apos;s total.
+                  </p>
+                ) : null}
                 <input
                   value={manualTags}
                   onChange={(e) => setManualTags(e.target.value)}
