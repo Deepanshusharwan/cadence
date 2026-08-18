@@ -45,6 +45,25 @@ function approxInr(usd: number): string {
   return `₹${Math.round(usd * APPROX_INR_RATE).toLocaleString("en-IN")}`;
 }
 
+// IANA timezones for India and its immediate neighbors — comparable
+// purchasing power to India, so they get routed to the same "IN" price
+// tier rather than the International one. Used only as the free,
+// dependency-free proxy for auto-detecting region on load (see the effect
+// in PricingPage below); the visitor can always override it by hand.
+const SOUTH_ASIA_TIMEZONES = new Set([
+  "Asia/Kolkata", // India
+  "Asia/Calcutta", // India (deprecated alias, some environments still report it)
+  "Asia/Karachi", // Pakistan
+  "Asia/Dhaka", // Bangladesh
+  "Asia/Kathmandu", // Nepal
+  "Asia/Colombo", // Sri Lanka
+  "Asia/Thimphu", // Bhutan
+  "Asia/Kabul", // Afghanistan
+  "Asia/Yangon", // Myanmar
+  "Asia/Rangoon", // Myanmar (deprecated alias)
+  "Indian/Maldives", // Maldives
+]);
+
 // Lemon Squeezy variant ids (Store #454802, product "Cadence" for the three
 // subscription cadences + product "Cadence Lifetime" for the one-time tier).
 const VARIANT_IDS: Record<Region, Record<Cadence, string>> = {
@@ -145,7 +164,7 @@ export default function PricingPage() {
     queueMicrotask(() => {
       try {
         const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        if (tz === "Asia/Kolkata" || tz === "Asia/Calcutta") {
+        if (SOUTH_ASIA_TIMEZONES.has(tz)) {
           setRegion("IN");
         }
       } catch {
@@ -236,7 +255,7 @@ export default function PricingPage() {
                 className="rounded-lg border border-ink-black/12 bg-pure-white px-3 py-1.5 text-body-sm font-medium text-ink-black outline-none focus:border-notion-blue"
               >
                 <option value="US">International</option>
-                <option value="IN">India</option>
+                <option value="IN">India &amp; South Asia</option>
               </select>
             </label>
           </div>
