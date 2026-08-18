@@ -79,7 +79,9 @@ export default function DashboardPage() {
         const sessions = store.weeklySessionCount(c.id);
         const current = c.trackingMode === "hours" ? minutes / 60 : sessions;
         const deficit = c.weeklyTarget === null ? -Infinity : c.weeklyTarget - current;
-        return { category: c, current, minutes, sessions, deficit };
+        const previousMinutes = store.previousWeeklyMinutes(c.id);
+        const previousSessions = store.previousWeeklySessionCount(c.id);
+        return { category: c, current, minutes, sessions, deficit, previousMinutes, previousSessions };
       }),
     [state.categories, store]
   );
@@ -187,12 +189,18 @@ export default function DashboardPage() {
       {/* Status strip */}
       <div className="mt-4 flex flex-wrap items-center gap-2">
         {streak > 0 ? (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-marigold px-3 py-1.5 text-caption font-semibold text-black">
+          <span
+            title="A day keeps your streak if you log a session or mark it Lighter. Full Leave days don't break it, but they don't add to the count either."
+            className="inline-flex items-center gap-1.5 rounded-full bg-marigold px-3 py-1.5 text-caption font-semibold text-black"
+          >
             <FlameIcon className="h-3.5 w-3.5" />
             {streak}-day streak
           </span>
         ) : (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-ink-black/5 px-3 py-1.5 text-caption font-medium text-ink-black/50">
+          <span
+            title="A day keeps your streak if you log a session or mark it Lighter. Full Leave days don't break it, but they don't add to the count either."
+            className="inline-flex items-center gap-1.5 rounded-full bg-ink-black/5 px-3 py-1.5 text-caption font-medium text-ink-black/50"
+          >
             <FlameIcon className="h-3.5 w-3.5" />
             Log something today to start a streak
           </span>
@@ -406,13 +414,15 @@ export default function DashboardPage() {
           </div>
         ) : (
           <div className="mt-4 space-y-4">
-            {progress.map(({ category, current, minutes, sessions }) => (
+            {progress.map(({ category, current, minutes, sessions, previousMinutes, previousSessions }) => (
               <CategoryProgress
                 key={category.id}
                 category={category}
                 current={current}
                 minutes={minutes}
                 sessions={sessions}
+                previousMinutes={previousMinutes}
+                previousSessions={previousSessions}
               />
             ))}
           </div>
@@ -427,27 +437,49 @@ function CategoryProgress({
   current,
   minutes,
   sessions,
+  previousMinutes,
+  previousSessions,
 }: {
   category: Category;
   current: number;
   minutes: number;
   sessions: number;
+  previousMinutes: number;
+  previousSessions: number;
 }) {
   const hasTarget = category.weeklyTarget !== null;
-  const pct = hasTarget ? (current / (category.weeklyTarget as number)) * 100 : 0;
+  const previous = category.trackingMode === "hours" ? previousMinutes / 60 : previousSessions;
+  // No target -- fall back to last week's total as the reference point
+  // instead of showing 0 progress forever regardless of what's logged.
+  const pct = hasTarget
+    ? (current / (category.weeklyTarget as number)) * 100
+    : previous > 0
+      ? (current / previous) * 100
+      : current > 0
+        ? 100
+        : 0;
   const label =
     category.trackingMode === "hours"
       ? `${(minutes / 60).toFixed(1)}h${hasTarget ? ` / ${category.weeklyTarget}h` : ""}`
       : `${sessions}${hasTarget ? ` / ${category.weeklyTarget} sessions` : " sessions"}`;
+  const lastWeekLabel =
+    !hasTarget && previous > 0
+      ? category.trackingMode === "hours"
+        ? ` · ${previous.toFixed(1)}h last week`
+        : ` · ${previous} last week`
+      : "";
 
   return (
     <div>
       <div className="flex justify-between text-caption text-ink-black/60">
         <span className="font-medium text-ink-black">{category.name}</span>
-        <span>{hasTarget ? label : "No minimum"}</span>
+        <span>
+          {label}
+          {lastWeekLabel}
+        </span>
       </div>
       <div className="mt-1">
-        <ProgressBar value={hasTarget ? pct : 0} className={category.color} />
+        <ProgressBar value={pct} className={category.color} />
       </div>
     </div>
   );

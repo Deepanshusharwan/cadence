@@ -340,6 +340,10 @@ export default function SetupPage() {
                 />
                 Weekend-preferred
               </label>
+              <p className="mt-1 pl-6 text-caption text-ink-black/40">
+                The planner favors scheduling this category on weekends when it&apos;s picking
+                what fills your flexible time.
+              </p>
               <button
                 type="button"
                 onClick={addCategory}
@@ -496,6 +500,11 @@ export default function SetupPage() {
                   />
                   Flexible focus block (planner assigns a category)
                 </label>
+                <p className="pl-6 text-caption text-ink-black/40">
+                  On: this time is open, and Cadence decides what to work on each day. Off: it&apos;s
+                  a fixed commitment (class, work) — just blocked off, nothing gets scheduled into
+                  it.
+                </p>
 
                 <div>
                   <span className="text-body-sm font-medium text-ink-black">

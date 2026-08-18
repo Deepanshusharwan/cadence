@@ -172,7 +172,18 @@ export default function ProgressPage() {
               const sessions = store.weeklySessionCount(c.id);
               const current = c.trackingMode === "hours" ? minutes / 60 : sessions;
               const hasTarget = c.weeklyTarget !== null;
-              const pct = hasTarget ? (current / (c.weeklyTarget as number)) * 100 : 0;
+              const previousMinutes = store.previousWeeklyMinutes(c.id);
+              const previousSessions = store.previousWeeklySessionCount(c.id);
+              const previous = c.trackingMode === "hours" ? previousMinutes / 60 : previousSessions;
+              // No target -- compare against last week's total instead of
+              // showing 0 progress forever regardless of what's logged.
+              const pct = hasTarget
+                ? (current / (c.weeklyTarget as number)) * 100
+                : previous > 0
+                  ? (current / previous) * 100
+                  : current > 0
+                    ? 100
+                    : 0;
               return (
                 <div key={c.id}>
                   <div className="flex justify-between text-caption text-ink-black/60">
@@ -181,10 +192,15 @@ export default function ProgressPage() {
                       {c.trackingMode === "hours"
                         ? `${(minutes / 60).toFixed(1)}h${hasTarget ? ` / ${c.weeklyTarget}h` : ""}`
                         : `${sessions}${hasTarget ? ` / ${c.weeklyTarget} sessions` : " sessions"}`}
+                      {!hasTarget && previous > 0
+                        ? c.trackingMode === "hours"
+                          ? ` · ${previous.toFixed(1)}h last week`
+                          : ` · ${previous} last week`
+                        : ""}
                     </span>
                   </div>
                   <div className="mt-1">
-                    <ProgressBar value={hasTarget ? pct : 0} className={c.color} />
+                    <ProgressBar value={pct} className={c.color} />
                   </div>
                 </div>
               );

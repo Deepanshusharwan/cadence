@@ -241,6 +241,8 @@ interface StoreValue {
   removeSession: (id: string) => void;
   weeklyMinutes: (categoryId: string) => number;
   weeklySessionCount: (categoryId: string) => number;
+  previousWeeklyMinutes: (categoryId: string) => number;
+  previousWeeklySessionCount: (categoryId: string) => number;
   currentStreak: () => number;
   streakInfo: () => StreakInfo;
   leaveBalance: () => LeaveBalance;
@@ -584,6 +586,46 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [state.sessions]
   );
 
+  // Previous week's totals -- used as a reference point for categories with
+  // no weekly target (spec has no "minimum" to compare against, so last
+  // week's own total stands in for one) instead of always showing 0
+  // progress for them.
+  const previousWeekRange = useCallback(() => {
+    const thisWeekStart = startOfWeekISO();
+    const lastWeekStart = new Date(thisWeekStart);
+    lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+    return { lastWeekStart, thisWeekStart };
+  }, []);
+
+  const previousWeeklyMinutes = useCallback(
+    (categoryId: string) => {
+      const { lastWeekStart, thisWeekStart } = previousWeekRange();
+      return state.sessions
+        .filter(
+          (s) =>
+            s.categoryId === categoryId &&
+            parseLocalDate(s.date) >= lastWeekStart &&
+            parseLocalDate(s.date) < thisWeekStart
+        )
+        .reduce((sum, s) => sum + s.durationMinutes, 0);
+    },
+    [state.sessions, previousWeekRange]
+  );
+
+  const previousWeeklySessionCount = useCallback(
+    (categoryId: string) => {
+      const { lastWeekStart, thisWeekStart } = previousWeekRange();
+      return state.sessions.filter(
+        (s) =>
+          s.categoryId === categoryId &&
+          s.durationMinutes >= 45 &&
+          parseLocalDate(s.date) >= lastWeekStart &&
+          parseLocalDate(s.date) < thisWeekStart
+      ).length;
+    },
+    [state.sessions, previousWeekRange]
+  );
+
   const currentStreak = useCallback(() => state.streakInfo.current.length, [state.streakInfo]);
   const streakInfoGetter = useCallback(() => state.streakInfo, [state.streakInfo]);
   const leaveBalanceGetter = useCallback(() => state.leaveBalance, [state.leaveBalance]);
@@ -652,6 +694,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       removeSession,
       weeklyMinutes,
       weeklySessionCount,
+      previousWeeklyMinutes,
+      previousWeeklySessionCount,
       currentStreak,
       streakInfo: streakInfoGetter,
       leaveBalance: leaveBalanceGetter,
@@ -688,6 +732,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       removeSession,
       weeklyMinutes,
       weeklySessionCount,
+      previousWeeklyMinutes,
+      previousWeeklySessionCount,
       currentStreak,
       streakInfoGetter,
       leaveBalanceGetter,
