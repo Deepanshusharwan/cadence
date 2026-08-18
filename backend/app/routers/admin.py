@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from .. import models, schemas
 from ..config import get_settings
 from ..db import get_db
-from ..deps import get_admin_email
+from ..deps import get_admin_email, get_current_user
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -88,6 +88,32 @@ def set_user_plan(
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
     user.plan = payload.plan
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+@router.patch("/users/{user_id}/banned", response_model=schemas.AdminUserOut)
+def set_user_banned(
+    user_id: str,
+    payload: schemas.BannedUpdate,
+    _admin_email: str = Depends(get_admin_email),
+    acting_admin: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """Banning is enforced centrally in deps.get_current_user (raises 403
+    on every route, not just ones that check it themselves) and is fully
+    reversible — this never deletes data, just blocks access.
+    """
+    if user_id == acting_admin.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Can't ban your own account — you'd lock yourself out with no way back in",
+        )
+    user = db.get(models.User, user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.banned = payload.banned
     db.commit()
     db.refresh(user)
     return user

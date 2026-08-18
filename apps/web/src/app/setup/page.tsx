@@ -8,6 +8,7 @@ import { Mark, MARKS, type MarkKey, type ProMarkKey } from "@/components/marks";
 import { SparkleIcon } from "@/components/icons";
 import { useStore, type TrackingMode, type AnchorRecurrence } from "@/lib/store";
 import { textOnCategoryColor } from "@/lib/category-color";
+import { SuspendedScreen } from "@/components/suspended-screen";
 
 const STEPS = ["Identity", "Categories", "Schedule", "Review"] as const;
 
@@ -140,6 +141,10 @@ export default function SetupPage() {
 
   const canProceed =
     step === 0 ? name.trim().length > 0 : step === 1 ? categories.length > 0 : true;
+
+  if (store.suspended) {
+    return <SuspendedScreen />;
+  }
 
   return (
     <div className="flex min-h-screen flex-col bg-paper-warmth">

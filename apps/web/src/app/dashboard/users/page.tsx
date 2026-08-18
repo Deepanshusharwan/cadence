@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { api, type ApiAdminUser } from "@/lib/api";
 import { Mark, markSrc, type MarkKey, type ProMarkKey } from "@/components/marks";
-import { SearchIcon } from "@/components/icons";
+import { SearchIcon, CloseIcon } from "@/components/icons";
 import { useToast } from "@/components/toast";
 
 // Same pattern as /dashboard/feedback: not in NAV, silent redirect on
@@ -29,6 +29,7 @@ export default function UsersAdminPage() {
   const [users, setUsers] = useState<ApiAdminUser[] | null>(null);
   const [search, setSearch] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [confirmingBanId, setConfirmingBanId] = useState<string | null>(null);
 
   function reload() {
     api
@@ -55,6 +56,24 @@ export default function UsersAdminPage() {
       reload();
     } catch {
       toast.show("Couldn't change that plan — try again.");
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function toggleBanned(id: string, banned: boolean) {
+    setBusyId(id);
+    setConfirmingBanId(null);
+    try {
+      await api.setUserBanned(id, banned);
+      toast.show(banned ? "User banned" : "User unbanned");
+      reload();
+    } catch {
+      toast.show(
+        banned
+          ? "Couldn't ban that user — you can't ban your own account."
+          : "Couldn't unban that user — try again."
+      );
     } finally {
       setBusyId(null);
     }
@@ -92,28 +111,78 @@ export default function UsersAdminPage() {
       ) : (
         <div className="mt-4 divide-y divide-ink-black/8 rounded-xl border border-ink-black/8 bg-pure-white">
           {filtered.map((u) => (
-            <div key={u.id} className="flex items-center gap-3 px-5 py-4">
-              <Mark src={markSrc(u.avatar as MarkKey | ProMarkKey)} size={32} />
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-body-sm font-medium text-ink-black">
-                  {u.name.trim() || "Unnamed user"}
-                </p>
-                <p className="truncate text-caption text-ink-black/40">{u.id}</p>
+            <div key={u.id} className="px-5 py-4">
+              <div className="flex items-center gap-3">
+                <Mark src={markSrc(u.avatar as MarkKey | ProMarkKey)} size={32} />
+                <div className="min-w-0 flex-1">
+                  <p className="flex items-center gap-2 truncate text-body-sm font-medium text-ink-black">
+                    {u.name.trim() || "Unnamed user"}
+                    {u.banned ? (
+                      <span className="shrink-0 rounded-full bg-coral/15 px-2 py-0.5 text-caption font-medium uppercase tracking-wide text-coral">
+                        Banned
+                      </span>
+                    ) : null}
+                  </p>
+                  <p className="truncate text-caption text-ink-black/40">{u.id}</p>
+                </div>
+                <div className="flex shrink-0 items-center gap-1 rounded-lg border border-ink-black/10 bg-paper-warmth p-1">
+                  {PLANS.map((plan) => (
+                    <button
+                      key={plan}
+                      type="button"
+                      disabled={busyId === u.id}
+                      onClick={() => changePlan(u.id, plan)}
+                      className={`rounded-md px-2.5 py-1 text-caption font-medium uppercase tracking-wide transition-colors disabled:opacity-40 ${
+                        u.plan === plan ? PLAN_STYLES[plan] : "text-ink-black/40 hover:text-ink-black"
+                      }`}
+                    >
+                      {plan}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="flex shrink-0 items-center gap-1 rounded-lg border border-ink-black/10 bg-paper-warmth p-1">
-                {PLANS.map((plan) => (
+
+              <div className="mt-2 flex justify-end">
+                {confirmingBanId === u.id ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-caption text-ink-black/60">
+                      Ban this user? They&apos;ll lose access immediately.
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => toggleBanned(u.id, true)}
+                      className="rounded-full bg-coral/15 px-2.5 py-1 text-caption font-semibold text-coral hover:bg-coral/25"
+                    >
+                      Yes, ban
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setConfirmingBanId(null)}
+                      className="rounded-full p-1 text-ink-black/40 hover:bg-ink-black/10"
+                      aria-label="Cancel"
+                    >
+                      <CloseIcon className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ) : u.banned ? (
                   <button
-                    key={plan}
                     type="button"
                     disabled={busyId === u.id}
-                    onClick={() => changePlan(u.id, plan)}
-                    className={`rounded-md px-2.5 py-1 text-caption font-medium uppercase tracking-wide transition-colors disabled:opacity-40 ${
-                      u.plan === plan ? PLAN_STYLES[plan] : "text-ink-black/40 hover:text-ink-black"
-                    }`}
+                    onClick={() => toggleBanned(u.id, false)}
+                    className="text-caption font-medium text-notion-blue hover:opacity-80 disabled:opacity-40"
                   >
-                    {plan}
+                    Unban
                   </button>
-                ))}
+                ) : (
+                  <button
+                    type="button"
+                    disabled={busyId === u.id}
+                    onClick={() => setConfirmingBanId(u.id)}
+                    className="text-caption font-medium text-ink-black/40 hover:text-coral disabled:opacity-40"
+                  >
+                    Ban
+                  </button>
+                )}
               </div>
             </div>
           ))}

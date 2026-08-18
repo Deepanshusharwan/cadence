@@ -44,6 +44,9 @@ def get_current_user(
             )
         db.commit()
         db.refresh(user)
+
+    if user.banned:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account suspended")
     return user
 
 

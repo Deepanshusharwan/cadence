@@ -15,6 +15,18 @@ function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// Carries the real HTTP status, so callers (store.tsx's bootstrap, for the
+// banned-account case) can branch on it reliably instead of string-matching
+// a generic Error's message.
+export class ApiError extends Error {
+  status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   // The dev backend is a single-process uvicorn instance without any
   // production tuning, and bootstrap fires ~10 requests in one burst — that
@@ -36,7 +48,7 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
       });
       if (!res.ok) {
         const body = await res.text().catch(() => "");
-        throw new Error(`${init?.method ?? "GET"} ${path} failed: ${res.status} ${body}`);
+        throw new ApiError(res.status, `${init?.method ?? "GET"} ${path} failed: ${res.status} ${body}`);
       }
       if (res.status === 204) return undefined as T;
       return (await res.json()) as T;
@@ -73,6 +85,7 @@ interface WireAdminUser {
   name: string;
   avatar: string;
   plan: Plan;
+  banned: boolean;
   onboarded: boolean;
   created_at: string;
 }
@@ -190,6 +203,7 @@ export interface ApiAdminUser {
   name: string;
   avatar: string;
   plan: Plan;
+  banned: boolean;
   onboarded: boolean;
   createdAt: string;
 }
@@ -306,6 +320,16 @@ const userFromWire = (w: WireUser): ApiUser => ({
   notificationsEnabled: w.notifications_enabled,
   onboarded: w.onboarded,
   plan: w.plan,
+});
+
+const adminUserFromWire = (w: WireAdminUser): ApiAdminUser => ({
+  id: w.id,
+  name: w.name,
+  avatar: w.avatar,
+  plan: w.plan,
+  banned: w.banned,
+  onboarded: w.onboarded,
+  createdAt: w.created_at,
 });
 
 const categoryFromWire = (w: WireCategory): ApiCategory => ({
@@ -527,23 +551,17 @@ export const api = {
   removeAdminEmail: (id: string) => apiFetch<void>(`/admin/emails/${id}`, { method: "DELETE" }),
 
   listAdminUsers: () =>
-    apiFetch<WireAdminUser[]>("/admin/users").then((rows) =>
-      rows.map(
-        (w): ApiAdminUser => ({
-          id: w.id,
-          name: w.name,
-          avatar: w.avatar,
-          plan: w.plan,
-          onboarded: w.onboarded,
-          createdAt: w.created_at,
-        })
-      )
-    ),
+    apiFetch<WireAdminUser[]>("/admin/users").then((rows) => rows.map(adminUserFromWire)),
   setUserPlan: (id: string, plan: Plan) =>
     apiFetch<WireUser>(`/admin/users/${id}/plan`, {
       method: "PATCH",
       body: JSON.stringify({ plan }),
     }).then(userFromWire),
+  setUserBanned: (id: string, banned: boolean) =>
+    apiFetch<WireAdminUser>(`/admin/users/${id}/banned`, {
+      method: "PATCH",
+      body: JSON.stringify({ banned }),
+    }).then(adminUserFromWire),
 
   getLeaveBalance: () => apiFetch<WireLeaveBalance>("/leave").then(leaveFromWire),
   getStreakInfo: () => apiFetch<WireStreakInfo>("/streaks").then(streakInfoFromWire),

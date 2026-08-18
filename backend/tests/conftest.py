@@ -12,14 +12,19 @@ TEST_USER_ID = "test-user"
 
 
 @pytest.fixture()
-def client():
+def _engine():
     engine = create_engine(
         "sqlite:///:memory:",
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
     )
-    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     Base.metadata.create_all(bind=engine)
+    return engine
+
+
+@pytest.fixture()
+def client(_engine):
+    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=_engine)
 
     def override_get_db():
         db = TestingSessionLocal()
@@ -38,3 +43,17 @@ def client():
         yield test_client
 
     app.dependency_overrides.clear()
+
+
+@pytest.fixture()
+def db_session(_engine):
+    """Direct DB access, sharing client's in-memory database — for test
+    setup that can't go through the API (e.g. creating a second user row,
+    since the client fixture can only ever authenticate as TEST_USER_ID).
+    """
+    TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=_engine)
+    db = TestingSessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()

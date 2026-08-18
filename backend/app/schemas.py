@@ -50,6 +50,10 @@ class PlanUpdate(BaseModel):
     plan: PlanType
 
 
+class BannedUpdate(BaseModel):
+    banned: bool
+
+
 # --- Category ------------------------------------------------------------
 
 
@@ -247,6 +251,7 @@ class AdminUserOut(ORMModel):
     name: str
     avatar: str
     plan: PlanType
+    banned: bool
     onboarded: bool
     created_at: datetime
 

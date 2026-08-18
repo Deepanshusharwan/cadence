@@ -431,6 +431,57 @@ def test_cannot_self_grant_plan_via_patch_me(client):
     assert resp.json()["plan"] == "free"
 
 
+def test_ban_requires_admin(client):
+    resp = client.patch("/admin/users/some-id/banned", json={"banned": True})
+    assert resp.status_code == 403
+
+
+def test_admin_cannot_ban_self(client, monkeypatch):
+    get_settings = _as_admin(monkeypatch)
+    try:
+        client.get("/me")
+        resp = client.patch("/admin/users/test-user/banned", json={"banned": True})
+        assert resp.status_code == 400
+    finally:
+        get_settings.cache_clear()
+
+
+def test_admin_can_ban_and_unban_a_user_and_it_blocks_every_route(client, db_session, monkeypatch):
+    from app import models
+    from app.auth import get_current_user_id
+    from app.main import app
+
+    db_session.add(models.User(id="other-user"))
+    db_session.commit()
+
+    get_settings = _as_admin(monkeypatch)
+    try:
+        resp = client.patch("/admin/users/other-user/banned", json={"banned": True})
+        assert resp.status_code == 200
+        assert resp.json()["banned"] is True
+
+        # Switch the client's authenticated identity to the now-banned user.
+        app.dependency_overrides[get_current_user_id] = lambda: "other-user"
+        try:
+            assert client.get("/me").status_code == 403
+            assert client.get("/categories").status_code == 403
+        finally:
+            app.dependency_overrides[get_current_user_id] = lambda: "test-user"
+
+        # Admin unbans them -- access comes back.
+        resp = client.patch("/admin/users/other-user/banned", json={"banned": False})
+        assert resp.status_code == 200
+        assert resp.json()["banned"] is False
+
+        app.dependency_overrides[get_current_user_id] = lambda: "other-user"
+        try:
+            assert client.get("/me").status_code == 200
+        finally:
+            app.dependency_overrides[get_current_user_id] = lambda: "test-user"
+    finally:
+        get_settings.cache_clear()
+
+
 def test_review_upsert_and_get(client):
     week_start = date.today() - timedelta(days=date.today().weekday())
     resp = client.get(f"/weekly-review/{week_start.isoformat()}")

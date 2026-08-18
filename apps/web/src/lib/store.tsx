@@ -12,7 +12,7 @@ import {
 } from "react";
 import { useAuth } from "@clerk/nextjs";
 import type { MarkKey, ProMarkKey } from "@/components/marks";
-import { api, type ApiInsight } from "./api";
+import { api, ApiError, type ApiInsight } from "./api";
 
 export type TrackingMode = "hours" | "sessions";
 
@@ -210,6 +210,7 @@ export interface ScheduleBlock {
 interface StoreValue {
   state: State;
   ready: boolean;
+  suspended: boolean;
   setProfile: (patch: Partial<Profile>) => void;
   completeOnboarding: () => void;
   addCategory: (input: Omit<Category, "id" | "color">) => void;
@@ -277,6 +278,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const { isLoaded: authLoaded, isSignedIn } = useAuth();
   const [state, setState] = useState<State>(DEFAULT_STATE);
   const [ready, setReady] = useState(false);
+  const [suspended, setSuspended] = useState(false);
   const reviewsLoading = useRef<Set<string>>(new Set());
 
   const refreshComputed = useCallback(async (onDate?: string) => {
@@ -346,6 +348,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         }));
       } catch (err) {
         console.error("Failed to load Cadence data from the API", err);
+        // A banned account gets 403 from every endpoint (deps.get_current_user
+        // enforces it centrally on the backend) — this is the one failure
+        // mode worth a dedicated screen instead of the generic error log.
+        if (!cancelled && err instanceof ApiError && err.status === 403) {
+          setSuspended(true);
+        }
       } finally {
         if (!cancelled) setReady(true);
       }
@@ -599,6 +607,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     () => ({
       state,
       ready,
+      suspended,
       setProfile,
       completeOnboarding,
       addCategory,
@@ -633,6 +642,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [
       state,
       ready,
+      suspended,
       setProfile,
       completeOnboarding,
       addCategory,

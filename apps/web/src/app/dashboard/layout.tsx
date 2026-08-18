@@ -7,6 +7,7 @@ import { SignOutButton } from "@clerk/nextjs";
 import { Mark, markSrc } from "@/components/marks";
 import { CadenceMark } from "@/components/logo";
 import { FeedbackModal } from "@/components/feedback-modal";
+import { SuspendedScreen } from "@/components/suspended-screen";
 import { useStore, anchorAppliesOn, todayISO } from "@/lib/store";
 import {
   ChevronLeftIcon,
@@ -100,6 +101,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     const id = setInterval(checkAnchors, 60000);
     return () => clearInterval(id);
   }, [store.state.settings.notificationsEnabled, store.state.anchors]);
+
+  if (store.suspended) {
+    return <SuspendedScreen />;
+  }
 
   if (!store.ready || !store.state.onboarded) {
     return (

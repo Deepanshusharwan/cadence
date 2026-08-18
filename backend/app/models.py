@@ -33,6 +33,11 @@ class User(Base):
     # UserUpdate (self-service PATCH /me) so a user can never grant
     # themselves a paid plan.
     plan: Mapped[str] = mapped_column(String, default="free")
+    # Same admin-only story as `plan` — set only via PATCH /admin/users/{id}/banned,
+    # never through PATCH /me. Enforced centrally in deps.get_current_user
+    # (raises 403 there) so every endpoint is blocked uniformly, not just
+    # ones that happen to check it themselves.
+    banned: Mapped[bool] = mapped_column(Boolean, default=False)
     timezone: Mapped[str] = mapped_column(String, default="UTC")
     wake_start: Mapped[str] = mapped_column(String, default="06:00")
     wake_end: Mapped[str] = mapped_column(String, default="08:00")
