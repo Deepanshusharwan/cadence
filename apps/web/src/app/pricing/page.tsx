@@ -305,7 +305,7 @@ export default function PricingPage() {
               <div className="absolute right-5 top-5 flex -space-x-3">
                 <Mark src={MARKS.pinkHair} size={30} className="ring-2 ring-sky-tint" />
                 <Mark src={MARKS.cat} size={30} className="ring-2 ring-sky-tint" />
-                <Mark src={MARKS.headphones} size={30} className="ring-2 ring-sky-tint" />
+                <Mark src={MARKS.dog} size={30} className="ring-2 ring-sky-tint" />
               </div>
 
               <p className="text-caption font-medium uppercase tracking-wide text-notion-blue">

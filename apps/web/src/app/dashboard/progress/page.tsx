@@ -1,39 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useStore, type DayType } from "@/lib/store";
+import { api, type ApiLongTermTrend } from "@/lib/api";
 import { LightbulbIcon } from "@/components/icons";
-
-// Wraps a Plus-only section: renders the real content for plus/pro,
-// otherwise a locked upsell card in its place — same shape, so the page
-// doesn't jump around when someone upgrades.
-function PlusGate({
-  plan,
-  title,
-  description,
-  children,
-}: {
-  plan: "free" | "plus" | "pro";
-  title: string;
-  description: string;
-  children: React.ReactNode;
-}) {
-  if (plan !== "free") return <>{children}</>;
-  return (
-    <div className="mt-6 rounded-xl border border-dashed border-ink-black/15 bg-pure-white/60 p-6">
-      <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">{title}</p>
-      <p className="mt-2 text-body-sm text-ink-black/50">{description}</p>
-      <Link
-        href="/pricing"
-        className="mt-3 inline-block text-body-sm font-medium text-notion-blue hover:opacity-80"
-      >
-        Upgrade to Plus →
-      </Link>
-    </div>
-  );
-}
+import { PlusGate } from "@/components/plus-gate";
 
 function ProgressBar({ value, className = "" }: { value: number; className?: string }) {
   return (
@@ -60,7 +33,12 @@ function addDays(d: Date, n: number) {
 }
 
 const CONSISTENCY_WINDOW_DAYS = 30;
-const TREND_WEEKS = 6;
+const LONG_TERM_MONTHS = 6;
+
+function monthLabel(monthKey: string): string {
+  const [y, m] = monthKey.split("-").map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString(undefined, { month: "short" });
+}
 
 export default function ProgressPage() {
   const store = useStore();
@@ -108,26 +86,35 @@ export default function ProgressPage() {
     return { active, completed, pct: active === 0 ? 0 : Math.round((completed / active) * 100) };
   }, [state.dayTypes, state.sessions]);
 
-  const weeklyTrend = useMemo(() => {
-    const today = new Date();
-    const weeks: { label: string; hours: number }[] = [];
-    for (let w = TREND_WEEKS - 1; w >= 0; w--) {
-      const weekEnd = addDays(today, -7 * w);
-      const weekStart = addDays(weekEnd, -6);
-      let minutes = 0;
-      for (const s of state.sessions) {
-        const d = new Date(s.date + "T00:00:00");
-        if (d >= weekStart && d <= weekEnd) minutes += s.durationMinutes;
-      }
-      weeks.push({
-        label: w === 0 ? "This wk" : weekStart.toLocaleDateString(undefined, { month: "short", day: "numeric" }),
-        hours: minutes / 60,
-      });
-    }
-    return weeks;
-  }, [state.sessions]);
+  // Backend-computed, not derived from state.sessions like the sections
+  // above -- Long Term needs months of history that free users never load
+  // into the client, so it's fetched lazily, only once someone can see it.
+  const [longTerm, setLongTerm] = useState<ApiLongTermTrend | null>(null);
+  useEffect(() => {
+    if (state.profile.plan === "free") return;
+    let cancelled = false;
+    api
+      .getLongTermTrend(LONG_TERM_MONTHS)
+      .then((data) => {
+        if (!cancelled) setLongTerm(data);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [state.profile.plan]);
 
-  const maxTrendHours = Math.max(1, ...weeklyTrend.map((w) => w.hours));
+  const longTermCategoryTotals = useMemo(() => {
+    if (!longTerm) return [];
+    const byCategory = new Map<string, number>();
+    for (const m of longTerm.months) {
+      byCategory.set(m.categoryId, (byCategory.get(m.categoryId) ?? 0) + m.minutes);
+    }
+    return state.categories
+      .map((c) => ({ category: c, minutes: byCategory.get(c.id) ?? 0 }))
+      .filter((t) => t.minutes > 0)
+      .sort((a, b) => b.minutes - a.minutes);
+  }, [longTerm, state.categories]);
 
   const insights = store.insights();
 
@@ -270,26 +257,46 @@ export default function ProgressPage() {
       <PlusGate
         plan={state.profile.plan}
         title="Long-term trend"
-        description="See your hours trended across weeks, not just this week and this month."
+        description="Consistency and category totals trended across months, not just this week and this month."
       >
         <div className="mt-6 rounded-xl border border-ink-black/8 bg-pure-white p-6">
           <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">
-            Last {TREND_WEEKS} weeks
+            Consistency — last {LONG_TERM_MONTHS} months
           </p>
-          <div className="mt-4 flex items-end gap-3" style={{ height: 96 }}>
-            {weeklyTrend.map((w) => (
-              <div key={w.label} className="flex flex-1 flex-col items-center gap-1.5">
-                <span className="text-caption text-ink-black/40">
-                  {w.hours > 0 ? w.hours.toFixed(1) : ""}
-                </span>
-                <div
-                  className="w-full rounded-t-md bg-marigold transition-[height] duration-500 ease-out"
-                  style={{ height: `${Math.max(4, (w.hours / maxTrendHours) * 72)}px` }}
-                />
-                <span className="text-caption text-ink-black/40">{w.label}</span>
+          {longTerm ? (
+            <>
+              <div className="mt-4 flex items-end gap-3" style={{ height: 96 }}>
+                {longTerm.monthlyConsistencyPct.map((m) => (
+                  <div key={m.month} className="flex flex-1 flex-col items-center gap-1.5">
+                    <span className="text-caption text-ink-black/40">{m.pct > 0 ? `${m.pct}%` : ""}</span>
+                    <div
+                      className="w-full rounded-t-md bg-marigold transition-[height] duration-500 ease-out"
+                      style={{ height: `${Math.max(4, (m.pct / 100) * 72)}px` }}
+                    />
+                    <span className="text-caption text-ink-black/40">{monthLabel(m.month)}</span>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+
+              {longTermCategoryTotals.length > 0 ? (
+                <div className="mt-5 space-y-1.5 border-t border-ink-black/8 pt-4">
+                  {longTermCategoryTotals.map(({ category, minutes }) => (
+                    <div key={category.id} className="flex items-center justify-between text-body-sm">
+                      <span className="flex items-center gap-2 text-ink-black">
+                        <span className={`h-2 w-2 rounded-full ${category.color}`} />
+                        {category.name}
+                      </span>
+                      <span className="text-ink-black/50">
+                        {(minutes / 60).toFixed(1)}h over {LONG_TERM_MONTHS} months
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+            </>
+          ) : (
+            <p className="mt-4 text-body-sm text-ink-black/40">Loading…</p>
+          )}
         </div>
       </PlusGate>
 

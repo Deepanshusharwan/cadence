@@ -27,7 +27,6 @@ dropped for that reason.
 | `cat.png` | Cat wearing glasses and a collar |
 | `pink-hair.png` | Person with pink hair, freckles |
 | `beanie.png` | Person wearing a beanie, earbuds in |
-| `headphones.png` | Person with a bun and purple headphones, winking |
 | `dog.png` | Dog with a green bandana, waving |
 
 Each is a 240×240px square PNG with its own colored ring/background already
@@ -48,13 +47,17 @@ duplicating an existing free mark's design too closely (a second
 purple-headphones character, a second waving dog) rather than adding real
 variety.
 
-Nothing currently checks a user's plan before showing these — there's no
-Pro billing/entitlement model built yet (see the pricing-plan work this
-folder is part of). This is the asset set staged for whenever that exists,
-not something already gated in the app.
+Gated on `state.profile.plan === "pro"` in the avatar pickers
+(`/setup`, `/dashboard/settings`) — see `markSrc()` in
+`src/components/marks.tsx`.
+
+`headphones.png` (purple headphones, bun, winking) moved here from the
+free `MARKS` set once real plan entitlement existed, so it's no longer
+available to Free/Plus users picking an avatar.
 
 | File | Subject |
 |---|---|
+| `headphones.png` | Person with a bun and purple headphones, winking |
 | `curly-headphones.png` | Person with black curly hair, blue headphones |
 | `sleepy-cat.png` | Cat in a blue beanie, "zzz" |
 | `silver-hair-glasses.png` | Person with silver hair and glasses |

@@ -270,6 +270,233 @@ def test_insight_fires_only_after_three_full_weeks_behind(client):
     assert resp.json() == []
 
 
+def test_long_term_trend_requires_plus_and_returns_shape(client, db_session):
+    from app import models
+
+    client.get("/me")
+    resp = client.get("/analytics/long-term")
+    assert resp.status_code == 403
+
+    user = db_session.get(models.User, "test-user")
+    user.plan = "plus"
+    db_session.commit()
+
+    resp = client.get("/analytics/long-term?months=6")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert len(body["monthly_consistency_pct"]) == 6
+    assert body["months"] == []  # no sessions logged yet
+
+
+def test_insight_fires_on_month_over_month_change(client):
+    cat = client.post(
+        "/categories",
+        json={"name": "Deep Work", "tracking_mode": "hours", "weekly_target": 1, "priority_tier": 1},
+    ).json()
+    today = date.today()
+    this_month_start = today.replace(day=1)
+    last_month_end = this_month_start - timedelta(days=1)
+    last_month_start = last_month_end.replace(day=1)
+    prev_month_end = last_month_start - timedelta(days=1)
+    prev_month_start = prev_month_end.replace(day=1)
+
+    # 1 hour two months ago, 10 hours last month -> a big month-over-month jump.
+    client.post(
+        "/sessions",
+        json={"category_id": cat["id"], "date": prev_month_start.isoformat(), "duration_minutes": 60, "tags": []},
+    )
+    client.post(
+        "/sessions",
+        json={"category_id": cat["id"], "date": last_month_start.isoformat(), "duration_minutes": 600, "tags": []},
+    )
+
+    resp = client.get("/insights")
+    ids = [i["id"] for i in resp.json()]
+    assert f"trend-up-{cat['id']}" in ids
+
+
+def _grant_plus(client, db_session, user_id="test-user"):
+    from app import models
+
+    client.get("/me")  # lazily creates the row
+    user = db_session.get(models.User, user_id)
+    user.plan = "plus"
+    db_session.commit()
+
+
+def test_export_requires_plus(client):
+    resp = client.get("/export/json")
+    assert resp.status_code == 403
+    resp = client.get("/export/csv")
+    assert resp.status_code == 403
+
+
+def test_export_json_returns_users_own_data(client, db_session):
+    _grant_plus(client, db_session)
+    cat = client.post(
+        "/categories",
+        json={"name": "Reading", "tracking_mode": "hours", "weekly_target": 3, "priority_tier": 1},
+    ).json()
+    client.post(
+        "/sessions",
+        json={"category_id": cat["id"], "date": date.today().isoformat(), "duration_minutes": 45, "tags": ["fiction"]},
+    )
+
+    resp = client.get("/export/json")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert len(body["sessions"]) == 1
+    assert body["sessions"][0]["duration_minutes"] == 45
+    assert len(body["categories"]) == 1
+    assert body["categories"][0]["name"] == "Reading"
+    assert "exported_at" in body
+
+
+def test_export_csv_returns_downloadable_file(client, db_session):
+    _grant_plus(client, db_session)
+    cat = client.post(
+        "/categories",
+        json={"name": "Reading", "tracking_mode": "hours", "weekly_target": 3, "priority_tier": 1},
+    ).json()
+    client.post(
+        "/sessions",
+        json={"category_id": cat["id"], "date": date.today().isoformat(), "duration_minutes": 45, "tags": ["fiction"]},
+    )
+
+    resp = client.get("/export/csv")
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith("text/csv")
+    assert "attachment" in resp.headers["content-disposition"]
+    assert "Reading" in resp.text
+    assert "45" in resp.text
+
+
+def test_share_link_create_requires_plus(client):
+    resp = client.post("/share-links")
+    assert resp.status_code == 403
+
+
+def test_share_link_full_lifecycle(client, db_session):
+    _grant_plus(client, db_session)
+    cat = client.post(
+        "/categories",
+        json={"name": "Deep Work", "tracking_mode": "hours", "weekly_target": 5, "priority_tier": 1},
+    ).json()
+    client.post(
+        "/sessions",
+        json={"category_id": cat["id"], "date": date.today().isoformat(), "duration_minutes": 90, "tags": []},
+    )
+
+    resp = client.post("/share-links")
+    assert resp.status_code == 200
+    token = resp.json()["token"]
+
+    # Public route -- no auth header at all.
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    anon = TestClient(app)
+    resp = anon.get(f"/share/{token}")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["categories"][0]["name"] == "Deep Work"
+    assert body["categories"][0]["current"] == 1.5
+
+    # Creating a second link replaces the first.
+    resp2 = client.post("/share-links")
+    token2 = resp2.json()["token"]
+    assert token2 != token
+    assert anon.get(f"/share/{token}").status_code == 404
+    assert anon.get(f"/share/{token2}").status_code == 200
+
+    # Revoking kills it.
+    resp = client.delete(f"/share-links/{token2}")
+    assert resp.status_code == 204
+    assert anon.get(f"/share/{token2}").status_code == 404
+
+
+def test_share_link_404s_for_unknown_token(client):
+    resp = client.get("/share/does-not-exist")
+    assert resp.status_code == 404
+
+
+def test_share_link_404s_once_owner_downgrades(client, db_session):
+    from app import models
+
+    _grant_plus(client, db_session)
+    resp = client.post("/share-links")
+    token = resp.json()["token"]
+
+    user = db_session.get(models.User, "test-user")
+    user.plan = "free"
+    db_session.commit()
+
+    resp = client.get(f"/share/{token}")
+    assert resp.status_code == 404
+
+
+def test_calendar_feed_create_requires_plus(client):
+    resp = client.post("/calendar-feed")
+    assert resp.status_code == 403
+
+
+def test_calendar_feed_full_lifecycle(client, db_session):
+    _grant_plus(client, db_session)
+    client.post(
+        "/events",
+        json={
+            "title": "Doctor appointment",
+            "date": date.today().isoformat(),
+            "start": "09:00",
+            "end": "10:00",
+            "type": "PERSONAL",
+            "notes": "Annual checkup",
+        },
+    )
+
+    resp = client.post("/calendar-feed")
+    assert resp.status_code == 200
+    token = resp.json()["token"]
+
+    from fastapi.testclient import TestClient
+
+    from app.main import app
+
+    anon = TestClient(app)
+    resp = anon.get(f"/calendar-feed/{token}.ics")
+    assert resp.status_code == 200
+    assert resp.headers["content-type"].startswith("text/calendar")
+    body = resp.text
+    assert "BEGIN:VCALENDAR" in body
+    assert "SUMMARY:Doctor appointment" in body
+    assert "DESCRIPTION:Annual checkup" in body
+
+    resp = client.delete(f"/calendar-feed/{token}")
+    assert resp.status_code == 204
+    assert anon.get(f"/calendar-feed/{token}.ics").status_code == 404
+
+
+def test_calendar_feed_404s_for_unknown_token(client):
+    resp = client.get("/calendar-feed/does-not-exist.ics")
+    assert resp.status_code == 404
+
+
+def test_calendar_feed_404s_once_owner_downgrades(client, db_session):
+    from app import models
+
+    _grant_plus(client, db_session)
+    resp = client.post("/calendar-feed")
+    token = resp.json()["token"]
+
+    user = db_session.get(models.User, "test-user")
+    user.plan = "free"
+    db_session.commit()
+
+    resp = client.get(f"/calendar-feed/{token}.ics")
+    assert resp.status_code == 404
+
+
 def test_feedback_create(client):
     resp = client.post("/feedback", json={"type": "idea", "message": "Add a Pomodoro timer mode"})
     assert resp.status_code == 201
@@ -721,6 +948,24 @@ def test_billing_checkout_returns_url_and_skips_trial_when_already_used(client, 
     assert resp.status_code == 200
     assert resp.json()["url"] == "https://example.lemonsqueezy.com/checkout/abc"
     assert captured == {"variant_id": "111", "user_id": "test-user", "skip_trial": False}
+
+
+def test_require_plus_rejects_free_and_allows_paid():
+    from fastapi import HTTPException
+
+    from app import models
+    from app.deps import require_plus
+
+    free_user = models.User(id="free-user", plan="free")
+    try:
+        require_plus(free_user)
+        assert False, "expected HTTPException for a free-plan user"
+    except HTTPException as exc:
+        assert exc.status_code == 403
+
+    for plan in ("plus", "pro"):
+        paid_user = models.User(id="paid-user", plan=plan)
+        assert require_plus(paid_user) is paid_user
 
 
 def test_review_upsert_and_get(client):

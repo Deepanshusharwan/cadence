@@ -289,3 +289,67 @@ class StreakInfoOut(BaseModel):
 class InsightOut(BaseModel):
     id: str
     text: str
+
+
+# --- Long Term analytics (Plus-only, GET /analytics/long-term) -----------------
+
+
+class MonthlyCategoryTotalOut(BaseModel):
+    month: str  # "YYYY-MM"
+    category_id: str
+    minutes: int
+    session_count: int
+
+
+class MonthlyConsistencyOut(BaseModel):
+    month: str  # "YYYY-MM"
+    pct: int
+
+
+class LongTermTrendOut(BaseModel):
+    months: list[MonthlyCategoryTotalOut]
+    monthly_consistency_pct: list[MonthlyConsistencyOut]
+
+
+# --- Data export (Plus-only, GET /export/json, GET /export/csv) ---------------
+
+
+class ShareLinkOut(BaseModel):
+    token: str
+    created_at: datetime
+
+
+class SharedCategoryProgressOut(BaseModel):
+    name: str
+    color: str
+    tracking_mode: TrackingMode
+    weekly_target: float | None
+    current: float
+
+
+class SharedProgressOut(BaseModel):
+    """GET /share/{token} — deliberately thin: no raw session history/tags,
+    no category ids, nothing beyond what's needed to show someone else the
+    shape of your progress. See routers/sharing.py.
+    """
+
+    user_name: str
+    user_avatar: str
+    current_streak: int
+    longest_streak: int
+    consistency_pct: int
+    categories: list[SharedCategoryProgressOut]
+
+
+class CalendarFeedOut(BaseModel):
+    token: str
+    created_at: datetime
+
+
+class ExportOut(BaseModel):
+    exported_at: datetime
+    sessions: list[SessionOut]
+    categories: list[CategoryOut]
+    reviews: list[ReviewOut]
+    events: list[EventOut]
+    day_entries: list[DayEntryOut]

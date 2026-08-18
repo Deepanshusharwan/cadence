@@ -131,10 +131,18 @@ export default function SetupPage() {
   }
 
   function skipSetup() {
-    const randomName = RANDOM_NAMES[Math.floor(Math.random() * RANDOM_NAMES.length)];
-    const keys = Object.keys(MARKS) as MarkKey[];
-    const randomAvatar = keys[Math.floor(Math.random() * keys.length)];
-    store.setProfile({ name: randomName, avatar: randomAvatar });
+    // Only invent a placeholder identity for a genuinely brand-new profile
+    // (blank name). A returning user hitting Skip -- e.g. via "Redo the
+    // full setup wizard" in Settings, or landing back here on another
+    // device -- already has a real name/avatar loaded from `/me`, and this
+    // must not clobber it with a random one. `avatar` alone can't signal
+    // "new" since the backend defaults it to "cat" for everyone.
+    if (!store.state.profile.name.trim()) {
+      const randomName = RANDOM_NAMES[Math.floor(Math.random() * RANDOM_NAMES.length)];
+      const keys = Object.keys(MARKS) as MarkKey[];
+      const randomAvatar = keys[Math.floor(Math.random() * keys.length)];
+      store.setProfile({ name: randomName, avatar: randomAvatar });
+    }
     store.completeOnboarding();
     router.push("/dashboard");
   }

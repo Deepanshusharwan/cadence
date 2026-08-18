@@ -9,7 +9,10 @@
 
 import { getAuthToken } from "./auth-token";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+// Exported so callers building a full URL to a non-JSON backend route
+// (e.g. the calendar .ics feed link shown in Settings) can use the same
+// base the rest of this client already talks to.
+export const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -60,6 +63,31 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
     }
   }
   throw lastError;
+}
+
+// For file downloads (CSV export) -- apiFetch above always calls res.json(),
+// which would try to parse a CSV file as JSON and fail.
+async function apiFetchBlob(path: string): Promise<Blob> {
+  const token = await getAuthToken();
+  const res = await fetch(`${API_URL}${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new ApiError(res.status, `GET ${path} failed: ${res.status} ${body}`);
+  }
+  return res.blob();
+}
+
+// Public, unauthenticated fetch -- for GET /share/{token}, viewed by
+// logged-out visitors, which must never carry a Clerk bearer token.
+async function publicFetch<T>(path: string): Promise<T> {
+  const res = await fetch(`${API_URL}${path}`);
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new ApiError(res.status, `GET ${path} failed: ${res.status} ${body}`);
+  }
+  return (await res.json()) as T;
 }
 
 // --- Wire types (snake_case, as returned by the backend) -------------------
@@ -172,6 +200,50 @@ interface WireStreakRun {
 interface WireStreakInfo {
   current: WireStreakRun;
   longest: WireStreakRun;
+}
+
+interface WireMonthlyCategoryTotal {
+  month: string;
+  category_id: string;
+  minutes: number;
+  session_count: number;
+}
+
+interface WireMonthlyConsistency {
+  month: string;
+  pct: number;
+}
+
+interface WireLongTermTrend {
+  months: WireMonthlyCategoryTotal[];
+  monthly_consistency_pct: WireMonthlyConsistency[];
+}
+
+interface WireShareLink {
+  token: string;
+  created_at: string;
+}
+
+interface WireCalendarFeed {
+  token: string;
+  created_at: string;
+}
+
+interface WireSharedCategoryProgress {
+  name: string;
+  color: string;
+  tracking_mode: "hours" | "sessions";
+  weekly_target: number | null;
+  current: number;
+}
+
+interface WireSharedProgress {
+  user_name: string;
+  user_avatar: string;
+  current_streak: number;
+  longest_streak: number;
+  consistency_pct: number;
+  categories: WireSharedCategoryProgress[];
 }
 
 interface WireScheduleBlock {
@@ -292,6 +364,36 @@ export interface ApiInsight {
   text: string;
 }
 
+export interface ApiShareLink {
+  token: string;
+  createdAt: string;
+}
+
+export interface ApiCalendarFeed {
+  token: string;
+  createdAt: string;
+}
+
+export interface ApiSharedProgress {
+  userName: string;
+  userAvatar: string;
+  currentStreak: number;
+  longestStreak: number;
+  consistencyPct: number;
+  categories: {
+    name: string;
+    color: string;
+    trackingMode: "hours" | "sessions";
+    weeklyTarget: number | null;
+    current: number;
+  }[];
+}
+
+export interface ApiLongTermTrend {
+  months: { month: string; categoryId: string; minutes: number; sessionCount: number }[];
+  monthlyConsistencyPct: { month: string; pct: number }[];
+}
+
 export interface ApiFeedback {
   id: string;
   type: "bug" | "idea" | "review" | "other";
@@ -393,6 +495,31 @@ const leaveFromWire = (w: WireLeaveBalance): ApiLeaveBalance => ({
 const streakInfoFromWire = (w: WireStreakInfo): ApiStreakInfo => ({
   current: w.current,
   longest: w.longest,
+});
+
+const longTermTrendFromWire = (w: WireLongTermTrend): ApiLongTermTrend => ({
+  months: w.months.map((m) => ({
+    month: m.month,
+    categoryId: m.category_id,
+    minutes: m.minutes,
+    sessionCount: m.session_count,
+  })),
+  monthlyConsistencyPct: w.monthly_consistency_pct,
+});
+
+const sharedProgressFromWire = (w: WireSharedProgress): ApiSharedProgress => ({
+  userName: w.user_name,
+  userAvatar: w.user_avatar,
+  currentStreak: w.current_streak,
+  longestStreak: w.longest_streak,
+  consistencyPct: w.consistency_pct,
+  categories: w.categories.map((c) => ({
+    name: c.name,
+    color: c.color,
+    trackingMode: c.tracking_mode,
+    weeklyTarget: c.weekly_target,
+    current: c.current,
+  })),
 });
 
 const scheduleBlockFromWire = (w: WireScheduleBlock): ApiScheduleBlock => ({
@@ -572,6 +699,35 @@ export const api = {
   getLeaveBalance: () => apiFetch<WireLeaveBalance>("/leave").then(leaveFromWire),
   getStreakInfo: () => apiFetch<WireStreakInfo>("/streaks").then(streakInfoFromWire),
   getInsights: () => apiFetch<ApiInsight[]>("/insights"),
+  getLongTermTrend: (months = 6) =>
+    apiFetch<WireLongTermTrend>(`/analytics/long-term?months=${months}`).then(longTermTrendFromWire),
+
+  exportJson: () => apiFetch<unknown>("/export/json"),
+  exportCsv: () => apiFetchBlob("/export/csv"),
+
+  getMyShareLink: () =>
+    apiFetch<WireShareLink | null>("/share-links").then((w) =>
+      w ? { token: w.token, createdAt: w.created_at } : null
+    ),
+  createShareLink: () =>
+    apiFetch<WireShareLink>("/share-links", { method: "POST" }).then((w) => ({
+      token: w.token,
+      createdAt: w.created_at,
+    })),
+  revokeShareLink: (token: string) => apiFetch<void>(`/share-links/${token}`, { method: "DELETE" }),
+  getSharedProgress: (token: string) =>
+    publicFetch<WireSharedProgress>(`/share/${token}`).then(sharedProgressFromWire),
+
+  getMyCalendarFeed: () =>
+    apiFetch<WireCalendarFeed | null>("/calendar-feed").then((w) =>
+      w ? { token: w.token, createdAt: w.created_at } : null
+    ),
+  createCalendarFeed: () =>
+    apiFetch<WireCalendarFeed>("/calendar-feed", { method: "POST" }).then((w) => ({
+      token: w.token,
+      createdAt: w.created_at,
+    })),
+  revokeCalendarFeed: (token: string) => apiFetch<void>(`/calendar-feed/${token}`, { method: "DELETE" }),
   getTodaySchedule: (onDate?: string) =>
     apiFetch<WireScheduleBlock[]>(`/today${onDate ? `?on_date=${onDate}` : ""}`).then((rows) =>
       rows.map(scheduleBlockFromWire)

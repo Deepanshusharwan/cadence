@@ -6,14 +6,17 @@ from .routers import (
     admin,
     anchors,
     billing,
+    calendar_feed,
     categories,
     computed,
     day_types,
     events,
+    export,
     feedback,
     me,
     reviews,
     sessions,
+    sharing,
     webhooks,
 )
 
@@ -45,4 +48,7 @@ app.include_router(feedback.router)
 app.include_router(admin.router)
 app.include_router(webhooks.router)
 app.include_router(billing.router)
+app.include_router(export.router)
+app.include_router(sharing.router)
+app.include_router(calendar_feed.router)
 app.include_router(computed.router)

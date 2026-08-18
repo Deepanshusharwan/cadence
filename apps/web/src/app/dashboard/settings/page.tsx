@@ -7,6 +7,17 @@ import { PencilIcon } from "@/components/icons";
 import { useStore, type Category, type TrackingMode, type AnchorRecurrence } from "@/lib/store";
 import { useToast } from "@/components/toast";
 import { textOnCategoryColor } from "@/lib/category-color";
+import { api, API_URL, type ApiCalendarFeed, type ApiShareLink } from "@/lib/api";
+import { PlusGate } from "@/components/plus-gate";
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 const TIER_LABELS = ["Tier 1", "Tier 2", "Tier 3", "Tier 4", "Tier 5"];
 
@@ -84,6 +95,84 @@ export default function SettingsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const [shareLink, setShareLink] = useState<ApiShareLink | null>(null);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+  useEffect(() => {
+    if (state.profile.plan === "free") return;
+    api.getMyShareLink().then(setShareLink).catch(() => {});
+  }, [state.profile.plan]);
+
+  async function handleGenerateShareLink() {
+    setShareLoading(true);
+    try {
+      setShareLink(await api.createShareLink());
+    } catch {
+      show("Couldn't create a share link — try again.");
+    } finally {
+      setShareLoading(false);
+    }
+  }
+
+  async function handleRevokeShareLink() {
+    if (!shareLink) return;
+    setShareLoading(true);
+    try {
+      await api.revokeShareLink(shareLink.token);
+      setShareLink(null);
+    } catch {
+      show("Couldn't revoke that link — try again.");
+    } finally {
+      setShareLoading(false);
+    }
+  }
+
+  function handleCopyShareLink() {
+    if (!shareLink) return;
+    navigator.clipboard.writeText(`${window.location.origin}/share/${shareLink.token}`);
+    setShareCopied(true);
+    setTimeout(() => setShareCopied(false), 2000);
+  }
+
+  const [calendarFeed, setCalendarFeed] = useState<ApiCalendarFeed | null>(null);
+  const [calendarLoading, setCalendarLoading] = useState(false);
+  const [calendarCopied, setCalendarCopied] = useState(false);
+  useEffect(() => {
+    if (state.profile.plan === "free") return;
+    api.getMyCalendarFeed().then(setCalendarFeed).catch(() => {});
+  }, [state.profile.plan]);
+
+  async function handleGenerateCalendarFeed() {
+    setCalendarLoading(true);
+    try {
+      setCalendarFeed(await api.createCalendarFeed());
+    } catch {
+      show("Couldn't create a calendar feed — try again.");
+    } finally {
+      setCalendarLoading(false);
+    }
+  }
+
+  async function handleRevokeCalendarFeed() {
+    if (!calendarFeed) return;
+    setCalendarLoading(true);
+    try {
+      await api.revokeCalendarFeed(calendarFeed.token);
+      setCalendarFeed(null);
+    } catch {
+      show("Couldn't revoke that feed — try again.");
+    } finally {
+      setCalendarLoading(false);
+    }
+  }
+
+  function handleCopyCalendarFeed() {
+    if (!calendarFeed) return;
+    navigator.clipboard.writeText(`${API_URL}/calendar-feed/${calendarFeed.token}.ics`);
+    setCalendarCopied(true);
+    setTimeout(() => setCalendarCopied(false), 2000);
+  }
+
   const [name, setName] = useState(state.profile.name);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [newCatName, setNewCatName] = useState("");
@@ -117,6 +206,35 @@ export default function SettingsPage() {
     setNewAnchorCategoryIds((ids) =>
       ids.includes(id) ? ids.filter((x) => x !== id) : [...ids, id]
     );
+  }
+
+  const [exporting, setExporting] = useState<"json" | "csv" | null>(null);
+
+  async function handleExportJson() {
+    setExporting("json");
+    try {
+      const data = await api.exportJson();
+      downloadBlob(
+        new Blob([JSON.stringify(data, null, 2)], { type: "application/json" }),
+        "cadence-export.json"
+      );
+    } catch {
+      show("Couldn't export your data — try again.");
+    } finally {
+      setExporting(null);
+    }
+  }
+
+  async function handleExportCsv() {
+    setExporting("csv");
+    try {
+      const blob = await api.exportCsv();
+      downloadBlob(blob, "cadence-sessions.csv");
+    } catch {
+      show("Couldn't export your data — try again.");
+    } finally {
+      setExporting(null);
+    }
   }
 
   function saveProfile() {
@@ -305,6 +423,168 @@ export default function SettingsPage() {
           </div>
         )}
       </section>
+
+      {/* Export data — Plus */}
+      <PlusGate
+        plan={state.profile.plan}
+        title="Export data"
+        description="Download everything you've logged as JSON or CSV, any time."
+      >
+        <section className="mt-6 rounded-xl border border-ink-black/8 bg-pure-white p-6">
+          <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">
+            Export data
+          </p>
+          <p className="mt-2 text-body-sm text-ink-black/50">
+            Everything you&apos;ve logged, yours to keep — sessions, categories, weekly reviews,
+            events, and day markers.
+          </p>
+          <div className="mt-4 flex gap-2">
+            <button
+              type="button"
+              onClick={handleExportJson}
+              disabled={exporting !== null}
+              className="rounded-lg border border-ink-black/12 px-4 py-2 text-body-sm font-medium text-ink-black transition-colors hover:bg-ink-black/5 disabled:opacity-40"
+            >
+              {exporting === "json" ? "Preparing…" : "Download as JSON"}
+            </button>
+            <button
+              type="button"
+              onClick={handleExportCsv}
+              disabled={exporting !== null}
+              className="rounded-lg border border-ink-black/12 px-4 py-2 text-body-sm font-medium text-ink-black transition-colors hover:bg-ink-black/5 disabled:opacity-40"
+            >
+              {exporting === "csv" ? "Preparing…" : "Download sessions as CSV"}
+            </button>
+          </div>
+        </section>
+      </PlusGate>
+
+      {/* Share progress — Plus */}
+      <PlusGate
+        plan={state.profile.plan}
+        title="Share your progress"
+        description="Get a read-only link showing your streaks and category progress — no session details, no login required to view."
+      >
+        <section className="mt-6 rounded-xl border border-ink-black/8 bg-pure-white p-6">
+          <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">
+            Share your progress
+          </p>
+          <p className="mt-2 text-body-sm text-ink-black/50">
+            A read-only link showing your streaks and this week&apos;s category progress — never
+            your raw session history.
+          </p>
+
+          {shareLink ? (
+            <div className="mt-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <input
+                  readOnly
+                  value={`${typeof window !== "undefined" ? window.location.origin : ""}/share/${shareLink.token}`}
+                  className="min-w-0 flex-1 rounded-lg border border-ink-black/12 bg-paper-warmth px-3 py-2 text-body-sm text-ink-black/70"
+                />
+                <button
+                  type="button"
+                  onClick={handleCopyShareLink}
+                  className="shrink-0 rounded-lg border border-ink-black/12 px-3 py-2 text-body-sm font-medium text-ink-black transition-colors hover:bg-ink-black/5"
+                >
+                  {shareCopied ? "Copied" : "Copy"}
+                </button>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={handleGenerateShareLink}
+                  disabled={shareLoading}
+                  className="text-body-sm font-medium text-notion-blue hover:opacity-80 disabled:opacity-40"
+                >
+                  Generate new link
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRevokeShareLink}
+                  disabled={shareLoading}
+                  className="text-body-sm font-medium text-coral hover:opacity-80 disabled:opacity-40"
+                >
+                  Revoke
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={handleGenerateShareLink}
+              disabled={shareLoading}
+              className="mt-4 rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity hover:opacity-90 disabled:opacity-40"
+            >
+              {shareLoading ? "Creating…" : "Create share link"}
+            </button>
+          )}
+        </section>
+      </PlusGate>
+
+      {/* Calendar feed — Plus */}
+      <PlusGate
+        plan={state.profile.plan}
+        title="Calendar"
+        description="Subscribe to your Cadence events from Google Calendar, Apple Calendar, or Outlook."
+      >
+        <section className="mt-6 rounded-xl border border-ink-black/8 bg-pure-white p-6">
+          <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">
+            Calendar
+          </p>
+          <p className="mt-2 text-body-sm text-ink-black/50">
+            A read-only feed of your Cadence events — paste this URL into your calendar app&apos;s
+            &quot;subscribe by URL&quot; (Google Calendar) or &quot;New Calendar Subscription&quot;
+            (Apple Calendar). Updates whenever your calendar app refreshes, not instantly.
+          </p>
+
+          {calendarFeed ? (
+            <div className="mt-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <input
+                  readOnly
+                  value={`${API_URL}/calendar-feed/${calendarFeed.token}.ics`}
+                  className="min-w-0 flex-1 rounded-lg border border-ink-black/12 bg-paper-warmth px-3 py-2 text-body-sm text-ink-black/70"
+                />
+                <button
+                  type="button"
+                  onClick={handleCopyCalendarFeed}
+                  className="shrink-0 rounded-lg border border-ink-black/12 px-3 py-2 text-body-sm font-medium text-ink-black transition-colors hover:bg-ink-black/5"
+                >
+                  {calendarCopied ? "Copied" : "Copy"}
+                </button>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={handleGenerateCalendarFeed}
+                  disabled={calendarLoading}
+                  className="text-body-sm font-medium text-notion-blue hover:opacity-80 disabled:opacity-40"
+                >
+                  Generate new link
+                </button>
+                <button
+                  type="button"
+                  onClick={handleRevokeCalendarFeed}
+                  disabled={calendarLoading}
+                  className="text-body-sm font-medium text-coral hover:opacity-80 disabled:opacity-40"
+                >
+                  Revoke
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={handleGenerateCalendarFeed}
+              disabled={calendarLoading}
+              className="mt-4 rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity hover:opacity-90 disabled:opacity-40"
+            >
+              {calendarLoading ? "Creating…" : "Create calendar feed"}
+            </button>
+          )}
+        </section>
+      </PlusGate>
 
       {/* Categories */}
       <section className="mt-6 rounded-xl border border-ink-black/8 bg-pure-white p-6">

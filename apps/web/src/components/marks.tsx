@@ -10,7 +10,6 @@ export const MARKS = {
   cat: "/marks/cat.png",
   pinkHair: "/marks/pink-hair.png",
   beanie: "/marks/beanie.png",
-  headphones: "/marks/headphones.png",
   dog: "/marks/dog.png",
 } as const;
 
@@ -25,6 +24,7 @@ export type MarkKey = keyof typeof MARKS;
 // viewer's current plan (a Pro user who gets downgraded still has a
 // PRO_MARKS avatar saved until they change it).
 export const PRO_MARKS = {
+  headphones: "/marks/pro/headphones.png",
   curlyHeadphones: "/marks/pro/curly-headphones.png",
   sleepyCat: "/marks/pro/sleepy-cat.png",
   silverHairGlasses: "/marks/pro/silver-hair-glasses.png",

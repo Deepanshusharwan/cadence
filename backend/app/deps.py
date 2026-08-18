@@ -50,6 +50,18 @@ def get_current_user(
     return user
 
 
+def require_plus(user: models.User = Depends(get_current_user)) -> models.User:
+    """Gate for Plus-only routes (long-term analytics, export, sharing,
+    calendar feed). Mirrors get_admin_email's shape below -- wrap
+    get_current_user, add one more check. Free-tier routes never depend on
+    this, so existing behavior is untouched; this only adds new gated
+    surface area.
+    """
+    if user.plan == "free":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Plus required")
+    return user
+
+
 def get_admin_email(
     user: models.User = Depends(get_current_user),
     db: Session = Depends(get_db),

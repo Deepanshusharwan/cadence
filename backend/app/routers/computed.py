@@ -6,8 +6,8 @@ from sqlalchemy.orm import Session
 
 from .. import models, schemas
 from ..db import get_db
-from ..deps import get_current_user
-from ..services.analytics import compute_insights, compute_streak_info
+from ..deps import get_current_user, require_plus
+from ..services.analytics import compute_insights, compute_long_term_trend, compute_streak_info
 from ..services.leave import compute_leave_balance
 from ..services.planner import todays_schedule
 
@@ -53,3 +53,12 @@ def get_insights(
     db: Session = Depends(get_db),
 ):
     return compute_insights(db, user.id)
+
+
+@router.get("/analytics/long-term", response_model=schemas.LongTermTrendOut)
+def get_long_term_trend(
+    months: int = 12,
+    user: models.User = Depends(require_plus),
+    db: Session = Depends(get_db),
+):
+    return compute_long_term_trend(db, user.id, months)

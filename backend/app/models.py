@@ -59,6 +59,44 @@ class User(Base):
     events: Mapped[list["CadenceEvent"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     day_entries: Mapped[list["DayEntry"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     reviews: Mapped[list["WeeklyReview"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    share_links: Mapped[list["ShareLink"]] = relationship(back_populates="user", cascade="all, delete-orphan")
+    calendar_feed_tokens: Mapped[list["CalendarFeedToken"]] = relationship(
+        back_populates="user", cascade="all, delete-orphan"
+    )
+
+
+class ShareLink(Base):
+    """A read-only, unauthenticated view onto one user's progress (Plus-only,
+    see routers/sharing.py). `id` doubles as the unguessable share token
+    itself -- deliberately not the Clerk user id, so GET /share/{token}
+    never resolves by account identity (see that route's own docstring).
+    """
+
+    __tablename__ = "share_links"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
+    revoked: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    user: Mapped[User] = relationship(back_populates="share_links")
+
+
+class CalendarFeedToken(Base):
+    """Same shape and lifecycle as ShareLink above -- a separate model
+    (rather than a `kind` discriminator on ShareLink) so a user can revoke
+    their calendar feed without killing their progress share, or vice
+    versa. See routers/calendar_feed.py.
+    """
+
+    __tablename__ = "calendar_feed_tokens"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
+    revoked: Mapped[bool] = mapped_column(Boolean, default=False)
+
+    user: Mapped[User] = relationship(back_populates="calendar_feed_tokens")
 
 
 class Category(Base):
