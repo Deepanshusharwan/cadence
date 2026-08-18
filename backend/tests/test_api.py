@@ -482,6 +482,149 @@ def test_admin_can_ban_and_unban_a_user_and_it_blocks_every_route(client, db_ses
         get_settings.cache_clear()
 
 
+def _signed_webhook(client, monkeypatch, payload, secret="whsec_test", variant_plans='{"111": "plus"}'):
+    """POST a Lemon Squeezy-shaped webhook with a real, valid HMAC-SHA256
+    signature over the exact bytes sent — using `content=` rather than
+    `json=` so the bytes we sign are exactly the bytes transmitted.
+    """
+    import hashlib
+    import hmac
+    import json
+
+    from app.config import get_settings
+
+    monkeypatch.setenv("LEMONSQUEEZY_WEBHOOK_SECRET", secret)
+    monkeypatch.setenv("LEMONSQUEEZY_VARIANT_PLANS", variant_plans)
+    get_settings.cache_clear()
+
+    body = json.dumps(payload).encode()
+    signature = hmac.new(secret.encode(), body, hashlib.sha256).hexdigest()
+    resp = client.post(
+        "/webhooks/lemonsqueezy",
+        content=body,
+        headers={"content-type": "application/json", "x-signature": signature},
+    )
+    return resp, get_settings
+
+
+def test_webhook_rejects_when_not_configured(client):
+    resp = client.post("/webhooks/lemonsqueezy", content=b"{}", headers={"x-signature": "whatever"})
+    assert resp.status_code == 500
+
+
+def test_webhook_rejects_invalid_signature(client, monkeypatch):
+    from app.config import get_settings
+
+    monkeypatch.setenv("LEMONSQUEEZY_WEBHOOK_SECRET", "whsec_test")
+    get_settings.cache_clear()
+    try:
+        resp = client.post(
+            "/webhooks/lemonsqueezy", content=b"{}", headers={"x-signature": "not-the-real-signature"}
+        )
+        assert resp.status_code == 400
+    finally:
+        get_settings.cache_clear()
+
+
+def test_webhook_grants_plan_on_order_created(client, monkeypatch):
+    client.get("/me")  # lazily creates test-user
+    payload = {
+        "meta": {"event_name": "order_created", "custom_data": {"user_id": "test-user"}},
+        "data": {"type": "orders", "attributes": {"variant_id": 111, "status": "paid"}},
+    }
+    resp, get_settings = _signed_webhook(client, monkeypatch, payload)
+    try:
+        assert resp.status_code == 200
+        assert client.get("/me").json()["plan"] == "plus"
+    finally:
+        get_settings.cache_clear()
+
+
+def test_webhook_ignores_unmapped_variant(client, monkeypatch):
+    client.get("/me")
+    payload = {
+        "meta": {"event_name": "order_created", "custom_data": {"user_id": "test-user"}},
+        "data": {"type": "orders", "attributes": {"variant_id": 999, "status": "paid"}},
+    }
+    resp, get_settings = _signed_webhook(client, monkeypatch, payload)
+    try:
+        assert resp.status_code == 200
+        assert client.get("/me").json()["plan"] == "free"
+    finally:
+        get_settings.cache_clear()
+
+
+def test_webhook_ignores_unknown_user(client, monkeypatch):
+    payload = {
+        "meta": {"event_name": "order_created", "custom_data": {"user_id": "no-such-user"}},
+        "data": {"type": "orders", "attributes": {"variant_id": 111, "status": "paid"}},
+    }
+    resp, get_settings = _signed_webhook(client, monkeypatch, payload)
+    try:
+        assert resp.status_code == 200  # acknowledged, just a no-op
+    finally:
+        get_settings.cache_clear()
+
+
+def test_webhook_subscription_updated_only_grants_when_active(client, monkeypatch):
+    client.get("/me")
+    payload = {
+        "meta": {"event_name": "subscription_updated", "custom_data": {"user_id": "test-user"}},
+        "data": {"type": "subscriptions", "attributes": {"variant_id": 111, "status": "past_due"}},
+    }
+    resp, get_settings = _signed_webhook(client, monkeypatch, payload)
+    try:
+        assert resp.status_code == 200
+        assert client.get("/me").json()["plan"] == "free"
+    finally:
+        get_settings.cache_clear()
+
+
+def test_webhook_subscription_expired_revokes_plan(client, monkeypatch):
+    client.get("/me")
+    grant_payload = {
+        "meta": {"event_name": "order_created", "custom_data": {"user_id": "test-user"}},
+        "data": {"type": "orders", "attributes": {"variant_id": 111, "status": "paid"}},
+    }
+    resp, get_settings = _signed_webhook(client, monkeypatch, grant_payload)
+    try:
+        assert client.get("/me").json()["plan"] == "plus"
+
+        revoke_payload = {
+            "meta": {"event_name": "subscription_expired", "custom_data": {"user_id": "test-user"}},
+            "data": {"type": "subscriptions", "attributes": {"variant_id": 111, "status": "expired"}},
+        }
+        resp, _ = _signed_webhook(client, monkeypatch, revoke_payload)
+        assert resp.status_code == 200
+        assert client.get("/me").json()["plan"] == "free"
+    finally:
+        get_settings.cache_clear()
+
+
+def test_webhook_cancelled_does_not_revoke_immediately(client, monkeypatch):
+    # subscription_cancelled means "won't renew," not "access ended right
+    # now" -- see routers/webhooks.py's own comment on why this is
+    # deliberately not in _REVOKE_EVENTS.
+    client.get("/me")
+    grant_payload = {
+        "meta": {"event_name": "order_created", "custom_data": {"user_id": "test-user"}},
+        "data": {"type": "orders", "attributes": {"variant_id": 111, "status": "paid"}},
+    }
+    resp, get_settings = _signed_webhook(client, monkeypatch, grant_payload)
+    try:
+        assert client.get("/me").json()["plan"] == "plus"
+
+        cancel_payload = {
+            "meta": {"event_name": "subscription_cancelled", "custom_data": {"user_id": "test-user"}},
+            "data": {"type": "subscriptions", "attributes": {"variant_id": 111, "status": "cancelled"}},
+        }
+        resp, _ = _signed_webhook(client, monkeypatch, cancel_payload)
+        assert resp.status_code == 200
+        assert client.get("/me").json()["plan"] == "plus"
+    finally:
+        get_settings.cache_clear()
+
+
 def test_review_upsert_and_get(client):
     week_start = date.today() - timedelta(days=date.today().weekday())
     resp = client.get(f"/weekly-review/{week_start.isoformat()}")

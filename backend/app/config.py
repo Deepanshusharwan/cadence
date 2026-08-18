@@ -37,6 +37,24 @@ class Settings(BaseSettings):
     # even the dev-bypass user.
     admin_emails: list[str] = []
 
+    # Lemon Squeezy (docs/deployment.md — the merchant-of-record payment
+    # processor). The secret is used to verify webhook authenticity
+    # (HMAC-SHA256 over the raw body, per Lemon Squeezy's docs) — this is
+    # the entire security boundary on POST /webhooks/lemonsqueezy, which
+    # has no Clerk auth (Lemon Squeezy's servers call it directly, not a
+    # logged-in user). Empty by default: with no secret configured, every
+    # webhook request is rejected rather than silently trusted.
+    lemonsqueezy_webhook_secret: str = ""
+
+    # variant id (as Lemon Squeezy sends it, a stringified int) -> plan.
+    # Populated once real products/variants exist in the Lemon Squeezy
+    # dashboard for each Plus cadence (monthly/quarterly/annual/lifetime) —
+    # all of them map to "plus", since the plan tier doesn't depend on
+    # billing cadence. An unmapped variant id is logged and ignored rather
+    # than granting anything, so an unrecognized product never silently
+    # grants access.
+    lemonsqueezy_variant_plans: dict[str, str] = {}
+
 
 @lru_cache
 def get_settings() -> Settings:
