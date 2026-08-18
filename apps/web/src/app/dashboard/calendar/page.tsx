@@ -27,7 +27,7 @@ const DAY_TYPE_META: Record<
     activeClassName: "bg-accent text-white",
   },
   REDUCED: {
-    label: "Reduced",
+    label: "Lighter",
     cost: "1 unit",
     badgeClassName: "bg-sky-tint text-accent",
     activeClassName: "bg-accent text-white",

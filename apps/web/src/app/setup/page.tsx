@@ -306,6 +306,9 @@ export default function SetupPage() {
                       </option>
                     ))}
                   </select>
+                  <p className="mt-1 text-caption text-ink-black/40">
+                    Tier 1 gets scheduled first when your week doesn&apos;t have room for everything.
+                  </p>
                 </Field>
                 <Field label="Tracked as">
                   <select
@@ -358,7 +361,8 @@ export default function SetupPage() {
               When&apos;s your day actually free?
             </h1>
             <p className="mt-3 font-serif text-body text-graphite">
-              Fill in your real anchors — these are yours to set, not ours to assume. Add as many
+              Fill in your real schedule blocks — the fixed and recurring chunks of your week
+              (class, a shift, the gym) — these are yours to set, not ours to assume. Add as many
               as you need, and remove any that don&apos;t apply to you.
             </p>
 
@@ -385,7 +389,7 @@ export default function SetupPage() {
             </div>
 
             <div className="mt-6">
-              <p className="text-body-sm font-medium text-ink-black">Schedule anchors</p>
+              <p className="text-body-sm font-medium text-ink-black">Schedule blocks</p>
               <div className="mt-2 space-y-2">
                 {anchors.map((a) => (
                   <div
@@ -525,7 +529,7 @@ export default function SetupPage() {
                   disabled={!newAnchorLabel.trim()}
                   className="rounded-lg bg-accent px-4 py-2 text-body-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
                 >
-                  + Add anchor
+                  + Add schedule block
                 </button>
               </div>
             </div>
@@ -551,7 +555,7 @@ export default function SetupPage() {
             </div>
             <p className="mx-auto mt-3 max-w-md font-serif text-body text-graphite">
               {categories.length} categor{categories.length === 1 ? "y" : "ies"} and{" "}
-              {anchors.length} schedule anchor{anchors.length === 1 ? "" : "s"} configured. Your
+              {anchors.length} schedule block{anchors.length === 1 ? "" : "s"} configured. Your
               dashboard is ready whenever you are — nothing here is locked in, you can change any
               of it later.
             </p>

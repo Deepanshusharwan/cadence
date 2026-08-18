@@ -10,7 +10,7 @@ import { useToast } from "@/components/toast";
 
 const DAY_TYPE_META: Record<DayType, { label: string; cost: string }> = {
   NORMAL: { label: "Normal", cost: "0 units" },
-  REDUCED: { label: "Reduced", cost: "1 unit" },
+  REDUCED: { label: "Lighter", cost: "1 unit" },
   LEAVE: { label: "Full Leave", cost: "2 units" },
   MISSED: { label: "Missed", cost: "0 units" },
 };

@@ -206,7 +206,7 @@ export default function ProgressPage() {
         </div>
         <p className="mt-2 text-caption text-ink-black/40">
           Active days exclude planned Full Leave. A day counts as kept if you logged a session or
-          marked it Reduced.
+          marked it Lighter.
         </p>
       </div>
 
@@ -239,7 +239,7 @@ export default function ProgressPage() {
             <p className="text-body-sm font-medium text-ink-black">{dayTypeCounts.NORMAL}</p>
           </div>
           <div>
-            <p className="text-caption text-ink-black/40">Reduced</p>
+            <p className="text-caption text-ink-black/40">Lighter</p>
             <p className="text-body-sm font-medium text-ink-black">{dayTypeCounts.REDUCED}</p>
           </div>
           <div>

@@ -311,7 +311,7 @@ export default function SettingsPage() {
   function addAnchor() {
     if (!newAnchorLabel.trim()) return;
     if (newAnchorRecurrence === "once" && !newAnchorDate) {
-      show("Pick a date for this one-off anchor");
+      show("Pick a date for this one-off schedule block");
       return;
     }
     if (newAnchorRecurrence === "weekly" && newAnchorDaysOfWeek.length === 0) {
@@ -692,7 +692,7 @@ export default function SettingsPage() {
                         title={
                           hasSessions
                             ? "Locked — this category already has logged sessions"
-                            : undefined
+                            : "How you'll measure progress in this category — hours logged, or number of sessions completed"
                         }
                         className={`${inputClass} bg-pure-white ${hasSessions ? "opacity-50" : ""}`}
                       >
@@ -711,6 +711,7 @@ export default function SettingsPage() {
                     <select
                       value={editCatTier}
                       onChange={(e) => setEditCatTier(Number(e.target.value))}
+                      title="How this category gets prioritized when your week doesn't have room for everything — Tier 1 goes first"
                       className={`${inputClass} bg-pure-white`}
                     >
                       {TIER_LABELS.map((label, i) => (
@@ -803,6 +804,7 @@ export default function SettingsPage() {
           <select
             value={newCatMode}
             onChange={(e) => setNewCatMode(e.target.value as TrackingMode)}
+            title="How you'll measure progress in this category — hours logged, or number of sessions completed"
             className={inputClass}
           >
             <option value="hours">Hours per week</option>
@@ -819,6 +821,7 @@ export default function SettingsPage() {
           <select
             value={newCatTier}
             onChange={(e) => setNewCatTier(Number(e.target.value))}
+            title="How this category gets prioritized when your week doesn't have room for everything — Tier 1 goes first"
             className={inputClass}
           >
             {TIER_LABELS.map((label, i) => (
@@ -903,10 +906,10 @@ export default function SettingsPage() {
 
           <div className="flex items-center justify-between rounded-lg border border-ink-black/8 px-4 py-3">
             <div>
-              <p className="text-body-sm font-medium text-ink-black">Anchor reminders</p>
+              <p className="text-body-sm font-medium text-ink-black">Schedule block reminders</p>
               <p className="text-caption text-ink-black/40">
-                Browser notifications a few minutes before an anchor starts, and when your fixed
-                commitment block ends.
+                Browser notifications a few minutes before a schedule block starts, and when your
+                fixed commitment block ends.
               </p>
             </div>
             <button
@@ -914,7 +917,7 @@ export default function SettingsPage() {
               onClick={async () => {
                 if (state.settings.notificationsEnabled) {
                   store.updateSettings({ notificationsEnabled: false });
-                  show("Anchor reminders turned off");
+                  show("Schedule block reminders turned off");
                   return;
                 }
                 if (typeof Notification === "undefined") {
@@ -927,7 +930,7 @@ export default function SettingsPage() {
                     : await Notification.requestPermission();
                 if (permission === "granted") {
                   store.updateSettings({ notificationsEnabled: true });
-                  show("Anchor reminders turned on");
+                  show("Schedule block reminders turned on");
                 } else {
                   show("Notification permission denied");
                 }
@@ -974,16 +977,17 @@ export default function SettingsPage() {
       {/* Schedule anchors */}
       <section className="mt-6 rounded-xl border border-ink-black/8 bg-pure-white p-6">
         <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">
-          Schedule anchors
+          Schedule blocks
         </p>
         <p className="mt-1 text-caption text-ink-black/40">
-          Add as many as you need — every day, specific weekdays, or a one-off date. Pin a
-          category to any of them if you want to fix what fills it.
+          A schedule block is any recurring or one-off chunk of time on your calendar — class, a
+          shift, the gym. Add as many as you need — every day, specific weekdays, or a one-off
+          date. Pin a category to any of them if you want to fix what fills it.
         </p>
 
         <div className="mt-4 space-y-2">
           {state.anchors.length === 0 ? (
-            <p className="text-body-sm text-ink-black/40">No anchors yet.</p>
+            <p className="text-body-sm text-ink-black/40">No schedule blocks yet.</p>
           ) : (
             state.anchors.map((a) => (
               <div
@@ -1142,7 +1146,7 @@ export default function SettingsPage() {
             disabled={!newAnchorLabel.trim()}
             className="rounded-lg bg-accent px-4 py-2 text-body-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
           >
-            + Add anchor
+            + Add schedule block
           </button>
         </div>
       </section>

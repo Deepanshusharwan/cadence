@@ -30,7 +30,7 @@ function startOfWeekFor(d: Date) {
 
 const DAY_TYPE_LABELS: Record<DayType, string> = {
   NORMAL: "Normal",
-  REDUCED: "Reduced",
+  REDUCED: "Lighter",
   LEAVE: "Full Leave",
   MISSED: "Missed",
 };

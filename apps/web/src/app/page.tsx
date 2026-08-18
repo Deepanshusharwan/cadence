@@ -57,7 +57,7 @@ const CATEGORIES = [
 
 const DAY_TYPES = [
   { name: "Normal", study: "~4h", cost: "0 units" },
-  { name: "Reduced", study: "~1–2h", cost: "1 unit" },
+  { name: "Lighter", study: "~1–2h", cost: "1 unit" },
   { name: "Full Leave", study: "0h", cost: "2 units" },
   { name: "Missed", study: "—", cost: "0 units" },
 ];
