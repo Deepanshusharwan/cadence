@@ -4,15 +4,16 @@ The website client: the marketing landing page, plus a working app (`/setup`, `/
 
 - **Stack:** Next.js (App Router) + TypeScript + Tailwind CSS v4
 - **Status:**
-  - ✅ Landing page
+  - ✅ Landing page — Notion-style illustrated marketing site, including two feature-block sections with product-UI mockups (week view, progress view)
   - ✅ App prototype: onboarding (`/setup`), dashboard (`/dashboard`), calendar (`/dashboard/calendar` — Day/Week/Month views), progress (`/dashboard/progress`), weekly review (`/dashboard/review`), settings (`/dashboard/settings`) — all real, all backed by `backend`
   - ✅ Weekly Review, monthly/long-term Progress trends (consistency %, per-category monthly totals, 6-week trend), leave carry-forward, current/longest streak tracking
   - ✅ Backend/API integration — every mutation and the Planner/Leave/Analytics engines (deficit-based `/today`, `/leave`, `/streaks`, `/insights`) are fetched from `backend`, not computed client-side; see `src/lib/api.ts`
-  - ⚠️ Runs against `backend`'s `DEV_AUTH_BYPASS=true` mode (a single fixed dev user) — no real multi-user auth yet
-  - ❌ Auth (Clerk) — not wired up; see `backend/README.md` for why (no live Clerk project/keys exist in this environment yet)
+  - ✅ Real Clerk auth — `<ClerkProvider>`, `clerkMiddleware()` route protection (`src/proxy.ts`) on `/setup` and `/dashboard/*`, branded `/sign-in`/`/sign-up` pages, and a session token attached to every API request. Live-tested against a real (test-mode) Clerk project — see `../../backend/README.md` and `../../docs/deployment.md`
+  - ✅ In-app feedback: a "Send feedback" modal (bug/idea/review/other) reachable from the dashboard sidebar, plus an owner-only `/dashboard/feedback` view (not linked in nav) with search/type/date filters and an admin-email manager
   - ❌ Projects — spec'd but not built; explicitly modeled as a category (with weekend-preferred) instead, per product decision (see `docs/software-specification.md` §70–71)
+  - ❌ Deployed publicly — runs locally (dev server or a real `next build`/`next start`) against the locally-Dockerized backend; see `../../docs/deployment.md` for the Vercel + VPS runbook
 
-Requires `backend` running locally (see `../../backend/README.md`) — set `NEXT_PUBLIC_API_URL` in `.env.local` if it's not at the default `http://localhost:8000`.
+Requires `backend` running (see `../../backend/README.md`) — set `NEXT_PUBLIC_API_URL` in `.env.local` if it's not at the default `http://localhost:8000` (e.g. `http://localhost` when running the backend's containerized `full` profile behind Caddy instead of the direct `uvicorn --reload` dev loop).
 
 The landing page follows the Notion-style visual language referenced in [`../../CLAUDE.md`](../../CLAUDE.md).
 

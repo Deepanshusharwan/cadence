@@ -8,11 +8,12 @@ The single cloud API behind all three clients (web, iOS, Android). Owns the prim
   - ✅ CRUD endpoints for all of the above, scoped per authenticated user
   - ✅ Computed endpoints ported from the web prototype's client-side logic: `GET /today` (deficit/priority planner), `GET /leave` (carry-forward balance), `GET /streaks`, `GET /insights`
   - ✅ Automated test suite (`tests/`) covering the endpoints above against an isolated in-memory DB — passing
-  - ✅ Wired up to `apps/web` — `src/lib/api.ts`/`store.tsx` on the web side talk to this API for everything, running against `DEV_AUTH_BYPASS=true` (a single fixed dev user)
+  - ✅ Wired up to `apps/web` — `src/lib/api.ts`/`store.tsx` on the web side talk to this API for everything, with a real Clerk session token on every request
   - ✅ Caddy reverse proxy (`Caddyfile`) in front of a containerized API (`Dockerfile`), wired into `docker-compose.yml` behind the `full` profile — TLS termination + a stable :80/:443 entry point for a real deployment, automatic HTTPS via just setting `CADDY_DOMAIN` to a real domain. Verified end to end locally (Caddy → containerized API → Postgres, `caddy validate`/`caddy fmt` clean)
-  - ⚠️ Clerk verification is implemented per Clerk's documented JWKS approach (`app/auth.py`) but **has not been live-tested** — this environment has no real Clerk project/keys, and `apps/web` has no `@clerk/nextjs` integration yet either. `DEV_AUTH_BYPASS=true` exists to develop/test everything else without them; never enable it against a real deployment
+  - ✅ Clerk verification is live-tested against a real (test-mode) Clerk project — JWKS signature check, issuer, and `azp` origin validation (`app/auth.py`), running with `DEV_AUTH_BYPASS=false`. `DEV_AUTH_BYPASS=true` still exists purely for local development without live Clerk credentials — never enable it against a real deployment
+  - ✅ `GET /feedback` admin view, gated by a Clerk-email allowlist (`ADMIN_EMAILS` in `.env`, plus emails added at runtime via `/admin/emails`) rather than any role stored on the user
 
-See [`../docs/architecture.md`](../docs/architecture.md) for the API's role in the sync model and system architecture.
+See [`../docs/architecture.md`](../docs/architecture.md) for the API's role in the sync model and system architecture, and [`../docs/deployment.md`](../docs/deployment.md) for the deploy runbook (VPS + Vercel).
 
 ## Setup
 
@@ -67,9 +68,18 @@ Caddyfile                         Reverse proxy in front of the containerized AP
 docker-compose.yml                 db (always) + api/caddy (behind the `full` profile)
 ```
 
-## Connecting a real Clerk project
+## Connecting a Clerk project
 
-1. Create a Clerk application at [dashboard.clerk.com](https://dashboard.clerk.com).
-2. Copy the publishable/secret keys and your instance's JWKS URL (`https://<your-clerk-domain>/.well-known/jwks.json`) into `.env`.
-3. Set `DEV_AUTH_BYPASS=false`.
-4. Install and wire up `@clerk/nextjs` in `apps/web` (not done yet — today it calls this API with no `Authorization` header at all, which only works because `DEV_AUTH_BYPASS` skips verification entirely) — add the same publishable key there, wrap the app in `<ClerkProvider>`, and attach the session token in `apps/web/src/lib/api.ts`'s `apiFetch`.
+Both sides are already wired up (`app/auth.py` here, `<ClerkProvider>` +
+`apiFetch`'s bearer token in `apps/web`) and running against a real
+test-mode Clerk project. To point this at a *different* Clerk project (a
+fresh one, or switching test → production):
+
+1. Create/open the Clerk application at [dashboard.clerk.com](https://dashboard.clerk.com).
+2. Copy the publishable/secret keys and the instance's JWKS URL
+   (`https://<your-clerk-domain>/.well-known/jwks.json`) into `.env`.
+3. Set the matching `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`/`CLERK_SECRET_KEY`
+   in `apps/web/.env.local` too — both sides must agree on the same
+   project.
+4. Leave `DEV_AUTH_BYPASS=false`. It must never be `true` against
+   anything real — see [`../docs/deployment.md`](../docs/deployment.md).
