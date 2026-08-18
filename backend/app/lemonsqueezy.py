@@ -41,6 +41,17 @@ def create_checkout(variant_id: str, user_id: str, skip_trial: bool) -> str | No
                         # routers/webhooks.py.
                         "checkout_data": {"custom": {"user_id": user_id}},
                         "checkout_options": {"skip_trial": skip_trial},
+                        "product_options": {
+                            # Without this, Lemon Squeezy's checkout shows a
+                            # switcher for every variant on the product —
+                            # including every other region/cadence — which
+                            # would let a US buyer pick the discounted India
+                            # variant (or vice versa). Restricting to just
+                            # the one variant the customer actually clicked
+                            # on hides the switcher entirely.
+                            "enabled_variants": [int(variant_id)],
+                            "redirect_url": f"{settings.frontend_url}/dashboard?checkout=success",
+                        },
                     },
                     "relationships": {
                         "store": {

@@ -205,18 +205,31 @@ export default function SettingsPage() {
         {!isEditingProfile ? (
           <div className="mt-4 flex items-center gap-3">
             <Mark src={markSrc(state.profile.avatar)} size={44} />
-            <span className="text-body font-medium text-ink-black">{state.profile.name}</span>
-            <button
-              type="button"
-              onClick={() => {
-                setName(state.profile.name);
-                setIsEditingProfile(true);
-              }}
-              aria-label="Edit profile"
-              className="ml-auto rounded-full p-2 text-ink-black/40 transition-colors hover:bg-ink-black/5 hover:text-ink-black"
-            >
-              <PencilIcon className="h-4 w-4" />
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-body font-medium text-ink-black">{state.profile.name}</span>
+              <span className="rounded-full bg-notion-blue/10 px-2 py-0.5 text-caption font-medium capitalize text-notion-blue">
+                {state.profile.plan}
+              </span>
+            </div>
+            <div className="ml-auto flex items-center gap-3">
+              <Link
+                href="/pricing"
+                className="text-caption font-medium text-notion-blue hover:opacity-80"
+              >
+                {state.profile.plan === "free" ? "Upgrade" : "Manage plan"}
+              </Link>
+              <button
+                type="button"
+                onClick={() => {
+                  setName(state.profile.name);
+                  setIsEditingProfile(true);
+                }}
+                aria-label="Edit profile"
+                className="rounded-full p-2 text-ink-black/40 transition-colors hover:bg-ink-black/5 hover:text-ink-black"
+              >
+                <PencilIcon className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         ) : (
           <div className="mt-4">
@@ -282,33 +295,6 @@ export default function SettingsPage() {
             </button>
           </div>
         )}
-      </section>
-
-      {/* Plan */}
-      <section className="mt-6 rounded-xl border border-ink-black/8 bg-pure-white p-6">
-        <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">
-          Plan
-        </p>
-        <div className="mt-4 flex items-center justify-between gap-4">
-          <div>
-            <p className="text-body font-medium capitalize text-ink-black">
-              {state.profile.plan}
-            </p>
-            <p className="mt-0.5 text-caption text-ink-black/40">
-              {state.profile.plan === "free"
-                ? "Cross-device sync, extended analytics, and more are on Plus."
-                : state.profile.plan === "plus"
-                  ? "Cross-device sync and extended analytics are active."
-                  : "Full access, including AI features as they ship."}
-            </p>
-          </div>
-          <Link
-            href="/pricing"
-            className="shrink-0 rounded-lg bg-notion-blue px-4 py-2 text-center text-body-sm font-medium text-pure-white transition-opacity hover:opacity-90"
-          >
-            {state.profile.plan === "free" ? "Upgrade" : "Manage plan"}
-          </Link>
-        </div>
       </section>
 
       {/* Categories */}

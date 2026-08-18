@@ -641,10 +641,65 @@ def test_webhook_subscription_created_marks_trial_used(client, db_session, monke
         get_settings.cache_clear()
 
 
-def test_billing_checkout_requires_config(client):
-    client.get("/me")
-    resp = client.post("/billing/checkout", json={"variant_id": "111"})
-    assert resp.status_code == 500
+def test_billing_checkout_requires_config(client, monkeypatch):
+    # LEMONSQUEEZY_API_KEY/STORE_ID are real values in the local .env (which
+    # Settings loads directly, same as every other config test in this
+    # file) -- blank them explicitly so this actually exercises the
+    # missing-config path instead of firing a real request at Lemon Squeezy.
+    from app.config import get_settings
+
+    monkeypatch.setenv("LEMONSQUEEZY_API_KEY", "")
+    monkeypatch.setenv("LEMONSQUEEZY_STORE_ID", "")
+    get_settings.cache_clear()
+    try:
+        client.get("/me")
+        resp = client.post("/billing/checkout", json={"variant_id": "111"})
+        assert resp.status_code == 500
+    finally:
+        get_settings.cache_clear()
+
+
+def test_lemonsqueezy_create_checkout_restricts_variant_and_sets_redirect(monkeypatch):
+    from app import lemonsqueezy
+    from app.config import get_settings
+
+    monkeypatch.setenv("LEMONSQUEEZY_API_KEY", "test-key")
+    monkeypatch.setenv("LEMONSQUEEZY_STORE_ID", "454802")
+    monkeypatch.setenv("FRONTEND_URL", "https://cadence.example.com")
+    get_settings.cache_clear()
+
+    captured = {}
+
+    class FakeResponse:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            return {"data": {"attributes": {"url": "https://example.lemonsqueezy.com/checkout/xyz"}}}
+
+    def fake_post(url, headers=None, json=None, timeout=None):
+        captured["json"] = json
+        return FakeResponse()
+
+    monkeypatch.setattr("httpx.post", fake_post)
+    try:
+        url = lemonsqueezy.create_checkout("2032070", "test-user", skip_trial=True)
+        assert url == "https://example.lemonsqueezy.com/checkout/xyz"
+
+        attrs = captured["json"]["data"]["attributes"]
+        assert attrs["product_options"]["enabled_variants"] == [2032070]
+        assert (
+            attrs["product_options"]["redirect_url"]
+            == "https://cadence.example.com/dashboard?checkout=success"
+        )
+        assert attrs["checkout_options"]["skip_trial"] is True
+        assert attrs["checkout_data"]["custom"]["user_id"] == "test-user"
+
+        rel = captured["json"]["data"]["relationships"]
+        assert rel["store"]["data"]["id"] == "454802"
+        assert rel["variant"]["data"]["id"] == "2032070"
+    finally:
+        get_settings.cache_clear()
 
 
 def test_billing_checkout_returns_url_and_skips_trial_when_already_used(client, monkeypatch):

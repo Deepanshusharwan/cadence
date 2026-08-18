@@ -212,6 +212,7 @@ interface StoreValue {
   ready: boolean;
   suspended: boolean;
   setProfile: (patch: Partial<Profile>) => void;
+  refreshProfile: () => Promise<void>;
   completeOnboarding: () => void;
   addCategory: (input: Omit<Category, "id" | "color">) => void;
   removeCategory: (id: string) => void;
@@ -371,6 +372,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     },
     []
   );
+
+  // Re-reads /me and applies just the plan (not the whole patch/PATCH
+  // machinery setProfile uses) -- for the post-checkout redirect, where the
+  // webhook that actually grants the plan runs server-side, independent of
+  // and possibly a beat behind the browser landing back on /dashboard.
+  const refreshProfile = useCallback(async () => {
+    try {
+      const me = await api.getMe();
+      setState((s) => ({ ...s, profile: { ...s.profile, plan: me.plan } }));
+    } catch (err) {
+      console.error("refreshProfile failed", err);
+    }
+  }, []);
 
   const completeOnboarding = useCallback(() => {
     setState((s) => ({ ...s, onboarded: true }));
@@ -609,6 +623,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       ready,
       suspended,
       setProfile,
+      refreshProfile,
       completeOnboarding,
       addCategory,
       removeCategory,
@@ -644,6 +659,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       ready,
       suspended,
       setProfile,
+      refreshProfile,
       completeOnboarding,
       addCategory,
       removeCategory,

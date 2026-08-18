@@ -38,6 +38,23 @@ export default function DashboardPage() {
   const store = useStore();
   const { state } = store;
   const { show, celebrate } = useToast();
+
+  // Lands here right after a Lemon Squeezy checkout (see
+  // backend's product_options.redirect_url) -- the webhook that actually
+  // grants the plan runs server-side and can arrive a beat after the
+  // browser does, so re-fetch rather than trusting stale bootstrap state.
+  // Reads window.location directly (not next/navigation's useSearchParams)
+  // so this stays a plain client-only effect with no Suspense boundary
+  // requirement on an otherwise statically-rendered page.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (new URLSearchParams(window.location.search).get("checkout") !== "success") return;
+    window.history.replaceState({}, "", window.location.pathname);
+    store.refreshProfile().then(() => {
+      celebrate("Welcome to Plus! Your plan is now active.", "met");
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const today = todayISO();
   const dayType = state.dayTypes[today] ?? "NORMAL";
   const balance = store.leaveBalance();
