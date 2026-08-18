@@ -28,6 +28,15 @@ class Settings(BaseSettings):
 
     cors_origins: list[str] = ["http://localhost:3000"]
 
+    # Email allowlist for GET /feedback. There's no general admin/role
+    # system in this app — feedback is just this one owner-only view — so
+    # it's a config list rather than a proper roles table. Checked against
+    # the requesting user's Clerk primary email (fetched from Clerk's
+    # Backend API, since session tokens don't carry email by default).
+    # Empty by default: nobody can list feedback until this is set, not
+    # even the dev-bypass user.
+    admin_emails: list[str] = []
+
 
 @lru_cache
 def get_settings() -> Settings:

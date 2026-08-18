@@ -10,6 +10,7 @@ opt-in and off by default, never enabled against a real deployment.
 
 from functools import lru_cache
 
+import httpx
 import jwt
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -59,6 +60,37 @@ def verify_session_token(token: str) -> str:
     if not sub:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token missing subject")
     return sub
+
+
+def get_clerk_primary_email(user_id: str) -> str | None:
+    """Look up a Clerk user's primary email via Clerk's Backend API.
+
+    Session tokens don't carry email by default, so the GET /feedback
+    admin-allowlist check (config.admin_emails) needs a live lookup rather
+    than reading it off the token. Only called on that one rarely-used
+    route, not the hot path. Any failure (network, unknown user, no
+    primary email set) fails closed — returns None rather than raising —
+    so a Clerk API hiccup denies access instead of accidentally granting it.
+    """
+    settings = get_settings()
+    if not settings.clerk_secret_key:
+        return None
+    try:
+        resp = httpx.get(
+            f"https://api.clerk.com/v1/users/{user_id}",
+            headers={"Authorization": f"Bearer {settings.clerk_secret_key}"},
+            timeout=5.0,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+    except (httpx.HTTPError, ValueError):
+        return None
+
+    primary_id = data.get("primary_email_address_id")
+    for entry in data.get("email_addresses", []):
+        if entry.get("id") == primary_id:
+            return entry.get("email_address")
+    return None
 
 
 def get_current_user_id(

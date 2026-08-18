@@ -7,7 +7,7 @@ TrackingMode = Literal["hours", "sessions"]
 AnchorRecurrence = Literal["daily", "weekly", "once"]
 DayType = Literal["NORMAL", "REDUCED", "LEAVE", "MISSED"]
 EventType = Literal["SCHOOL_OR_WORK", "SOCIAL", "PERSONAL", "TRAVEL", "OTHER"]
-FeedbackType = Literal["bug", "idea", "other"]
+FeedbackType = Literal["bug", "idea", "review", "other"]
 
 
 class ORMModel(BaseModel):
@@ -196,6 +196,35 @@ class FeedbackOut(ORMModel):
     type: FeedbackType
     message: str
     created_at: datetime
+
+
+class FeedbackAdminOut(BaseModel):
+    """GET /feedback (admin-only) — adds who sent it, joined from the User
+    table rather than a stored relationship (see models.Feedback).
+    """
+
+    id: str
+    type: FeedbackType
+    message: str
+    created_at: datetime
+    user_id: str
+    user_name: str
+    user_avatar: str
+
+
+# --- Admin allowlist -------------------------------------------------------------
+
+
+class AdminEmailCreate(BaseModel):
+    email: str
+
+
+class AdminEmailOut(BaseModel):
+    # None for the env-configured baseline — those have no DB row and can't
+    # be removed via the API (see deps.get_admin_email / routers/admin.py).
+    id: str | None
+    email: str
+    source: Literal["seed", "added"]
 
 
 # --- Computed / read models -----------------------------------------------------

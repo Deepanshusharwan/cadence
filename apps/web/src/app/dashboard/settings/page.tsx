@@ -4,8 +4,9 @@ import { useState } from "react";
 import Link from "next/link";
 import { Mark, MARKS, type MarkKey } from "@/components/marks";
 import { PencilIcon } from "@/components/icons";
-import { useStore, type TrackingMode, type AnchorRecurrence } from "@/lib/store";
+import { useStore, type Category, type TrackingMode, type AnchorRecurrence } from "@/lib/store";
 import { useToast } from "@/components/toast";
+import { textOnCategoryColor } from "@/lib/category-color";
 
 const TIER_LABELS = ["Tier 1", "Tier 2", "Tier 3", "Tier 4", "Tier 5"];
 
@@ -81,6 +82,11 @@ export default function SettingsPage() {
   const [newCatTarget, setNewCatTarget] = useState("");
   const [newCatTier, setNewCatTier] = useState(1);
   const [confirmingRemoveId, setConfirmingRemoveId] = useState<string | null>(null);
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [editCatName, setEditCatName] = useState("");
+  const [editCatMode, setEditCatMode] = useState<TrackingMode>("hours");
+  const [editCatTarget, setEditCatTarget] = useState("");
+  const [editCatTier, setEditCatTier] = useState(1);
 
   const [newAnchorLabel, setNewAnchorLabel] = useState("");
   const [newAnchorStart, setNewAnchorStart] = useState("09:00");
@@ -128,6 +134,26 @@ export default function SettingsPage() {
   function removeCategory(id: string, categoryName: string) {
     store.removeCategory(id);
     show(`Removed ${categoryName}`);
+  }
+
+  function startEditCategory(c: Category) {
+    setEditingCategoryId(c.id);
+    setEditCatName(c.name);
+    setEditCatMode(c.trackingMode);
+    setEditCatTarget(c.weeklyTarget === null ? "" : String(c.weeklyTarget));
+    setEditCatTier(c.priorityTier);
+  }
+
+  function saveEditCategory(id: string) {
+    if (!editCatName.trim()) return;
+    store.updateCategory(id, {
+      name: editCatName.trim(),
+      trackingMode: editCatMode,
+      weeklyTarget: editCatTarget.trim() === "" ? null : Number(editCatTarget),
+      priorityTier: editCatTier,
+    });
+    setEditingCategoryId(null);
+    show("Category updated");
   }
 
   function addAnchor() {
@@ -233,42 +259,127 @@ export default function SettingsPage() {
           Categories
         </p>
         <div className="mt-4 space-y-2">
-          {state.categories.map((c) => (
-            <div
-              key={c.id}
-              className={`flex items-center justify-between rounded-lg p-3 ${c.color} text-ink-black`}
-            >
-              <span className="font-semibold">{c.name}</span>
-              {confirmingRemoveId === c.id ? (
-                <div className="flex items-center gap-2">
-                  <span className="text-caption font-medium">Remove?</span>
-                  <button
-                    onClick={() => {
-                      removeCategory(c.id, c.name);
-                      setConfirmingRemoveId(null);
-                    }}
-                    className="rounded-full bg-ink-black/15 px-2.5 py-1 text-caption font-semibold hover:bg-ink-black/25"
-                  >
-                    Yes, remove
-                  </button>
-                  <button
-                    onClick={() => setConfirmingRemoveId(null)}
-                    className="rounded-full px-2.5 py-1 text-caption font-medium hover:bg-ink-black/10"
-                  >
-                    Cancel
-                  </button>
+          {state.categories.map((c) => {
+            const hasSessions = state.sessions.some((s) => s.categoryId === c.id);
+            const isEditing = editingCategoryId === c.id;
+
+            if (isEditing) {
+              return (
+                <div key={c.id} className={`rounded-lg p-3 ${c.color} ${textOnCategoryColor(c.color)}`}>
+                  <div className="space-y-2">
+                    <input
+                      autoFocus
+                      value={editCatName}
+                      onChange={(e) => setEditCatName(e.target.value)}
+                      className={`${inputClass} bg-pure-white`}
+                    />
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <select
+                        value={editCatMode}
+                        onChange={(e) => setEditCatMode(e.target.value as TrackingMode)}
+                        disabled={hasSessions}
+                        title={
+                          hasSessions
+                            ? "Locked — this category already has logged sessions"
+                            : undefined
+                        }
+                        className={`${inputClass} bg-pure-white ${hasSessions ? "opacity-50" : ""}`}
+                      >
+                        <option value="hours">Hours per week</option>
+                        <option value="sessions">Sessions per week</option>
+                      </select>
+                      <input
+                        type="number"
+                        min={0}
+                        value={editCatTarget}
+                        onChange={(e) => setEditCatTarget(e.target.value)}
+                        placeholder="Weekly target (blank = no minimum)"
+                        className={`${inputClass} bg-pure-white`}
+                      />
+                    </div>
+                    <select
+                      value={editCatTier}
+                      onChange={(e) => setEditCatTier(Number(e.target.value))}
+                      className={`${inputClass} bg-pure-white`}
+                    >
+                      {TIER_LABELS.map((label, i) => (
+                        <option key={label} value={i + 1}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                    {hasSessions ? (
+                      <p className="text-caption text-ink-black/70">
+                        Hours/sessions tracking is locked once a category has logged
+                        sessions — create a new category instead if you need to switch.
+                      </p>
+                    ) : null}
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => saveEditCategory(c.id)}
+                        disabled={!editCatName.trim()}
+                        className="rounded-full bg-ink-black/15 px-3 py-1 text-caption font-semibold hover:bg-ink-black/25 disabled:opacity-40"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={() => setEditingCategoryId(null)}
+                        className="rounded-full px-3 py-1 text-caption font-medium hover:bg-ink-black/10"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
                 </div>
-              ) : (
-                <button
-                  onClick={() => setConfirmingRemoveId(c.id)}
-                  className="rounded-full px-2 py-1 text-body-sm text-ink-black/50 hover:bg-ink-black/10"
-                  aria-label={`Remove ${c.name}`}
-                >
-                  ×
-                </button>
-              )}
-            </div>
-          ))}
+              );
+            }
+
+            return (
+              <div
+                key={c.id}
+                className={`flex items-center justify-between rounded-lg p-3 ${c.color} ${textOnCategoryColor(c.color)}`}
+              >
+                <span className="font-semibold">{c.name}</span>
+                {confirmingRemoveId === c.id ? (
+                  <div className="flex items-center gap-2">
+                    <span className="text-caption font-medium">Remove?</span>
+                    <button
+                      onClick={() => {
+                        removeCategory(c.id, c.name);
+                        setConfirmingRemoveId(null);
+                      }}
+                      className="rounded-full bg-ink-black/15 px-2.5 py-1 text-caption font-semibold hover:bg-ink-black/25"
+                    >
+                      Yes, remove
+                    </button>
+                    <button
+                      onClick={() => setConfirmingRemoveId(null)}
+                      className="rounded-full px-2.5 py-1 text-caption font-medium hover:bg-ink-black/10"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => startEditCategory(c)}
+                      aria-label={`Edit ${c.name}`}
+                      className="rounded-full p-1.5 text-ink-black/50 hover:bg-ink-black/10"
+                    >
+                      <PencilIcon className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setConfirmingRemoveId(c.id)}
+                      className="rounded-full px-2 py-1 text-body-sm text-ink-black/50 hover:bg-ink-black/10"
+                      aria-label={`Remove ${c.name}`}
+                    >
+                      ×
+                    </button>
+                  </div>
+                )}
+              </div>
+            );
+          })}
         </div>
 
         <div className="mt-4 grid gap-3 sm:grid-cols-2">

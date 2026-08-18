@@ -57,7 +57,22 @@ def update_category(
     )
     if category is None:
         raise HTTPException(status_code=404, detail="Category not found")
-    for field, value in payload.model_dump(exclude_unset=True).items():
+
+    changes = payload.model_dump(exclude_unset=True)
+    if "tracking_mode" in changes and changes["tracking_mode"] != category.tracking_mode:
+        has_sessions = (
+            db.query(models.StudySession).filter(models.StudySession.category_id == category_id).first()
+            is not None
+        )
+        if has_sessions:
+            raise HTTPException(
+                status_code=400,
+                detail="Can't change hours/sessions tracking on a category with logged sessions "
+                "— it would re-interpret their existing history under a different rule. "
+                "Create a new category instead.",
+            )
+
+    for field, value in changes.items():
         setattr(category, field, value)
     db.commit()
     db.refresh(category)

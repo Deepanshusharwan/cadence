@@ -1,8 +1,9 @@
-from fastapi import Depends
+from fastapi import Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from . import models
-from .auth import get_current_user_id
+from .auth import get_clerk_primary_email, get_current_user_id
+from .config import get_settings
 from .db import get_db
 
 # A reasonable starting template (spec §18) — the setup wizard's Schedule
@@ -44,3 +45,25 @@ def get_current_user(
         db.commit()
         db.refresh(user)
     return user
+
+
+def get_admin_email(
+    user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> str:
+    """Gate for the /admin/* and GET /feedback routes: the requester's real
+    Clerk email (fetched server-side, never trusted from the client — see
+    auth.get_clerk_primary_email) must be in config.admin_emails (the
+    permanent env-configured baseline) or the admin_emails DB table (added
+    via the admin UI on top of that baseline). Returns the resolved email
+    on success — callers use it for the delete-self-lockout guard.
+    """
+    email = get_clerk_primary_email(user.id)
+    if not email:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+
+    seed = {e.lower() for e in get_settings().admin_emails}
+    added = {row.email.lower() for row in db.query(models.AdminEmail).all()}
+    if email.lower() not in seed | added:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not authorized")
+    return email

@@ -139,6 +139,20 @@ class Feedback(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
 
 
+class AdminEmail(Base):
+    """Emails added to the GET /feedback allowlist from the admin UI, on top
+    of the permanent baseline in config.admin_emails (env-only, not
+    editable here — see deps.get_admin_email). Not tied to a Clerk/User
+    row: an email can be allowlisted before that person has ever signed up.
+    """
+
+    __tablename__ = "admin_emails"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    email: Mapped[str] = mapped_column(String, unique=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
+
+
 class WeeklyReview(Base):
     __tablename__ = "reviews"
 

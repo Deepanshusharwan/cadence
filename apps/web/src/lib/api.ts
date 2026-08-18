@@ -112,9 +112,15 @@ interface WireDayEntry {
 
 interface WireFeedback {
   id: string;
-  type: "bug" | "idea" | "other";
+  type: "bug" | "idea" | "review" | "other";
   message: string;
   created_at: string;
+}
+
+interface WireFeedbackAdmin extends WireFeedback {
+  user_id: string;
+  user_name: string;
+  user_avatar: string;
 }
 
 interface WireReview {
@@ -248,6 +254,22 @@ export interface ApiScheduleBlock {
 export interface ApiInsight {
   id: string;
   text: string;
+}
+
+export interface ApiFeedback {
+  id: string;
+  type: "bug" | "idea" | "review" | "other";
+  message: string;
+  createdAt: string;
+  userId: string;
+  userName: string;
+  userAvatar: string;
+}
+
+export interface ApiAdminEmail {
+  id: string | null;
+  email: string;
+  source: "seed" | "added";
 }
 
 const userFromWire = (w: WireUser): ApiUser => ({
@@ -459,8 +481,27 @@ export const api = {
       }),
     }).then(reviewFromWire),
 
-  submitFeedback: (input: { type: "bug" | "idea" | "other"; message: string }) =>
+  submitFeedback: (input: { type: ApiFeedback["type"]; message: string }) =>
     apiFetch<WireFeedback>("/feedback", { method: "POST", body: JSON.stringify(input) }).then(() => undefined),
+  listFeedback: () =>
+    apiFetch<WireFeedbackAdmin[]>("/feedback").then((rows) =>
+      rows.map(
+        (w): ApiFeedback => ({
+          id: w.id,
+          type: w.type,
+          message: w.message,
+          createdAt: w.created_at,
+          userId: w.user_id,
+          userName: w.user_name,
+          userAvatar: w.user_avatar,
+        })
+      )
+    ),
+
+  listAdminEmails: () => apiFetch<ApiAdminEmail[]>("/admin/emails"),
+  addAdminEmail: (email: string) =>
+    apiFetch<ApiAdminEmail>("/admin/emails", { method: "POST", body: JSON.stringify({ email }) }),
+  removeAdminEmail: (id: string) => apiFetch<void>(`/admin/emails/${id}`, { method: "DELETE" }),
 
   getLeaveBalance: () => apiFetch<WireLeaveBalance>("/leave").then(leaveFromWire),
   getStreakInfo: () => apiFetch<WireStreakInfo>("/streaks").then(streakInfoFromWire),

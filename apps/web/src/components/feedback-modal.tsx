@@ -1,15 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { api } from "@/lib/api";
+import { api, type ApiFeedback } from "@/lib/api";
 import { useToast } from "@/components/toast";
 import { CloseIcon } from "@/components/icons";
 
-type FeedbackType = "bug" | "idea" | "other";
+type FeedbackType = ApiFeedback["type"];
 
 const TYPES: { value: FeedbackType; label: string }[] = [
   { value: "bug", label: "Bug" },
   { value: "idea", label: "Idea" },
+  { value: "review", label: "Review" },
   { value: "other", label: "Other" },
 ];
 

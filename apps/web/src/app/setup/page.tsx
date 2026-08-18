@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Mark, MARKS, type MarkKey } from "@/components/marks";
 import { SparkleIcon } from "@/components/icons";
 import { useStore, type TrackingMode, type AnchorRecurrence } from "@/lib/store";
+import { textOnCategoryColor } from "@/lib/category-color";
 
 const STEPS = ["Identity", "Categories", "Schedule", "Review"] as const;
 
@@ -242,7 +243,7 @@ export default function SetupPage() {
                 {categories.map((c) => (
                   <div
                     key={c.id}
-                    className={`flex items-center justify-between rounded-lg p-3 ${c.color} text-ink-black`}
+                    className={`flex items-center justify-between rounded-lg p-3 ${c.color} ${textOnCategoryColor(c.color)}`}
                   >
                     <div>
                       <span className="font-semibold">{c.name}</span>

@@ -69,6 +69,31 @@ def test_category_not_found_for_other_user_scoped_id(client):
     assert resp.status_code == 404
 
 
+def test_category_tracking_mode_locked_once_sessions_exist(client):
+    cat = client.post(
+        "/categories",
+        json={"name": "Reading", "tracking_mode": "hours", "weekly_target": 5, "priority_tier": 1},
+    ).json()
+
+    # No sessions yet -- tracking_mode is still freely editable.
+    resp = client.patch(f"/categories/{cat['id']}", json={"tracking_mode": "sessions"})
+    assert resp.status_code == 200
+    assert resp.json()["tracking_mode"] == "sessions"
+
+    client.post(
+        "/sessions",
+        json={"category_id": cat["id"], "date": str(date.today()), "duration_minutes": 45, "tags": []},
+    )
+
+    resp = client.patch(f"/categories/{cat['id']}", json={"tracking_mode": "hours"})
+    assert resp.status_code == 400
+
+    # Other fields (name, target, tier) stay editable regardless.
+    resp = client.patch(f"/categories/{cat['id']}", json={"name": "Reading (renamed)", "priority_tier": 2})
+    assert resp.status_code == 200
+    assert resp.json()["name"] == "Reading (renamed)"
+
+
 def test_session_delete_does_not_orphan_history(client):
     cat = client.post(
         "/categories",
@@ -252,6 +277,117 @@ def test_feedback_create(client):
     assert body["type"] == "idea"
     assert body["message"] == "Add a Pomodoro timer mode"
     assert body["id"]
+
+
+def test_feedback_list_requires_admin(client):
+    client.post("/feedback", json={"type": "bug", "message": "Timer drifts on pause"})
+    resp = client.get("/feedback")
+    assert resp.status_code == 403
+
+
+def test_feedback_list_admin_sees_all(client, monkeypatch):
+    from app.config import get_settings
+
+    monkeypatch.setenv("ADMIN_EMAILS", '["owner@example.com"]')
+    monkeypatch.setattr("app.deps.get_clerk_primary_email", lambda user_id: "owner@example.com")
+    get_settings.cache_clear()
+    try:
+        client.post("/feedback", json={"type": "bug", "message": "Timer drifts on pause"})
+        client.post("/feedback", json={"type": "idea", "message": "Add a Pomodoro timer mode"})
+
+        resp = client.get("/feedback")
+        assert resp.status_code == 200
+        rows = resp.json()
+        messages = {row["message"] for row in rows}
+        assert messages == {"Timer drifts on pause", "Add a Pomodoro timer mode"}
+        assert all(row["user_id"] == "test-user" for row in rows)
+        assert all(row["user_avatar"] == "cat" for row in rows)  # default avatar
+    finally:
+        get_settings.cache_clear()
+
+
+def test_feedback_list_denies_email_not_in_allowlist(client, monkeypatch):
+    from app.config import get_settings
+
+    monkeypatch.setenv("ADMIN_EMAILS", '["owner@example.com"]')
+    monkeypatch.setattr("app.deps.get_clerk_primary_email", lambda user_id: "someone-else@example.com")
+    get_settings.cache_clear()
+    try:
+        resp = client.get("/feedback")
+        assert resp.status_code == 403
+    finally:
+        get_settings.cache_clear()
+
+
+def _as_admin(monkeypatch, email="owner@example.com"):
+    from app.config import get_settings
+
+    monkeypatch.setenv("ADMIN_EMAILS", f'["{email}"]')
+    monkeypatch.setattr("app.deps.get_clerk_primary_email", lambda user_id: email)
+    get_settings.cache_clear()
+    return get_settings
+
+
+def test_admin_emails_requires_admin(client):
+    resp = client.get("/admin/emails")
+    assert resp.status_code == 403
+
+
+def test_admin_can_list_add_remove_emails(client, monkeypatch):
+    get_settings = _as_admin(monkeypatch)
+    try:
+        resp = client.get("/admin/emails")
+        assert resp.status_code == 200
+        assert resp.json() == [{"id": None, "email": "owner@example.com", "source": "seed"}]
+
+        resp = client.post("/admin/emails", json={"email": "New@Example.com"})
+        assert resp.status_code == 201
+        added = resp.json()
+        assert added["email"] == "new@example.com"  # normalized to lowercase
+        assert added["source"] == "added"
+        assert added["id"]
+
+        emails = {row["email"] for row in client.get("/admin/emails").json()}
+        assert emails == {"owner@example.com", "new@example.com"}
+
+        resp = client.delete(f"/admin/emails/{added['id']}")
+        assert resp.status_code == 204
+        emails = {row["email"] for row in client.get("/admin/emails").json()}
+        assert emails == {"owner@example.com"}
+    finally:
+        get_settings.cache_clear()
+
+
+def test_admin_cannot_add_duplicate_email(client, monkeypatch):
+    get_settings = _as_admin(monkeypatch)
+    try:
+        resp = client.post("/admin/emails", json={"email": "owner@example.com"})
+        assert resp.status_code == 400
+    finally:
+        get_settings.cache_clear()
+
+
+def test_admin_cannot_remove_own_access(client, monkeypatch):
+    get_settings = _as_admin(monkeypatch, email="owner@example.com")
+    try:
+        # Owner (seeded) adds two DB-only admins.
+        second = client.post("/admin/emails", json={"email": "second-admin@example.com"}).json()
+        third = client.post("/admin/emails", json={"email": "third-admin@example.com"}).json()
+
+        # Switch identity to the DB-only "second-admin" and try to remove
+        # their own row -- this is exactly the self-lockout case, since
+        # unlike "owner" they have no seed fallback.
+        monkeypatch.setattr(
+            "app.deps.get_clerk_primary_email", lambda user_id: "second-admin@example.com"
+        )
+        resp = client.delete(f"/admin/emails/{second['id']}")
+        assert resp.status_code == 400
+
+        # "second-admin" removing a *different* DB admin is fine.
+        resp = client.delete(f"/admin/emails/{third['id']}")
+        assert resp.status_code == 204
+    finally:
+        get_settings.cache_clear()
 
 
 def test_review_upsert_and_get(client):
