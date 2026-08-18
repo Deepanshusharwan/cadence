@@ -48,7 +48,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 const inputClass =
-  "w-full rounded-lg border border-ink-black/12 bg-pure-white px-3 py-2 text-body-sm text-ink-black outline-none transition-colors focus:border-notion-blue";
+  "w-full rounded-lg border border-ink-black/12 bg-pure-white px-3 py-2 text-body-sm text-ink-black outline-none transition-colors focus:border-accent";
 
 export default function SetupPage() {
   const router = useRouter();
@@ -177,9 +177,9 @@ export default function SetupPage() {
               <div
                 className={`flex h-7 w-7 items-center justify-center rounded-full text-caption font-semibold transition-colors ${
                   i === step
-                    ? "bg-notion-blue text-pure-white"
+                    ? "bg-accent text-white"
                     : i < step
-                      ? "bg-marigold text-ink-black"
+                      ? "bg-marigold text-black"
                       : "bg-ink-black/8 text-ink-black/40"
                 }`}
               >
@@ -226,7 +226,7 @@ export default function SetupPage() {
                     onClick={() => setAvatar(key)}
                     className={`rounded-full p-1 transition-all duration-200 ease-out ${
                       avatar === key
-                        ? "scale-110 ring-2 ring-notion-blue ring-offset-2 ring-offset-paper-warmth"
+                        ? "scale-110 ring-2 ring-accent ring-offset-2 ring-offset-paper-warmth"
                         : "opacity-60 hover:opacity-100"
                     }`}
                   >
@@ -341,7 +341,7 @@ export default function SetupPage() {
                 type="button"
                 onClick={addCategory}
                 disabled={!newCatName.trim()}
-                className="mt-4 rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity hover:opacity-90 disabled:opacity-40"
+                className="mt-4 rounded-lg bg-accent px-4 py-2 text-body-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
               >
                 + Add category
               </button>
@@ -464,7 +464,7 @@ export default function SetupPage() {
                         onClick={() => toggleNewAnchorDay(w.day)}
                         className={`h-8 w-8 shrink-0 rounded-full text-caption font-semibold transition-colors ${
                           newAnchorDaysOfWeek.includes(w.day)
-                            ? "bg-notion-blue text-pure-white"
+                            ? "bg-accent text-white"
                             : "bg-ink-black/5 text-ink-black/50 hover:bg-ink-black/10"
                         }`}
                       >
@@ -508,7 +508,7 @@ export default function SetupPage() {
                           onClick={() => toggleNewAnchorCategory(c.id)}
                           className={`rounded-full px-3 py-1.5 text-caption font-medium transition-colors ${
                             newAnchorCategoryIds.includes(c.id)
-                              ? "bg-notion-blue text-pure-white"
+                              ? "bg-accent text-white"
                               : "bg-ink-black/5 text-ink-black/60 hover:bg-ink-black/10"
                           }`}
                         >
@@ -523,7 +523,7 @@ export default function SetupPage() {
                   type="button"
                   onClick={addAnchor}
                   disabled={!newAnchorLabel.trim()}
-                  className="rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity hover:opacity-90 disabled:opacity-40"
+                  className="rounded-lg bg-accent px-4 py-2 text-body-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
                 >
                   + Add anchor
                 </button>
@@ -589,7 +589,7 @@ export default function SetupPage() {
               type="button"
               onClick={() => setStep((s) => Math.min(STEPS.length - 1, s + 1))}
               disabled={!canProceed}
-              className="rounded-lg bg-notion-blue px-5 py-2.5 text-body-sm font-medium text-pure-white transition-opacity hover:opacity-90 disabled:opacity-40"
+              className="rounded-lg bg-accent px-5 py-2.5 text-body-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
             >
               Continue →
             </button>
@@ -597,7 +597,7 @@ export default function SetupPage() {
             <button
               type="button"
               onClick={finish}
-              className="rounded-lg bg-notion-blue px-5 py-2.5 text-body-sm font-medium text-pure-white transition-opacity hover:opacity-90"
+              className="rounded-lg bg-accent px-5 py-2.5 text-body-sm font-medium text-white transition-opacity hover:opacity-90"
             >
               Go to my dashboard →
             </button>

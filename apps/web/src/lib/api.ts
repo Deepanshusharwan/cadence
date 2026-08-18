@@ -98,6 +98,7 @@ interface WireUser {
   id: string;
   name: string;
   avatar: string;
+  accent_color: string;
   timezone: string;
   wake_start: string;
   wake_end: string;
@@ -260,6 +261,7 @@ export interface ApiUser {
   id: string;
   name: string;
   avatar: string;
+  accentColor: string;
   timezone: string;
   wakeStart: string;
   wakeEnd: string;
@@ -414,6 +416,7 @@ const userFromWire = (w: WireUser): ApiUser => ({
   id: w.id,
   name: w.name,
   avatar: w.avatar,
+  accentColor: w.accent_color,
   timezone: w.timezone,
   wakeStart: w.wake_start,
   wakeEnd: w.wake_end,
@@ -540,6 +543,7 @@ export const api = {
       body: JSON.stringify({
         name: patch.name,
         avatar: patch.avatar,
+        accent_color: patch.accentColor,
         timezone: patch.timezone,
         wake_start: patch.wakeStart,
         wake_end: patch.wakeEnd,

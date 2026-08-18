@@ -24,25 +24,25 @@ const DAY_TYPE_META: Record<
     label: "Normal",
     cost: "0 units",
     badgeClassName: "bg-ink-black/5 text-ink-black/60",
-    activeClassName: "bg-notion-blue text-pure-white",
+    activeClassName: "bg-accent text-white",
   },
   REDUCED: {
     label: "Reduced",
     cost: "1 unit",
-    badgeClassName: "bg-sky-tint text-notion-blue",
-    activeClassName: "bg-notion-blue text-pure-white",
+    badgeClassName: "bg-sky-tint text-accent",
+    activeClassName: "bg-accent text-white",
   },
   LEAVE: {
     label: "Full Leave",
     cost: "2 units",
-    badgeClassName: "bg-marigold text-ink-black",
-    activeClassName: "bg-notion-blue text-pure-white",
+    badgeClassName: "bg-marigold text-black",
+    activeClassName: "bg-accent text-white",
   },
   MISSED: {
     label: "Missed",
     cost: "0 units",
-    badgeClassName: "bg-terracotta text-ink-black",
-    activeClassName: "bg-notion-blue text-pure-white",
+    badgeClassName: "bg-terracotta text-black",
+    activeClassName: "bg-accent text-white",
   },
 };
 
@@ -59,7 +59,7 @@ const EVENT_TYPE_LABELS: Record<EventType, string> = {
 const EVENT_TYPE_ORDER: EventType[] = ["SCHOOL_OR_WORK", "SOCIAL", "PERSONAL", "TRAVEL", "OTHER"];
 
 const dayFormInputClass =
-  "w-full rounded-lg border border-ink-black/12 bg-pure-white px-3 py-2 text-body-sm text-ink-black outline-none transition-colors focus:border-notion-blue";
+  "w-full rounded-lg border border-ink-black/12 bg-pure-white px-3 py-2 text-body-sm text-ink-black outline-none transition-colors focus:border-accent";
 
 function toISO(d: Date) {
   const y = d.getFullYear();
@@ -326,12 +326,12 @@ function DayView({
           {!isToday ? (
             <button
               onClick={onJumpToday}
-              className="mt-0.5 text-caption font-medium text-notion-blue hover:opacity-80"
+              className="mt-0.5 text-caption font-medium text-accent hover:opacity-80"
             >
               Jump to today
             </button>
           ) : (
-            <span className="mt-0.5 inline-block text-caption font-medium text-notion-blue">Today</span>
+            <span className="mt-0.5 inline-block text-caption font-medium text-accent">Today</span>
           )}
         </div>
         <button
@@ -372,7 +372,7 @@ function DayView({
               const category = categories.find((c) => c.id === s.categoryId);
               if (editingId === s.id) {
                 return (
-                  <div key={s.id} className="space-y-2 rounded-lg border border-notion-blue/40 p-3">
+                  <div key={s.id} className="space-y-2 rounded-lg border border-accent/40 p-3">
                     <div className="flex gap-2">
                       <select
                         value={editCategoryId}
@@ -402,7 +402,7 @@ function DayView({
                     <div className="flex gap-2">
                       <button
                         onClick={() => saveEdit(s.id)}
-                        className="rounded-lg bg-notion-blue px-3 py-1.5 text-caption font-medium text-pure-white hover:opacity-90"
+                        className="rounded-lg bg-accent px-3 py-1.5 text-caption font-medium text-white hover:opacity-90"
                       >
                         Save
                       </button>
@@ -575,7 +575,7 @@ function DayView({
           <button
             onClick={addEvent}
             disabled={!newEventTitle.trim()}
-            className="rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity hover:opacity-90 disabled:opacity-40"
+            className="rounded-lg bg-accent px-4 py-2 text-body-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
           >
             + Add event
           </button>
@@ -660,7 +660,7 @@ function WeekView({
             <div
               key={dateISO}
               className={`rounded-xl border bg-pure-white p-3 ${
-                isToday ? "border-notion-blue ring-1 ring-notion-blue" : "border-ink-black/8"
+                isToday ? "border-accent ring-1 ring-accent" : "border-ink-black/8"
               }`}
             >
               <button
@@ -671,7 +671,7 @@ function WeekView({
                   {WEEKDAY_LABELS[d.getDay() === 0 ? 6 : d.getDay() - 1]} {d.getDate()}
                 </span>
                 {isToday ? (
-                  <span className="rounded-full bg-notion-blue px-1.5 py-0.5 text-[10px] font-semibold text-pure-white">
+                  <span className="rounded-full bg-accent px-1.5 py-0.5 text-[10px] font-semibold text-white">
                     Today
                   </span>
                 ) : null}
@@ -780,7 +780,7 @@ function MonthView({
               onClick={() => onSelectDay(d)}
               className={`relative flex aspect-square flex-col items-center justify-center gap-0.5 rounded-lg border p-1 transition-colors hover:bg-ink-black/5 ${
                 isToday
-                  ? "border-notion-blue ring-1 ring-notion-blue"
+                  ? "border-accent ring-1 ring-accent"
                   : inMonth
                     ? "border-ink-black/8 bg-pure-white"
                     : "border-transparent"

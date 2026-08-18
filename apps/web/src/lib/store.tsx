@@ -74,6 +74,7 @@ export type Plan = "free" | "plus" | "pro";
 export interface Profile {
   name: string;
   avatar: MarkKey | ProMarkKey;
+  accentColor: string;
   plan: Plan;
 }
 
@@ -149,7 +150,7 @@ const EMPTY_STREAK_INFO: StreakInfo = { current: EMPTY_STREAK_RUN, longest: EMPT
 
 const DEFAULT_STATE: State = {
   onboarded: false,
-  profile: { name: "", avatar: "cat", plan: "free" },
+  profile: { name: "", avatar: "cat", accentColor: "notion-blue", plan: "free" },
   categories: [],
   wakeStart: "06:00",
   wakeEnd: "08:00",
@@ -328,7 +329,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setState((s) => ({
           ...s,
           onboarded: me.onboarded,
-          profile: { name: me.name, avatar: me.avatar as MarkKey | ProMarkKey, plan: me.plan },
+          profile: {
+            name: me.name,
+            avatar: me.avatar as MarkKey | ProMarkKey,
+            accentColor: me.accentColor,
+            plan: me.plan,
+          },
           wakeStart: me.wakeStart,
           wakeEnd: me.wakeEnd,
           settings: {

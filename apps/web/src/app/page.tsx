@@ -49,10 +49,10 @@ const PHILOSOPHY_CARDS = [
 const CATEGORIES = [
   { name: "Study", tier: "Tier 1", target: "8h / week", bg: "bg-marigold", text: "text-ink-black" },
   { name: "Career Growth", tier: "Tier 1", target: "6h / week", bg: "bg-terracotta", text: "text-ink-black" },
-  { name: "Fitness", tier: "Tier 2", target: "4 sessions / week", bg: "bg-signal-blue", text: "text-pure-white" },
+  { name: "Fitness", tier: "Tier 2", target: "4 sessions / week", bg: "bg-signal-blue", text: "text-white" },
   { name: "New Skill", tier: "Tier 3", target: "No minimum", bg: "bg-sky-wash", text: "text-ink-black" },
   { name: "Reading", tier: "Tier 4", target: "No minimum", bg: "bg-orchid", text: "text-ink-black" },
-  { name: "Side Project", tier: "Weekends", target: "~5h", bg: "bg-midnight-ink", text: "text-pure-white" },
+  { name: "Side Project", tier: "Weekends", target: "~5h", bg: "bg-midnight-ink", text: "text-white" },
 ];
 
 const DAY_TYPES = [
@@ -199,7 +199,7 @@ export default function Home() {
               <SquiggleArrowIcon className="pointer-events-none absolute -left-14 -top-1 hidden h-10 w-20 text-ink-black/25 lg:block" />
               <Link
                 href="/sign-in"
-                className="rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity duration-200 ease-out hover:opacity-90"
+                className="rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-white transition-opacity duration-200 ease-out hover:opacity-90"
               >
                 Get Cadence Free
               </Link>
@@ -245,7 +245,7 @@ export default function Home() {
             <div className="pointer-events-none absolute -right-24 top-14 hidden lg:block">
               <Mark src={MARKS.pinkHair} size={44} className="shadow-[0px_2px_6px_rgba(0,0,0,0.12)]" />
               <span className="absolute -bottom-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-signal-blue ring-2 ring-paper-warmth">
-                <SparkleIcon className="h-2.5 w-2.5 text-pure-white" />
+                <SparkleIcon className="h-2.5 w-2.5 text-white" />
               </span>
             </div>
             <Mark
@@ -508,32 +508,32 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="order-1 rounded-xl bg-midnight-ink p-6 text-pure-white md:order-2">
-              <p className="text-caption font-medium uppercase tracking-wide text-pure-white/50">
+            <div className="order-1 rounded-xl bg-midnight-ink p-6 text-white md:order-2">
+              <p className="text-caption font-medium uppercase tracking-wide text-white/50">
                 Leave balance
               </p>
               <div className="mt-4 grid grid-cols-2 gap-4">
                 <div>
-                  <p className="text-caption text-pure-white/50">Current month</p>
+                  <p className="text-caption text-white/50">Current month</p>
                   <p className="mt-1 text-heading-sm font-bold">7 units</p>
                 </div>
                 <div>
-                  <p className="text-caption text-pure-white/50">Carried</p>
+                  <p className="text-caption text-white/50">Carried</p>
                   <p className="mt-1 text-heading-sm font-bold">3 units</p>
                 </div>
                 <div>
-                  <p className="text-caption text-pure-white/50">Total available</p>
+                  <p className="text-caption text-white/50">Total available</p>
                   <p className="mt-1 text-heading-sm font-bold">10 units</p>
                 </div>
                 <div>
-                  <p className="text-caption text-pure-white/50">Used</p>
+                  <p className="text-caption text-white/50">Used</p>
                   <p className="mt-1 text-heading-sm font-bold">2 units</p>
                 </div>
               </div>
-              <p className="mt-6 rounded-lg bg-pure-white/10 px-4 py-3 text-body-sm text-pure-white/80">
+              <p className="mt-6 rounded-lg bg-pure-white/10 px-4 py-3 text-body-sm text-white/80">
                 3 carried units expire at month end
               </p>
-              <p className="mt-3 text-caption text-pure-white/40">
+              <p className="mt-3 text-caption text-white/40">
                 Example allowance shown — set your own in Settings
               </p>
             </div>
@@ -663,11 +663,11 @@ export default function Home() {
             className="pointer-events-none absolute left-12 bottom-12 hidden ring-2 ring-pure-white/20 lg:block"
           />
           <div className="mx-auto max-w-3xl px-6 text-center">
-            <p className="font-serif text-[32px] leading-[1.25] text-pure-white">
+            <p className="font-serif text-[32px] leading-[1.25] text-white">
               &ldquo;The timetable exists to serve the user&apos;s goals and life. The
               user does not exist to serve the timetable.&rdquo;
             </p>
-            <p className="mt-6 text-caption font-medium uppercase tracking-wide text-pure-white/50">
+            <p className="mt-6 text-caption font-medium uppercase tracking-wide text-white/50">
               Design principle, Cadence
             </p>
           </div>

@@ -127,7 +127,7 @@ export default function ReviewPage() {
             </p>
             <Link
               href="/dashboard/settings"
-              className="mt-4 rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity hover:opacity-90"
+              className="mt-4 rounded-lg bg-accent px-4 py-2 text-body-sm font-medium text-white transition-opacity hover:opacity-90"
             >
               + Add your first category
             </Link>
@@ -179,7 +179,7 @@ export default function ReviewPage() {
               value={review.wins}
               onChange={(e) => store.saveReview(weekKey, { wins: e.target.value })}
               rows={2}
-              className="mt-1.5 w-full rounded-lg border border-ink-black/12 bg-pure-white px-3 py-2 text-body-sm text-ink-black outline-none transition-colors focus:border-notion-blue"
+              className="mt-1.5 w-full rounded-lg border border-ink-black/12 bg-pure-white px-3 py-2 text-body-sm text-ink-black outline-none transition-colors focus:border-accent"
             />
           </label>
           <label className="block">
@@ -190,7 +190,7 @@ export default function ReviewPage() {
               value={review.problems}
               onChange={(e) => store.saveReview(weekKey, { problems: e.target.value })}
               rows={2}
-              className="mt-1.5 w-full rounded-lg border border-ink-black/12 bg-pure-white px-3 py-2 text-body-sm text-ink-black outline-none transition-colors focus:border-notion-blue"
+              className="mt-1.5 w-full rounded-lg border border-ink-black/12 bg-pure-white px-3 py-2 text-body-sm text-ink-black outline-none transition-colors focus:border-accent"
             />
           </label>
           <label className="block">
@@ -201,13 +201,13 @@ export default function ReviewPage() {
               value={review.nextWeekChanges}
               onChange={(e) => store.saveReview(weekKey, { nextWeekChanges: e.target.value })}
               rows={2}
-              className="mt-1.5 w-full rounded-lg border border-ink-black/12 bg-pure-white px-3 py-2 text-body-sm text-ink-black outline-none transition-colors focus:border-notion-blue"
+              className="mt-1.5 w-full rounded-lg border border-ink-black/12 bg-pure-white px-3 py-2 text-body-sm text-ink-black outline-none transition-colors focus:border-accent"
             />
           </label>
         </div>
         <button
           onClick={save}
-          className="mt-4 rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity hover:opacity-90"
+          className="mt-4 rounded-lg bg-accent px-4 py-2 text-body-sm font-medium text-white transition-opacity hover:opacity-90"
         >
           Save review
         </button>

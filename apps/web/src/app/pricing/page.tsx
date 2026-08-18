@@ -231,7 +231,7 @@ export default function PricingPage() {
                     onClick={() => setCadence(c.key)}
                     className={`flex flex-col items-center rounded-md px-3 py-1.5 text-body-sm font-medium transition-colors duration-200 ease-out ${
                       active
-                        ? "bg-notion-blue text-pure-white"
+                        ? "bg-notion-blue text-white"
                         : "text-ink-black/60 hover:text-ink-black"
                     }`}
                   >
@@ -239,7 +239,7 @@ export default function PricingPage() {
                     {badge ? (
                       <span
                         className={`text-[10px] font-medium uppercase tracking-wide ${
-                          active ? "text-pure-white/70" : "text-notion-blue/70"
+                          active ? "text-white/70" : "text-notion-blue/70"
                         }`}
                       >
                         {badge}
@@ -299,7 +299,7 @@ export default function PricingPage() {
 
             {/* Plus */}
             <div className="relative rounded-xl border-2 border-notion-blue bg-sky-tint p-6">
-              <span className="absolute -top-3 left-6 rounded-full bg-notion-blue px-3 py-1 text-caption font-medium uppercase tracking-wide text-pure-white">
+              <span className="absolute -top-3 left-6 rounded-full bg-notion-blue px-3 py-1 text-caption font-medium uppercase tracking-wide text-white">
                 Most popular
               </span>
               <div className="absolute right-5 top-5 flex -space-x-3">
@@ -334,7 +334,7 @@ export default function PricingPage() {
                 type="button"
                 onClick={handleStartPlus}
                 disabled={checkoutLoading}
-                className="mt-6 block w-full rounded-lg bg-notion-blue px-4 py-2 text-center text-body-sm font-medium text-pure-white transition-opacity duration-200 ease-out hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-6 block w-full rounded-lg bg-notion-blue px-4 py-2 text-center text-body-sm font-medium text-white transition-opacity duration-200 ease-out hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {checkoutLoading
                   ? "Redirecting…"
@@ -427,13 +427,13 @@ export default function PricingPage() {
             size={40}
             className="pointer-events-none absolute right-12 top-10 hidden ring-2 ring-pure-white/20 lg:block"
           />
-          <SquiggleArrowIcon className="pointer-events-none absolute left-1/3 top-8 hidden h-8 w-14 text-pure-white/20 lg:block" />
+          <SquiggleArrowIcon className="pointer-events-none absolute left-1/3 top-8 hidden h-8 w-14 text-white/20 lg:block" />
           <div className="mx-auto max-w-2xl px-6 text-center">
-            <p className="font-serif text-[32px] leading-[1.25] text-pure-white">
+            <p className="font-serif text-[32px] leading-[1.25] text-white">
               &ldquo;The timetable exists to serve the user&apos;s goals and life. The
               user does not exist to serve the timetable.&rdquo;
             </p>
-            <p className="mt-6 text-caption font-medium uppercase tracking-wide text-pure-white/50">
+            <p className="mt-6 text-caption font-medium uppercase tracking-wide text-white/50">
               That includes pricing — free stays genuinely useful, on purpose.
             </p>
           </div>

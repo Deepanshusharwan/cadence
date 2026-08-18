@@ -4,6 +4,8 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { StoreProvider } from "@/lib/store";
 import { ToastProvider } from "@/components/toast";
 import { ClerkTokenBridge } from "@/components/clerk-token-bridge";
+import { AccentApplier } from "@/components/accent-applier";
+import { THEME_INIT_SCRIPT } from "@/lib/theme";
 import "./globals.css";
 
 const inter = Inter({
@@ -29,9 +31,13 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         lang="en"
         className={`${inter.variable} ${sourceSerif.variable} font-sans antialiased`}
       >
+        <head>
+          <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        </head>
         <body className="min-h-full flex flex-col">
           <ClerkTokenBridge />
           <StoreProvider>
+            <AccentApplier />
             <ToastProvider>{children}</ToastProvider>
           </StoreProvider>
         </body>

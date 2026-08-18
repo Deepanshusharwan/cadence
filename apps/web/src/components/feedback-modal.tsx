@@ -71,7 +71,7 @@ export function FeedbackModal({ onClose }: { onClose: () => void }) {
               onClick={() => setType(t.value)}
               className={`rounded-lg px-3 py-1.5 text-body-sm font-medium transition-colors ${
                 type === t.value
-                  ? "bg-sky-tint text-notion-blue"
+                  ? "bg-sky-tint text-accent"
                   : "text-ink-black/60 hover:bg-ink-black/5 hover:text-ink-black"
               }`}
             >
@@ -86,7 +86,7 @@ export function FeedbackModal({ onClose }: { onClose: () => void }) {
           rows={4}
           placeholder="What's on your mind?"
           autoFocus
-          className="mt-3 w-full resize-none rounded-lg border border-ink-black/12 px-3 py-2 text-body-sm text-ink-black placeholder:text-ink-black/30 focus:border-notion-blue focus:outline-none"
+          className="mt-3 w-full resize-none rounded-lg border border-ink-black/12 px-3 py-2 text-body-sm text-ink-black placeholder:text-ink-black/30 focus:border-accent focus:outline-none"
         />
 
         <div className="mt-4 flex justify-end gap-2">
@@ -101,7 +101,7 @@ export function FeedbackModal({ onClose }: { onClose: () => void }) {
             type="button"
             onClick={submit}
             disabled={!message.trim() || submitting}
-            className="rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity hover:opacity-90 disabled:opacity-40"
+            className="rounded-lg bg-accent px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity hover:opacity-90 disabled:opacity-40"
           >
             {submitting ? "Sending…" : "Send"}
           </button>

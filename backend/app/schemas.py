@@ -22,6 +22,7 @@ class UserOut(ORMModel):
     id: str
     name: str
     avatar: str
+    accent_color: str
     timezone: str
     wake_start: str
     wake_end: str
@@ -37,6 +38,7 @@ class UserUpdate(BaseModel):
     # can never touch it.
     name: str | None = None
     avatar: str | None = None
+    accent_color: str | None = None
     timezone: str | None = None
     wake_start: str | None = None
     wake_end: str | None = None

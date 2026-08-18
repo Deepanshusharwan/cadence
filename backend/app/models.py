@@ -26,6 +26,11 @@ class User(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True)  # Clerk user id
     name: Mapped[str] = mapped_column(String, default="")
     avatar: Mapped[str] = mapped_column(String, default="cat")
+    # One of the existing design-system accent tokens (e.g. "notion-blue",
+    # "coral", "marigold") -- self-service like avatar, no Plus check at
+    # the model/DB level (the picker UI itself is what's gated, same as
+    # every other cosmetic Plus feature in this app).
+    accent_color: Mapped[str] = mapped_column(String, default="notion-blue")
     # "free" | "plus" | "pro". No billing integration exists yet (see
     # docs/deployment.md / the pricing-plan work) — nothing sets this except
     # the admin-only PATCH /admin/users/{id}/plan, reusing the same

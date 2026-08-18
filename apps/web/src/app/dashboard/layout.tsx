@@ -134,13 +134,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <Link
             href="/"
             aria-label="Cadence"
-            className="mx-auto flex h-9 w-9 items-center justify-center rounded-lg border border-ink-black/8 bg-pure-white text-notion-blue"
+            className="mx-auto flex h-9 w-9 items-center justify-center rounded-lg border border-ink-black/8 bg-pure-white text-accent"
           >
             <CadenceMark className="h-5 w-5" />
           </Link>
         ) : (
           <Link href="/" className="flex items-center gap-2 px-2">
-            <CadenceMark className="h-5 w-5 shrink-0 text-notion-blue" />
+            <CadenceMark className="h-5 w-5 shrink-0 text-accent" />
             <span className="text-heading-sm font-bold tracking-[-0.242px] text-ink-black">
               Cadence
             </span>
@@ -159,7 +159,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   collapsed ? "justify-center px-0" : "px-3"
                 } ${
                   active
-                    ? "bg-sky-tint text-notion-blue"
+                    ? "bg-sky-tint text-accent"
                     : "text-ink-black/60 hover:bg-ink-black/5 hover:text-ink-black"
                 }`}
               >
@@ -219,7 +219,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               href={item.href}
               className={`rounded-lg px-2.5 py-1.5 text-caption font-medium ${
                 pathname === item.href
-                  ? "bg-sky-tint text-notion-blue"
+                  ? "bg-sky-tint text-accent"
                   : "text-ink-black/50"
               }`}
             >

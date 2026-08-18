@@ -19,7 +19,7 @@ import { useToast } from "@/components/toast";
 
 const TYPE_STYLES: Record<ApiFeedback["type"], string> = {
   bug: "bg-coral/15 text-coral",
-  idea: "bg-sky-tint text-notion-blue",
+  idea: "bg-sky-tint text-accent",
   review: "bg-marigold/20 text-[#8a5a00]",
   other: "bg-ink-black/5 text-ink-black/60",
 };
@@ -105,13 +105,13 @@ function AdminEmailManager() {
           onChange={(e) => setNewEmail(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && add()}
           placeholder="Add another email…"
-          className="flex-1 rounded-lg border border-ink-black/12 px-3 py-1.5 text-body-sm text-ink-black placeholder:text-ink-black/30 focus:border-notion-blue focus:outline-none"
+          className="flex-1 rounded-lg border border-ink-black/12 px-3 py-1.5 text-body-sm text-ink-black placeholder:text-ink-black/30 focus:border-accent focus:outline-none"
         />
         <button
           type="button"
           onClick={add}
           disabled={!newEmail.trim() || busy}
-          className="shrink-0 rounded-lg bg-notion-blue px-3 py-1.5 text-body-sm font-medium text-pure-white hover:opacity-90 disabled:opacity-40"
+          className="shrink-0 rounded-lg bg-accent px-3 py-1.5 text-body-sm font-medium text-white hover:opacity-90 disabled:opacity-40"
         >
           Add
         </button>
@@ -165,7 +165,7 @@ export default function FeedbackAdminPage() {
     <div className="mx-auto max-w-2xl">
       <div className="flex items-center justify-between">
         <h1 className="text-heading-lg font-semibold text-ink-black">Feedback</h1>
-        <Link href="/dashboard/users" className="text-body-sm text-notion-blue hover:opacity-80">
+        <Link href="/dashboard/users" className="text-body-sm text-accent hover:opacity-80">
           Manage users →
         </Link>
       </div>
@@ -183,7 +183,7 @@ export default function FeedbackAdminPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search by user or message…"
-            className="w-full rounded-lg border border-ink-black/12 py-2 pl-9 pr-3 text-body-sm text-ink-black placeholder:text-ink-black/30 focus:border-notion-blue focus:outline-none"
+            className="w-full rounded-lg border border-ink-black/12 py-2 pl-9 pr-3 text-body-sm text-ink-black placeholder:text-ink-black/30 focus:border-accent focus:outline-none"
           />
         </div>
 
@@ -196,7 +196,7 @@ export default function FeedbackAdminPage() {
                 onClick={() => setTypeFilter(t)}
                 className={`rounded-full px-3 py-1 text-caption font-medium uppercase tracking-wide transition-colors ${
                   typeFilter === t
-                    ? "bg-notion-blue text-pure-white"
+                    ? "bg-accent text-white"
                     : "bg-ink-black/5 text-ink-black/60 hover:bg-ink-black/10"
                 }`}
               >
@@ -210,14 +210,14 @@ export default function FeedbackAdminPage() {
               type="date"
               value={from}
               onChange={(e) => setFrom(e.target.value)}
-              className="rounded-lg border border-ink-black/12 px-2 py-1 text-caption text-ink-black focus:border-notion-blue focus:outline-none"
+              className="rounded-lg border border-ink-black/12 px-2 py-1 text-caption text-ink-black focus:border-accent focus:outline-none"
             />
             <span>–</span>
             <input
               type="date"
               value={to}
               onChange={(e) => setTo(e.target.value)}
-              className="rounded-lg border border-ink-black/12 px-2 py-1 text-caption text-ink-black focus:border-notion-blue focus:outline-none"
+              className="rounded-lg border border-ink-black/12 px-2 py-1 text-caption text-ink-black focus:border-accent focus:outline-none"
             />
             {(from || to) && (
               <button

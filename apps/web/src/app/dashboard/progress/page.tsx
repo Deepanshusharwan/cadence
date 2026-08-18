@@ -160,7 +160,7 @@ export default function ProgressPage() {
             </p>
             <Link
               href="/dashboard/settings"
-              className="mt-4 rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity hover:opacity-90"
+              className="mt-4 rounded-lg bg-accent px-4 py-2 text-body-sm font-medium text-white transition-opacity hover:opacity-90"
             >
               Add a category
             </Link>
@@ -337,7 +337,7 @@ export default function ProgressPage() {
             value={historyQuery}
             onChange={(e) => setHistoryQuery(e.target.value)}
             placeholder="Search category or tag…"
-            className="min-w-0 flex-1 rounded-lg border border-ink-black/12 bg-pure-white px-3 py-2 text-body-sm text-ink-black outline-none transition-colors focus:border-notion-blue"
+            className="min-w-0 flex-1 rounded-lg border border-ink-black/12 bg-pure-white px-3 py-2 text-body-sm text-ink-black outline-none transition-colors focus:border-accent"
           />
           <select
             value={historyCategoryId}

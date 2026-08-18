@@ -19,7 +19,7 @@ const PLANS: Plan[] = ["free", "plus", "pro"];
 
 const PLAN_STYLES: Record<Plan, string> = {
   free: "bg-ink-black/5 text-ink-black/60",
-  plus: "bg-sky-tint text-notion-blue",
+  plus: "bg-sky-tint text-accent",
   pro: "bg-marigold/20 text-[#8a5a00]",
 };
 
@@ -83,7 +83,7 @@ export default function UsersAdminPage() {
     <div className="mx-auto max-w-2xl">
       <div className="flex items-center justify-between">
         <h1 className="text-heading-lg font-semibold text-ink-black">Users</h1>
-        <Link href="/dashboard/feedback" className="text-body-sm text-notion-blue hover:opacity-80">
+        <Link href="/dashboard/feedback" className="text-body-sm text-accent hover:opacity-80">
           View feedback →
         </Link>
       </div>
@@ -98,7 +98,7 @@ export default function UsersAdminPage() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           placeholder="Search by name or user id…"
-          className="w-full rounded-lg border border-ink-black/12 py-2 pl-9 pr-3 text-body-sm text-ink-black placeholder:text-ink-black/30 focus:border-notion-blue focus:outline-none"
+          className="w-full rounded-lg border border-ink-black/12 py-2 pl-9 pr-3 text-body-sm text-ink-black placeholder:text-ink-black/30 focus:border-accent focus:outline-none"
         />
       </div>
 
@@ -169,7 +169,7 @@ export default function UsersAdminPage() {
                     type="button"
                     disabled={busyId === u.id}
                     onClick={() => toggleBanned(u.id, false)}
-                    className="text-caption font-medium text-notion-blue hover:opacity-80 disabled:opacity-40"
+                    className="text-caption font-medium text-accent hover:opacity-80 disabled:opacity-40"
                   >
                     Unban
                   </button>

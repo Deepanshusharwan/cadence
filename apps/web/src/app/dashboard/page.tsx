@@ -187,7 +187,7 @@ export default function DashboardPage() {
       {/* Status strip */}
       <div className="mt-4 flex flex-wrap items-center gap-2">
         {streak > 0 ? (
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-marigold px-3 py-1.5 text-caption font-semibold text-ink-black">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-marigold px-3 py-1.5 text-caption font-semibold text-black">
             <FlameIcon className="h-3.5 w-3.5" />
             {streak}-day streak
           </span>
@@ -223,7 +223,7 @@ export default function DashboardPage() {
             }}
             className={`rounded-full px-3 py-1.5 text-caption font-medium uppercase tracking-wide transition-colors ${
               dayType === type
-                ? "bg-notion-blue text-pure-white"
+                ? "bg-accent text-white"
                 : "bg-ink-black/5 text-ink-black/50 hover:bg-ink-black/10"
             }`}
           >
@@ -298,7 +298,7 @@ export default function DashboardPage() {
                   <button
                     onClick={() => startTimerFor(timerCategoryId)}
                     disabled={!timerCategoryId}
-                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity hover:opacity-90 disabled:opacity-40"
+                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2 text-body-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
                   >
                     <PlayIcon className="h-4 w-4" />
                     Start session
@@ -399,7 +399,7 @@ export default function DashboardPage() {
             </p>
             <Link
               href="/dashboard/settings"
-              className="mt-4 rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity hover:opacity-90"
+              className="mt-4 rounded-lg bg-accent px-4 py-2 text-body-sm font-medium text-white transition-opacity hover:opacity-90"
             >
               + Add your first category
             </Link>

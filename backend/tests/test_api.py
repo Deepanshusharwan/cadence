@@ -29,6 +29,15 @@ def test_me_lazily_creates_user(client):
     assert resp.json()["onboarded"] is True
 
 
+def test_accent_color_defaults_and_updates_via_patch_me(client):
+    resp = client.get("/me")
+    assert resp.json()["accent_color"] == "notion-blue"
+
+    resp = client.patch("/me", json={"accent_color": "coral"})
+    assert resp.status_code == 200
+    assert resp.json()["accent_color"] == "coral"
+
+
 def test_new_user_gets_starter_anchors(client):
     client.get("/me")  # triggers lazy creation
     anchors = client.get("/anchors").json()

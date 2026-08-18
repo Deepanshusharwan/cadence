@@ -8,6 +8,17 @@ import { useStore, type Category, type TrackingMode, type AnchorRecurrence } fro
 import { useToast } from "@/components/toast";
 import { textOnCategoryColor } from "@/lib/category-color";
 import { api, API_URL, type ApiCalendarFeed, type ApiShareLink } from "@/lib/api";
+import { getStoredTheme, setStoredTheme, type ThemeMode } from "@/lib/theme";
+
+const ACCENT_OPTIONS: { key: string; className: string; label: string }[] = [
+  { key: "notion-blue", className: "bg-notion-blue", label: "Blue (default)" },
+  { key: "coral", className: "bg-coral", label: "Coral" },
+  { key: "marigold", className: "bg-marigold", label: "Marigold" },
+  { key: "signal-blue", className: "bg-signal-blue", label: "Signal blue" },
+  { key: "orchid", className: "bg-orchid", label: "Orchid" },
+  { key: "denim", className: "bg-denim", label: "Denim" },
+  { key: "terracotta", className: "bg-terracotta", label: "Terracotta" },
+];
 import { PlusGate } from "@/components/plus-gate";
 
 function downloadBlob(blob: Blob, filename: string) {
@@ -44,7 +55,7 @@ function describeRecurrence(a: { recurrence: AnchorRecurrence; date: string | nu
 }
 
 const inputClass =
-  "w-full rounded-lg border border-ink-black/12 bg-pure-white px-3 py-2 text-body-sm text-ink-black outline-none transition-colors focus:border-notion-blue";
+  "w-full rounded-lg border border-ink-black/12 bg-pure-white px-3 py-2 text-body-sm text-ink-black outline-none transition-colors focus:border-accent";
 
 // `Intl.supportedValuesOf` isn't in every browser's lib.dom.d.ts yet — feature-detect at
 // runtime and fall back to a short curated list so the picker still works everywhere.
@@ -132,6 +143,20 @@ export default function SettingsPage() {
     navigator.clipboard.writeText(`${window.location.origin}/share/${shareLink.token}`);
     setShareCopied(true);
     setTimeout(() => setShareCopied(false), 2000);
+  }
+
+  const [themeMode, setThemeMode] = useState<ThemeMode>("light");
+  useEffect(() => {
+    // Deferred via queueMicrotask -- reading an external platform API
+    // (localStorage) on mount, not synchronizing a React value, so this
+    // isn't the render-loop case react-hooks/set-state-in-effect guards
+    // against. Same pattern as /pricing's timezone-detection effect.
+    queueMicrotask(() => setThemeMode(getStoredTheme()));
+  }, []);
+
+  function handleSetTheme(mode: ThemeMode) {
+    setThemeMode(mode);
+    setStoredTheme(mode);
   }
 
   const [calendarFeed, setCalendarFeed] = useState<ApiCalendarFeed | null>(null);
@@ -334,14 +359,14 @@ export default function SettingsPage() {
             <Mark src={markSrc(state.profile.avatar)} size={44} />
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-body font-medium text-ink-black">{state.profile.name}</span>
-              <span className="rounded-full bg-notion-blue/10 px-2 py-0.5 text-caption font-medium capitalize text-notion-blue">
+              <span className="rounded-full bg-accent/10 px-2 py-0.5 text-caption font-medium capitalize text-accent">
                 {state.profile.plan}
               </span>
             </div>
             <div className="ml-auto flex items-center gap-3">
               <Link
                 href="/pricing"
-                className="text-caption font-medium text-notion-blue hover:opacity-80"
+                className="text-caption font-medium text-accent hover:opacity-80"
               >
                 {state.profile.plan === "free" ? "Upgrade" : "Manage plan"}
               </Link>
@@ -374,7 +399,7 @@ export default function SettingsPage() {
                   onClick={() => store.setProfile({ avatar: key })}
                   className={`rounded-full p-1 transition-all duration-200 ease-out ${
                     state.profile.avatar === key
-                      ? "scale-110 ring-2 ring-notion-blue ring-offset-2 ring-offset-pure-white"
+                      ? "scale-110 ring-2 ring-accent ring-offset-2 ring-offset-pure-white"
                       : "opacity-60 hover:opacity-100"
                   }`}
                 >
@@ -385,7 +410,7 @@ export default function SettingsPage() {
 
             {state.profile.plan === "pro" ? (
               <>
-                <p className="mt-4 text-caption font-medium uppercase tracking-wide text-notion-blue">
+                <p className="mt-4 text-caption font-medium uppercase tracking-wide text-accent">
                   Pro avatars
                 </p>
                 <div className="mt-2 flex flex-wrap gap-3">
@@ -396,7 +421,7 @@ export default function SettingsPage() {
                       onClick={() => store.setProfile({ avatar: key })}
                       className={`rounded-full p-1 transition-all duration-200 ease-out ${
                         state.profile.avatar === key
-                          ? "scale-110 ring-2 ring-notion-blue ring-offset-2 ring-offset-pure-white"
+                          ? "scale-110 ring-2 ring-accent ring-offset-2 ring-offset-pure-white"
                           : "opacity-60 hover:opacity-100"
                       }`}
                     >
@@ -407,7 +432,7 @@ export default function SettingsPage() {
               </>
             ) : (
               <p className="mt-4 text-caption text-ink-black/40">
-                <Link href="/pricing" className="text-notion-blue hover:opacity-80">
+                <Link href="/pricing" className="text-accent hover:opacity-80">
                   Upgrade to Pro
                 </Link>{" "}
                 to unlock 24 more avatars.
@@ -416,7 +441,7 @@ export default function SettingsPage() {
             <button
               type="button"
               onClick={saveProfile}
-              className="mt-3 rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity hover:opacity-90"
+              className="mt-3 rounded-lg bg-accent px-4 py-2 text-body-sm font-medium text-white transition-opacity hover:opacity-90"
             >
               Done
             </button>
@@ -495,7 +520,7 @@ export default function SettingsPage() {
                   type="button"
                   onClick={handleGenerateShareLink}
                   disabled={shareLoading}
-                  className="text-body-sm font-medium text-notion-blue hover:opacity-80 disabled:opacity-40"
+                  className="text-body-sm font-medium text-accent hover:opacity-80 disabled:opacity-40"
                 >
                   Generate new link
                 </button>
@@ -514,7 +539,7 @@ export default function SettingsPage() {
               type="button"
               onClick={handleGenerateShareLink}
               disabled={shareLoading}
-              className="mt-4 rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity hover:opacity-90 disabled:opacity-40"
+              className="mt-4 rounded-lg bg-accent px-4 py-2 text-body-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
             >
               {shareLoading ? "Creating…" : "Create share link"}
             </button>
@@ -559,7 +584,7 @@ export default function SettingsPage() {
                   type="button"
                   onClick={handleGenerateCalendarFeed}
                   disabled={calendarLoading}
-                  className="text-body-sm font-medium text-notion-blue hover:opacity-80 disabled:opacity-40"
+                  className="text-body-sm font-medium text-accent hover:opacity-80 disabled:opacity-40"
                 >
                   Generate new link
                 </button>
@@ -578,11 +603,64 @@ export default function SettingsPage() {
               type="button"
               onClick={handleGenerateCalendarFeed}
               disabled={calendarLoading}
-              className="mt-4 rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity hover:opacity-90 disabled:opacity-40"
+              className="mt-4 rounded-lg bg-accent px-4 py-2 text-body-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
             >
               {calendarLoading ? "Creating…" : "Create calendar feed"}
             </button>
           )}
+        </section>
+      </PlusGate>
+
+      {/* Theme — Plus */}
+      <PlusGate
+        plan={state.profile.plan}
+        title="Theme"
+        description="Switch to dark mode and pick an accent color that's yours."
+      >
+        <section className="mt-6 rounded-xl border border-ink-black/8 bg-pure-white p-6">
+          <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">
+            Theme
+          </p>
+
+          <div className="mt-4">
+            <span className="text-body-sm font-medium text-ink-black">Appearance</span>
+            <div className="mt-3 inline-flex items-stretch gap-1 rounded-lg border border-ink-black/10 bg-paper-warmth p-1">
+              {(["light", "dark", "system"] as ThemeMode[]).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => handleSetTheme(mode)}
+                  className={`rounded-md px-3 py-1.5 text-body-sm font-medium capitalize transition-colors ${
+                    themeMode === mode
+                      ? "bg-accent text-white"
+                      : "text-ink-black/60 hover:text-ink-black"
+                  }`}
+                >
+                  {mode}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-5">
+            <span className="text-body-sm font-medium text-ink-black">Accent color</span>
+            <div className="mt-3 flex flex-wrap gap-3">
+              {ACCENT_OPTIONS.map((option) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  onClick={() => store.setProfile({ accentColor: option.key })}
+                  aria-label={option.label}
+                  title={option.label}
+                  className={`h-8 w-8 rounded-full transition-all duration-200 ease-out ${option.className} ${
+                    state.profile.accentColor === option.key
+                      ? "scale-110 ring-2 ring-ink-black/60 ring-offset-2 ring-offset-pure-white"
+                      : "opacity-80 hover:opacity-100"
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
         </section>
       </PlusGate>
 
@@ -753,7 +831,7 @@ export default function SettingsPage() {
         <button
           onClick={addCategory}
           disabled={!newCatName.trim()}
-          className="mt-3 rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity hover:opacity-90 disabled:opacity-40"
+          className="mt-3 rounded-lg bg-accent px-4 py-2 text-body-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
         >
           + Add category
         </button>
@@ -856,7 +934,7 @@ export default function SettingsPage() {
               }}
               className={`shrink-0 rounded-full px-3 py-1.5 text-caption font-medium transition-colors ${
                 state.settings.notificationsEnabled
-                  ? "bg-notion-blue text-pure-white"
+                  ? "bg-accent text-white"
                   : "bg-ink-black/5 text-ink-black/60 hover:bg-ink-black/10"
               }`}
             >
@@ -1004,7 +1082,7 @@ export default function SettingsPage() {
                   onClick={() => toggleNewAnchorDay(w.day)}
                   className={`h-8 w-8 shrink-0 rounded-full text-caption font-semibold transition-colors ${
                     newAnchorDaysOfWeek.includes(w.day)
-                      ? "bg-notion-blue text-pure-white"
+                      ? "bg-accent text-white"
                       : "bg-ink-black/5 text-ink-black/50 hover:bg-ink-black/10"
                   }`}
                 >
@@ -1048,7 +1126,7 @@ export default function SettingsPage() {
                     onClick={() => toggleNewAnchorCategory(c.id)}
                     className={`rounded-full px-3 py-1.5 text-caption font-medium transition-colors ${
                       newAnchorCategoryIds.includes(c.id)
-                        ? "bg-notion-blue text-pure-white"
+                        ? "bg-accent text-white"
                         : "bg-ink-black/5 text-ink-black/60 hover:bg-ink-black/10"
                     }`}
                   >
@@ -1062,7 +1140,7 @@ export default function SettingsPage() {
           <button
             onClick={addAnchor}
             disabled={!newAnchorLabel.trim()}
-            className="rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity hover:opacity-90 disabled:opacity-40"
+            className="rounded-lg bg-accent px-4 py-2 text-body-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
           >
             + Add anchor
           </button>
@@ -1071,7 +1149,7 @@ export default function SettingsPage() {
 
       <Link
         href="/setup"
-        className="mt-6 inline-block text-body-sm font-medium text-notion-blue hover:opacity-80"
+        className="mt-6 inline-block text-body-sm font-medium text-accent hover:opacity-80"
       >
         Redo the full setup wizard →
       </Link>

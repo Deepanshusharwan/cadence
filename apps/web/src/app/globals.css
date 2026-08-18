@@ -24,6 +24,13 @@
   --color-orchid: #a98fd1;
   --color-denim: #6f9dc4;
 
+  /* Accent token (Settings -> accent-color picker) -- declared here so
+     Tailwind generates bg-accent/text-accent/etc. utilities; the actual
+     value per user is set by the plain :root / [data-accent] overrides
+     below, which a @theme-generated utility still picks up at runtime
+     since it compiles to var(--color-accent), not a literal. */
+  --color-accent: #0075de;
+
   /* Fonts */
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-serif: var(--font-source-serif), Georgia, "Times New Roman", serif;
@@ -68,6 +75,50 @@
 :root {
   color-scheme: light;
 }
+
+/* Dark mode redefines only the neutral/surface tokens -- the vivid brand
+   colors (marigold, coral, signal-blue, etc.) stay as-is; they're already
+   saturated enough to read on either ground. ink-black/charcoal flip to
+   near-white so every existing text-ink-black/NN alpha usage keeps working
+   unchanged (a light color at 60% over a dark surface reads the same
+   hierarchy role a dark color at 60% over a light surface does).
+   System preference first, guarded so an explicit light choice always
+   wins; the explicit [data-theme="dark"] block below wins in the other
+   direction. See lib/theme.ts for how data-theme gets set. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --color-paper-warmth: #181613;
+    --color-pure-white: #232120;
+    --color-ink-black: #f3f0ea;
+    --color-charcoal: #e8e3da;
+    --color-stone: #9a9690;
+    --color-graphite: #bfb9b0;
+    --color-slate: #a39d96;
+    --color-sky-tint: #17293c;
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-paper-warmth: #181613;
+  --color-pure-white: #232120;
+  --color-ink-black: #f3f0ea;
+  --color-charcoal: #e8e3da;
+  --color-stone: #9a9690;
+  --color-graphite: #bfb9b0;
+  --color-slate: #a39d96;
+  --color-sky-tint: #17293c;
+}
+
+/* Accent picker: one selector per offered swatch color (Settings' palette
+   matches this list exactly, see dashboard/settings/page.tsx). */
+:root[data-accent="coral"] { --color-accent: var(--color-coral); }
+:root[data-accent="marigold"] { --color-accent: var(--color-marigold); }
+:root[data-accent="signal-blue"] { --color-accent: var(--color-signal-blue); }
+:root[data-accent="orchid"] { --color-accent: var(--color-orchid); }
+:root[data-accent="denim"] { --color-accent: var(--color-denim); }
+:root[data-accent="terracotta"] { --color-accent: var(--color-terracotta); }
 
 body {
   background: var(--color-paper-warmth);

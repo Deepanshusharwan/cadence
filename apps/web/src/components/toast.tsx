@@ -82,9 +82,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               key={toast.id}
               className={`relative flex items-center gap-2 rounded-lg border px-4 py-2.5 text-body-sm font-medium shadow-[0px_4px_12px_rgba(0,0,0,0.12)] ${
                 toast.variant === "celebrate-exceeded"
-                  ? "animate-celebrate-in border-terracotta bg-terracotta text-pure-white"
+                  ? "animate-celebrate-in border-terracotta bg-terracotta text-white"
                   : toast.variant === "celebrate-met"
-                    ? "animate-celebrate-in border-marigold bg-marigold text-ink-black"
+                    ? "animate-celebrate-in border-marigold bg-marigold text-black"
                     : "animate-word-in border-ink-black/8 bg-pure-white text-ink-black"
               }`}
             >
@@ -101,7 +101,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   <SparkleIcon className="h-4 w-4 shrink-0" />
                 </>
               ) : (
-                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-marigold text-[10px] text-ink-black">
+                <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-marigold text-[10px] text-black">
                   ✓
                 </span>
               )}
