@@ -122,6 +122,23 @@ class DayEntry(Base):
     user: Mapped[User] = relationship(back_populates="day_entries")
 
 
+class Feedback(Base):
+    """User-submitted improvement/feature requests (settings 'Send feedback').
+
+    Deliberately no FK-cascade relationship back on User — feedback is meant
+    to survive independently of the submitting account for review purposes,
+    unlike e.g. sessions which are per-user history.
+    """
+
+    __tablename__ = "feedback"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(ForeignKey("users.id"), index=True)
+    type: Mapped[str] = mapped_column(String)  # "bug" | "idea" | "other"
+    message: Mapped[str] = mapped_column(String)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=_utcnow)
+
+
 class WeeklyReview(Base):
     __tablename__ = "reviews"
 

@@ -245,6 +245,15 @@ def test_insight_fires_only_after_three_full_weeks_behind(client):
     assert resp.json() == []
 
 
+def test_feedback_create(client):
+    resp = client.post("/feedback", json={"type": "idea", "message": "Add a Pomodoro timer mode"})
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["type"] == "idea"
+    assert body["message"] == "Add a Pomodoro timer mode"
+    assert body["id"]
+
+
 def test_review_upsert_and_get(client):
     week_start = date.today() - timedelta(days=date.today().weekday())
     resp = client.get(f"/weekly-review/{week_start.isoformat()}")

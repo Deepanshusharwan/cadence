@@ -110,6 +110,13 @@ interface WireDayEntry {
   day_type: "NORMAL" | "REDUCED" | "LEAVE" | "MISSED";
 }
 
+interface WireFeedback {
+  id: string;
+  type: "bug" | "idea" | "other";
+  message: string;
+  created_at: string;
+}
+
 interface WireReview {
   week_start: string;
   wins: string;
@@ -451,6 +458,9 @@ export const api = {
         next_week_changes: patch.nextWeekChanges,
       }),
     }).then(reviewFromWire),
+
+  submitFeedback: (input: { type: "bug" | "idea" | "other"; message: string }) =>
+    apiFetch<WireFeedback>("/feedback", { method: "POST", body: JSON.stringify(input) }).then(() => undefined),
 
   getLeaveBalance: () => apiFetch<WireLeaveBalance>("/leave").then(leaveFromWire),
   getStreakInfo: () => apiFetch<WireStreakInfo>("/streaks").then(streakInfoFromWire),

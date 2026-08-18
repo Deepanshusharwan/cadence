@@ -6,6 +6,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { SignOutButton } from "@clerk/nextjs";
 import { Mark, MARKS } from "@/components/marks";
 import { CadenceMark } from "@/components/logo";
+import { FeedbackModal } from "@/components/feedback-modal";
 import { useStore, anchorAppliesOn, todayISO } from "@/lib/store";
 import {
   ChevronLeftIcon,
@@ -15,6 +16,7 @@ import {
   LightbulbIcon,
   SettingsIcon,
   LogOutIcon,
+  MegaphoneIcon,
   type IconComponent,
 } from "@/components/icons";
 
@@ -35,6 +37,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const [collapsed, setCollapsed] = useState(false);
   const [collapsedReady, setCollapsedReady] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -162,26 +165,40 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           })}
         </nav>
 
+        <button
+          type="button"
+          onClick={() => setFeedbackOpen(true)}
+          title={collapsed ? "Send feedback" : undefined}
+          className={`mt-auto flex items-center gap-2.5 rounded-lg py-2 text-body-sm font-medium text-ink-black/54 transition-colors hover:bg-ink-black/5 hover:text-ink-black ${
+            collapsed ? "justify-center px-0" : "px-3"
+          }`}
+        >
+          <MegaphoneIcon className="h-4.5 w-4.5 shrink-0" />
+          {collapsed ? <span className="sr-only">Send feedback</span> : "Send feedback"}
+        </button>
+
         <div
-          className={`mt-auto flex items-center gap-2 rounded-lg py-2 ${collapsed ? "justify-center px-0" : "px-2"}`}
+          className={`flex items-center gap-2 rounded-lg py-2 ${collapsed ? "justify-center px-0" : "px-2"}`}
           title={collapsed ? store.state.profile.name : undefined}
         >
           <Mark src={MARKS[store.state.profile.avatar]} size={32} />
           {collapsed ? null : (
-            <span className="min-w-0 flex-1 truncate text-body-sm font-medium text-ink-black">
-              {store.state.profile.name}
-            </span>
+            <>
+              <span className="min-w-0 flex-1 truncate text-body-sm font-medium text-ink-black">
+                {store.state.profile.name}
+              </span>
+              <SignOutButton>
+                <button
+                  type="button"
+                  aria-label="Sign out"
+                  title="Sign out"
+                  className="shrink-0 rounded-lg p-1.5 text-ink-black/40 hover:bg-ink-black/5 hover:text-ink-black"
+                >
+                  <LogOutIcon className="h-4 w-4" />
+                </button>
+              </SignOutButton>
+            </>
           )}
-          <SignOutButton>
-            <button
-              type="button"
-              aria-label="Sign out"
-              title="Sign out"
-              className="shrink-0 rounded-lg p-1.5 text-ink-black/40 hover:bg-ink-black/5 hover:text-ink-black"
-            >
-              <LogOutIcon className="h-4 w-4" />
-            </button>
-          </SignOutButton>
         </div>
       </aside>
 
@@ -208,6 +225,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </div>
 
       <main className="flex-1 px-6 py-8 pt-20 sm:pt-8">{children}</main>
+
+      {feedbackOpen ? <FeedbackModal onClose={() => setFeedbackOpen(false)} /> : null}
     </div>
   );
 }

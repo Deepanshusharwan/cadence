@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
-from .routers import anchors, categories, computed, day_types, events, me, reviews, sessions
+from .routers import anchors, categories, computed, day_types, events, feedback, me, reviews, sessions
 
 app = FastAPI(title="Cadence API")
 
@@ -28,4 +28,5 @@ app.include_router(sessions.router)
 app.include_router(events.router)
 app.include_router(day_types.router)
 app.include_router(reviews.router)
+app.include_router(feedback.router)
 app.include_router(computed.router)

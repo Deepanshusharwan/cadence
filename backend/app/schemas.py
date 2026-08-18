@@ -1,4 +1,4 @@
-from datetime import date as Date
+from datetime import date as Date, datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
@@ -7,6 +7,7 @@ TrackingMode = Literal["hours", "sessions"]
 AnchorRecurrence = Literal["daily", "weekly", "once"]
 DayType = Literal["NORMAL", "REDUCED", "LEAVE", "MISSED"]
 EventType = Literal["SCHOOL_OR_WORK", "SOCIAL", "PERSONAL", "TRAVEL", "OTHER"]
+FeedbackType = Literal["bug", "idea", "other"]
 
 
 class ORMModel(BaseModel):
@@ -180,6 +181,21 @@ class ReviewOut(BaseModel):
     wins: str
     problems: str
     next_week_changes: str
+
+
+# --- Feedback ------------------------------------------------------------------
+
+
+class FeedbackCreate(BaseModel):
+    type: FeedbackType
+    message: str
+
+
+class FeedbackOut(ORMModel):
+    id: str
+    type: FeedbackType
+    message: str
+    created_at: datetime
 
 
 # --- Computed / read models -----------------------------------------------------

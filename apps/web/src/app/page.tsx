@@ -171,7 +171,7 @@ function SectionHeader({
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen flex-col bg-paper-warmth">
+    <div className="flex min-h-screen flex-col overflow-x-hidden bg-paper-warmth">
       {/* Nav */}
       <header className="sticky top-0 z-50 border-b border-ink-black/8 bg-paper-warmth/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-[1760px] items-center justify-between px-4 sm:px-6">
@@ -197,12 +197,12 @@ export default function Home() {
             >
               Sign in
             </Link>
-            <a
-              href="/setup"
+            <Link
+              href="/sign-in"
               className="rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity duration-200 ease-out hover:opacity-90"
             >
               Get Cadence Free
-            </a>
+            </Link>
           </div>
         </div>
       </header>
@@ -236,12 +236,12 @@ export default function Home() {
           <div className="mt-8 flex items-center justify-center">
             <div className="relative inline-flex items-center gap-3">
               <SquiggleArrowIcon className="pointer-events-none absolute -left-14 -top-1 hidden h-10 w-20 text-ink-black/25 lg:block" />
-              <a
-                href="/setup"
+              <Link
+                href="/sign-in"
                 className="rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity duration-200 ease-out hover:opacity-90"
               >
                 Get Cadence Free
-              </a>
+              </Link>
               <a
                 href="#philosophy"
                 className="rounded-lg bg-sky-tint px-4 py-2 text-body-sm font-medium text-notion-blue transition-opacity duration-200 ease-out hover:opacity-90"
@@ -729,12 +729,12 @@ export default function Home() {
               Plan the year. Protect the person.
             </h2>
             <div className="mt-8">
-              <a
-                href="/setup"
+              <Link
+                href="/sign-in"
                 className="inline-flex rounded-lg bg-pure-white px-5 py-2.5 text-body-sm font-medium text-notion-blue transition-opacity duration-200 ease-out hover:opacity-90"
               >
                 Get Cadence Free
-              </a>
+              </Link>
             </div>
           </div>
         </section>

@@ -5,7 +5,7 @@ import { AuthShell } from "@/components/auth-shell";
 export default function SignUpPage() {
   return (
     <AuthShell variant="signUp">
-      <SignUp appearance={clerkAppearance} />
+      <SignUp appearance={clerkAppearance} signInUrl="/sign-in" fallbackRedirectUrl="/dashboard" />
     </AuthShell>
   );
 }

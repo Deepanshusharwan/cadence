@@ -197,6 +197,24 @@ export function LogOutIcon(props: IconProps) {
   );
 }
 
+export function MegaphoneIcon(props: IconProps) {
+  return (
+    <svg {...baseProps} {...props}>
+      <path d="M3 10v4a1 1 0 0 0 1 1h2l1 5h2l-1-5h2l8 4V6l-8 4H4a1 1 0 0 0-1 1Z" />
+      <path d="M19 9.5a3.5 3.5 0 0 1 0 5" />
+    </svg>
+  );
+}
+
+export function CloseIcon(props: IconProps) {
+  return (
+    <svg {...baseProps} {...props}>
+      <path d="M6 6 18 18" />
+      <path d="M18 6 6 18" />
+    </svg>
+  );
+}
+
 export function PencilIcon(props: IconProps) {
   return (
     <svg {...baseProps} {...props}>
