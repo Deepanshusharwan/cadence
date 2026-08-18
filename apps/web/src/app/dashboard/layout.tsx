@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
+import { SignOutButton } from "@clerk/nextjs";
 import { Mark, MARKS } from "@/components/marks";
 import { CadenceMark } from "@/components/logo";
 import { useStore, anchorAppliesOn, todayISO } from "@/lib/store";
@@ -13,6 +14,7 @@ import {
   BarChartIcon,
   LightbulbIcon,
   SettingsIcon,
+  LogOutIcon,
   type IconComponent,
 } from "@/components/icons";
 
@@ -166,10 +168,20 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         >
           <Mark src={MARKS[store.state.profile.avatar]} size={32} />
           {collapsed ? null : (
-            <span className="truncate text-body-sm font-medium text-ink-black">
+            <span className="min-w-0 flex-1 truncate text-body-sm font-medium text-ink-black">
               {store.state.profile.name}
             </span>
           )}
+          <SignOutButton>
+            <button
+              type="button"
+              aria-label="Sign out"
+              title="Sign out"
+              className="shrink-0 rounded-lg p-1.5 text-ink-black/40 hover:bg-ink-black/5 hover:text-ink-black"
+            >
+              <LogOutIcon className="h-4 w-4" />
+            </button>
+          </SignOutButton>
         </div>
       </aside>
 

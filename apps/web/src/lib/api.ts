@@ -3,9 +3,11 @@
 // the snake_case <-> camelCase mapping lives entirely in this file so nothing
 // downstream has to know the backend uses a different naming convention.
 //
-// No Authorization header is sent yet — the backend runs with
-// DEV_AUTH_BYPASS=true for now (see backend/README.md). Once Clerk is wired
-// up, this is the one place that needs to attach the session token.
+// Every request carries the current Clerk session token (via
+// lib/auth-token.ts's bridge) so the backend's real JWKS verification has
+// something to check — see backend/app/auth.py.
+
+import { getAuthToken } from "./auth-token";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -23,9 +25,14 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   let lastError: unknown;
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
+      const token = await getAuthToken();
       const res = await fetch(`${API_URL}${path}`, {
         ...init,
-        headers: { "Content-Type": "application/json", ...init?.headers },
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...init?.headers,
+        },
       });
       if (!res.ok) {
         const body = await res.text().catch(() => "");

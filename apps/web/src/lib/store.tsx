@@ -10,6 +10,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useAuth } from "@clerk/nextjs";
 import type { MarkKey } from "@/components/marks";
 import { api, type ApiInsight } from "./api";
 
@@ -264,6 +265,13 @@ function insightFromApi(i: ApiInsight): Insight {
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
+  // StoreProvider wraps the whole app, including the public landing page —
+  // gate the bootstrap fetch on Clerk actually reporting a signed-in user so
+  // an anonymous visit to "/" never fires (and fails) authenticated API
+  // calls. Pages that need real data (/setup, /dashboard/*) are already
+  // behind middleware.ts's auth.protect(), so by the time they render,
+  // isSignedIn is true here too.
+  const { isLoaded: authLoaded, isSignedIn } = useAuth();
   const [state, setState] = useState<State>(DEFAULT_STATE);
   const [ready, setReady] = useState(false);
   const reviewsLoading = useRef<Set<string>>(new Set());
@@ -285,6 +293,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    if (!authLoaded) return;
+    if (!isSignedIn) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setReady(true);
+      return;
+    }
     let cancelled = false;
     async function bootstrap() {
       try {
@@ -337,7 +351,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [authLoaded, isSignedIn]);
 
   const setProfile = useCallback(
     (patch: Partial<Profile>) => {

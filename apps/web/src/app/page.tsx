@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Link from "next/link";
 import { RotatingWord } from "@/components/rotating-word";
 import { Mark, MARKS } from "@/components/marks";
 import { CadenceMark } from "@/components/logo";
@@ -168,12 +169,12 @@ export default function Home() {
             ))}
           </nav>
           <div className="flex items-center gap-2">
-            <a
-              href="#"
+            <Link
+              href="/sign-in"
               className="rounded-lg px-4 py-2 text-body-sm font-medium text-ink-black/95 transition-colors duration-200 ease-out hover:bg-ink-black/5"
             >
               Sign in
-            </a>
+            </Link>
             <a
               href="/setup"
               className="rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity duration-200 ease-out hover:opacity-90"

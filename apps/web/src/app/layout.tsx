@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { Inter, Source_Serif_4 } from "next/font/google";
+import { ClerkProvider } from "@clerk/nextjs";
 import { StoreProvider } from "@/lib/store";
 import { ToastProvider } from "@/components/toast";
+import { ClerkTokenBridge } from "@/components/clerk-token-bridge";
 import "./globals.css";
 
 const inter = Inter({
@@ -22,15 +24,18 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="en"
-      className={`${inter.variable} ${sourceSerif.variable} font-sans antialiased`}
-    >
-      <body className="min-h-full flex flex-col">
-        <StoreProvider>
-          <ToastProvider>{children}</ToastProvider>
-        </StoreProvider>
-      </body>
-    </html>
+    <ClerkProvider>
+      <html
+        lang="en"
+        className={`${inter.variable} ${sourceSerif.variable} font-sans antialiased`}
+      >
+        <body className="min-h-full flex flex-col">
+          <ClerkTokenBridge />
+          <StoreProvider>
+            <ToastProvider>{children}</ToastProvider>
+          </StoreProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

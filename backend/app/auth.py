@@ -2,12 +2,10 @@
 
 The backend never maintains its own auth system — every request carries the
 Clerk-issued session token, and this module verifies it against Clerk's
-published JWKS rather than trusting the client. There's no live Clerk
-project wired up in this environment, so this can't be end-to-end tested
-here; `DEV_AUTH_BYPASS=true` exists purely so the rest of the API can be
-built and tested locally against a fixed dev user without real Clerk
-credentials. It must stay opt-in and off by default — never enable it
-against a real deployment.
+published JWKS rather than trusting the client. `DEV_AUTH_BYPASS=true`
+exists purely so the rest of the API can be built and tested locally
+against a fixed dev user without real Clerk credentials — it must stay
+opt-in and off by default, never enabled against a real deployment.
 """
 
 from functools import lru_cache
@@ -46,6 +44,17 @@ def verify_session_token(token: str) -> str:
         issuer=settings.clerk_issuer or None,
         options=options,
     )
+
+    # `azp` (authorized party) is the origin the token was issued to. Clerk
+    # sets it whenever more than one frontend can talk to the same Clerk
+    # instance; checking it stops a token minted for a different app on the
+    # same Clerk project from being replayed against this API. Per Clerk's
+    # own guidance, skip the check entirely when the claim is absent (single
+    # first-party frontend, or an older token shape).
+    azp = claims.get("azp")
+    if azp is not None and azp not in settings.cors_origins:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token origin")
+
     sub = claims.get("sub")
     if not sub:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Token missing subject")

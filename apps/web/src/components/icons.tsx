@@ -187,6 +187,16 @@ export function ChevronLeftIcon(props: IconProps) {
   );
 }
 
+export function LogOutIcon(props: IconProps) {
+  return (
+    <svg {...baseProps} {...props}>
+      <path d="M9 4.5H6.5A1.5 1.5 0 0 0 5 6v12a1.5 1.5 0 0 0 1.5 1.5H9" />
+      <path d="M14.5 15.5 19 11l-4.5-4.5" />
+      <path d="M19 11H9" />
+    </svg>
+  );
+}
+
 export function PencilIcon(props: IconProps) {
   return (
     <svg {...baseProps} {...props}>
