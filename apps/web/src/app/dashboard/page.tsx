@@ -19,6 +19,7 @@ import {
   ExpandIcon,
   CollapseIcon,
   ChevronLeftIcon,
+  CheckIcon,
 } from "@/components/icons";
 import { useStore, todayISO, type Category, type DayType } from "@/lib/store";
 import { useToast } from "@/components/toast";
@@ -105,10 +106,9 @@ export default function DashboardPage() {
     return () => clearInterval(id);
   }, [state.timer]);
 
-  const [manualCategoryId, setManualCategoryId] = useState("");
   const [manualMinutes, setManualMinutes] = useState("30");
-  const [manualTags, setManualTags] = useState("");
   const [timerMode, setTimerMode] = useState<"timer" | "manual">("timer");
+  const [pendingManualLog, setPendingManualLog] = useState<Category | null>(null);
   const [showQuickAddItem, setShowQuickAddItem] = useState(false);
   const [quickAddItemName, setQuickAddItemName] = useState("");
   const [showQuickAddBlock, setShowQuickAddBlock] = useState(false);
@@ -144,14 +144,6 @@ export default function DashboardPage() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [timerFullscreen]);
 
-  // Sessions-tracked categories only count a logged block toward the
-  // weekly total once it's >= 45 minutes (same rule store.weeklySessionCount
-  // and the backend's insights use) -- the manual-log form defaults to 30,
-  // so without this warning someone logs the default, the row is created,
-  // and their weekly count silently never moves.
-  const manualCategory = state.categories.find((c) => c.id === manualCategoryId);
-  const manualBelowSessionThreshold =
-    manualCategory?.trackingMode === "sessions" && Number(manualMinutes) < 45 && manualMinutes !== "";
 
   const progress = useMemo(
     () =>
@@ -202,27 +194,46 @@ export default function DashboardPage() {
     }
   }
 
-  function logManual() {
+  function logManualFor(id: string, knownCategory?: Category) {
     const minutes = Number(manualMinutes);
-    if (!manualCategoryId) {
-      show("Pick an item to log against first");
-      return;
-    }
     if (!minutes) {
       show("Enter how many minutes to log");
       return;
     }
-    const category = state.categories.find((c) => c.id === manualCategoryId);
-    const tags = manualTags
-      .split(",")
-      .map((t) => t.trim())
-      .filter(Boolean);
-    checkCelebration(manualCategoryId, minutes);
-    store.logSessionManually(manualCategoryId, minutes, undefined, tags);
-    setManualMinutes("30");
-    setManualTags("");
-    show(`Logged ${minutes}m to ${category?.name ?? "item"}`);
+    // A category just created via quick-add isn't in state.categories yet
+    // (setState from the create call hasn't flushed into this closure) --
+    // knownCategory lets that caller pass it directly instead of showing a
+    // "item" fallback in the toast.
+    const category = knownCategory ?? state.categories.find((c) => c.id === id);
+    checkCelebration(id, minutes);
+    store.logSessionManually(id, minutes, undefined, []);
+    // Sessions-tracked items only count a logged block toward the weekly
+    // total once it's >= 45 minutes (same rule store.weeklySessionCount
+    // and the backend's insights use) -- surfaced here rather than as a
+    // persistent pre-log warning, since there's no longer a "selected"
+    // item to warn about ahead of time.
+    const belowThreshold = category?.trackingMode === "sessions" && minutes < 45;
+    show(
+      belowThreshold
+        ? `Logged ${minutes}m to ${category?.name ?? "item"} — under 45m, won't count toward this week`
+        : `Logged ${minutes}m to ${category?.name ?? "item"}`
+    );
   }
+
+  function confirmManualLog() {
+    if (!pendingManualLog) return;
+    logManualFor(pendingManualLog.id, pendingManualLog);
+    setPendingManualLog(null);
+  }
+
+  useEffect(() => {
+    if (!pendingManualLog) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setPendingManualLog(null);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [pendingManualLog]);
 
   function timerElapsedMs() {
     if (!state.timer) return 0;
@@ -259,7 +270,11 @@ export default function DashboardPage() {
       weekendPreferred: false,
     });
     if (category) {
-      startTimerFor(category.id);
+      if (timerMode === "timer") {
+        startTimerFor(category.id);
+      } else {
+        setPendingManualLog(category);
+      }
     }
     setQuickAddItemName("");
     setShowQuickAddItem(false);
@@ -479,7 +494,24 @@ export default function DashboardPage() {
                 More watch faces with Plus →
               </Link>
             )
-          ) : null}
+          ) : (
+            <div className="inline-flex items-stretch gap-1 rounded-lg border border-ink-black/10 bg-paper-warmth p-1">
+              {(["timer", "manual"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setTimerMode(mode)}
+                  className={`rounded-md px-3 py-1.5 text-caption font-medium transition-colors ${
+                    timerMode === mode
+                      ? "bg-accent text-white"
+                      : "text-ink-black/50 hover:bg-ink-black/5"
+                  }`}
+                >
+                  {mode === "timer" ? "Timer" : "Manual log"}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
         {state.timer && timerCategory ? (
           <div className="mt-4 flex flex-col items-center gap-6 sm:flex-row sm:justify-center">
@@ -525,133 +557,130 @@ export default function DashboardPage() {
           </div>
         ) : (
           <div className="mx-auto mt-4 max-w-sm">
-            <div className="mb-4 inline-flex items-stretch gap-1 rounded-lg border border-ink-black/10 bg-paper-warmth p-1">
-              {(["timer", "manual"] as const).map((mode) => (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => setTimerMode(mode)}
-                  className={`rounded-md px-3 py-1.5 text-body-sm font-medium transition-colors ${
-                    timerMode === mode
-                      ? "bg-accent text-white"
-                      : "text-ink-black/50 hover:bg-ink-black/5"
-                  }`}
-                >
-                  {mode === "timer" ? "Timer" : "Manual log"}
-                </button>
-              ))}
-            </div>
-            {timerMode === "manual" ? (
-              <div>
-                <div className="flex gap-2">
-                  <select
-                    value={manualCategoryId}
-                    onChange={(e) => setManualCategoryId(e.target.value)}
-                    className="min-w-0 flex-1 rounded-lg border border-ink-black/12 bg-pure-white px-2 py-1.5 text-caption text-ink-black"
-                  >
-                    <option value="">Item…</option>
-                    {state.categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="number"
-                    min={1}
-                    value={manualMinutes}
-                    onChange={(e) => setManualMinutes(e.target.value)}
-                    className="w-16 rounded-lg border border-ink-black/12 bg-pure-white px-2 py-1.5 text-caption text-ink-black"
-                  />
-                  <button
-                    onClick={logManual}
-                    disabled={!manualCategoryId}
-                    className="shrink-0 rounded-lg bg-ink-black/5 px-3 py-1.5 text-caption font-medium text-ink-black hover:bg-ink-black/10 disabled:opacity-40"
-                  >
-                    Log
-                  </button>
-                </div>
-                {manualBelowSessionThreshold ? (
-                  <p className="mt-1.5 text-caption text-coral">
-                    {manualCategory?.name} counts sessions, and this is under 45 minutes — it&apos;ll
-                    be logged, but won&apos;t count toward this week&apos;s total.
-                  </p>
-                ) : null}
+            {showQuickAddItem ? (
+              <div className="flex gap-2">
                 <input
-                  value={manualTags}
-                  onChange={(e) => setManualTags(e.target.value)}
-                  placeholder="Tags — comma separated, optional"
-                  className="mt-2 w-full rounded-lg border border-ink-black/12 bg-pure-white px-2 py-1.5 text-caption text-ink-black placeholder:text-ink-black/30"
-                />
-              </div>
-            ) : showQuickAddItem ? (
-                <div className="flex gap-2">
-                  <input
-                    autoFocus
-                    value={quickAddItemName}
-                    onChange={(e) => setQuickAddItemName(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") handleQuickAddItem();
-                      if (e.key === "Escape") {
-                        setShowQuickAddItem(false);
-                        setQuickAddItemName("");
-                      }
-                    }}
-                    placeholder="Item name — e.g. Guitar"
-                    className="min-w-0 flex-1 rounded-lg border border-ink-black/12 bg-pure-white px-3 py-2 text-body-sm text-ink-black placeholder:text-ink-black/30"
-                  />
-                  <button
-                    onClick={handleQuickAddItem}
-                    disabled={!quickAddItemName.trim()}
-                    className="shrink-0 rounded-lg bg-accent px-3 py-2 text-body-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
-                  >
-                    Create
-                  </button>
-                  <button
-                    onClick={() => {
+                  autoFocus
+                  value={quickAddItemName}
+                  onChange={(e) => setQuickAddItemName(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") handleQuickAddItem();
+                    if (e.key === "Escape") {
                       setShowQuickAddItem(false);
                       setQuickAddItemName("");
-                    }}
-                    aria-label="Cancel"
-                    className="shrink-0 rounded-lg px-2.5 py-2 text-body-sm text-ink-black/50 hover:bg-ink-black/10"
-                  >
-                    ×
-                  </button>
-                </div>
-              ) : state.categories.length === 0 ? (
+                    }
+                  }}
+                  placeholder="Item name — e.g. Guitar"
+                  className="min-w-0 flex-1 rounded-lg border border-ink-black/12 bg-pure-white px-3 py-2 text-body-sm text-ink-black placeholder:text-ink-black/30"
+                />
                 <button
-                  onClick={() => setShowQuickAddItem(true)}
-                  className="flex w-full items-center justify-center gap-1 rounded-lg border border-dashed border-ink-black/20 px-4 py-2 text-body-sm font-medium text-ink-black/60 hover:bg-ink-black/5"
+                  onClick={handleQuickAddItem}
+                  disabled={!quickAddItemName.trim()}
+                  className="shrink-0 rounded-lg bg-accent px-3 py-2 text-body-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
                 >
-                  + New item to start timing
+                  Create
                 </button>
-              ) : (
-                <div className="flex flex-wrap gap-2.5">
-                  {state.categories.map((c) => (
-                    <button
-                      key={c.id}
-                      type="button"
-                      onClick={() => startTimerFor(c.id)}
-                      title={`Start timing ${c.name}`}
-                      className="group flex items-center gap-2 rounded-full bg-ink-black/5 py-2 pl-3.5 pr-4 text-body-sm font-medium text-ink-black/70 transition-colors hover:bg-ink-black/10"
-                    >
-                      <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${c.color}`} />
-                      {c.name}
-                      <PlayIcon className="-mr-1 h-3.5 w-3.5 shrink-0 text-ink-black/25 opacity-0 transition-opacity group-hover:opacity-100" />
-                    </button>
-                  ))}
+                <button
+                  onClick={() => {
+                    setShowQuickAddItem(false);
+                    setQuickAddItemName("");
+                  }}
+                  aria-label="Cancel"
+                  className="shrink-0 rounded-lg px-2.5 py-2 text-body-sm text-ink-black/50 hover:bg-ink-black/10"
+                >
+                  ×
+                </button>
+              </div>
+            ) : state.categories.length === 0 ? (
+              <button
+                onClick={() => setShowQuickAddItem(true)}
+                className="flex w-full items-center justify-center gap-1 rounded-lg border border-dashed border-ink-black/20 px-4 py-2 text-body-sm font-medium text-ink-black/60 hover:bg-ink-black/5"
+              >
+                + New item to {timerMode === "timer" ? "start timing" : "log time for"}
+              </button>
+            ) : (
+              <div className="flex flex-wrap items-center gap-2.5">
+                {state.categories.map((c) => (
                   <button
+                    key={c.id}
                     type="button"
-                    onClick={() => setShowQuickAddItem(true)}
-                    className="rounded-full px-3.5 py-2 text-body-sm font-medium text-ink-black/40 hover:bg-ink-black/5 hover:text-ink-black/60"
+                    onClick={() => (timerMode === "timer" ? startTimerFor(c.id) : setPendingManualLog(c))}
+                    title={
+                      timerMode === "timer" ? `Start timing ${c.name}` : `Log ${manualMinutes || 0}m to ${c.name}`
+                    }
+                    className="group flex items-center gap-2 rounded-full bg-ink-black/5 py-2 pl-3.5 pr-4 text-body-sm font-medium text-ink-black/70 transition-colors hover:bg-ink-black/10"
                   >
-                    + New
+                    <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${c.color}`} />
+                    {c.name}
+                    {timerMode === "timer" ? (
+                      <PlayIcon className="-mr-1 h-3.5 w-3.5 shrink-0 text-ink-black/25 opacity-0 transition-opacity group-hover:opacity-100" />
+                    ) : (
+                      <CheckIcon className="-mr-1 h-3.5 w-3.5 shrink-0 text-ink-black/25 opacity-0 transition-opacity group-hover:opacity-100" />
+                    )}
                   </button>
-                </div>
-              )}
-            </div>
-          )}
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setShowQuickAddItem(true)}
+                  className="rounded-full px-3.5 py-2 text-body-sm font-medium text-ink-black/40 hover:bg-ink-black/5 hover:text-ink-black/60"
+                >
+                  + New
+                </button>
+                {timerMode === "manual" ? (
+                  <div className="ml-auto flex items-center gap-1.5">
+                    <input
+                      type="number"
+                      min={1}
+                      value={manualMinutes}
+                      onChange={(e) => setManualMinutes(e.target.value)}
+                      className="w-16 rounded-lg border border-ink-black/12 bg-pure-white px-2 py-1.5 text-caption text-ink-black"
+                    />
+                    <span className="text-caption text-ink-black/40">min</span>
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </div>
+        )}
         </div>
+
+      {pendingManualLog ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-ink-black/40 p-4"
+          onClick={() => setPendingManualLog(null)}
+        >
+          <div
+            className="w-full max-w-xs rounded-xl border border-ink-black/10 bg-pure-white p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p className="text-body font-medium text-ink-black">
+              Log {manualMinutes || 0}m to {pendingManualLog.name}?
+            </p>
+            {pendingManualLog.trackingMode === "sessions" && Number(manualMinutes) < 45 ? (
+              <p className="mt-2 text-caption text-coral">
+                Under 45 minutes — this item counts sessions, so it&apos;ll be logged but won&apos;t
+                count toward this week&apos;s total.
+              </p>
+            ) : null}
+            <div className="mt-5 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setPendingManualLog(null)}
+                className="flex-1 rounded-lg bg-ink-black/5 px-4 py-2 text-body-sm font-medium text-ink-black hover:bg-ink-black/10"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmManualLog}
+                className="flex-1 rounded-lg bg-accent px-4 py-2 text-body-sm font-medium text-white transition-opacity hover:opacity-90"
+              >
+                Log
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {timerFullscreen && state.timer && timerCategory ? (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-6 bg-paper-warmth p-6">
