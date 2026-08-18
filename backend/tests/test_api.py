@@ -390,6 +390,47 @@ def test_admin_cannot_remove_own_access(client, monkeypatch):
         get_settings.cache_clear()
 
 
+def test_admin_users_requires_admin(client):
+    resp = client.get("/admin/users")
+    assert resp.status_code == 403
+
+
+def test_admin_can_list_and_grant_plans(client, monkeypatch):
+    get_settings = _as_admin(monkeypatch)
+    try:
+        client.get("/me")  # lazily creates the row
+
+        resp = client.get("/admin/users")
+        assert resp.status_code == 200
+        users = resp.json()
+        assert len(users) == 1
+        assert users[0]["plan"] == "free"
+        user_id = users[0]["id"]
+
+        resp = client.patch(f"/admin/users/{user_id}/plan", json={"plan": "pro"})
+        assert resp.status_code == 200
+        assert resp.json()["plan"] == "pro"
+
+        resp = client.get("/admin/users")
+        assert resp.json()[0]["plan"] == "pro"
+    finally:
+        get_settings.cache_clear()
+
+
+def test_admin_grant_plan_requires_admin(client):
+    client.get("/me")
+    resp = client.patch("/me", json={})  # just to have a real user id to target
+    resp = client.patch(f"/admin/users/{resp.json()['id']}/plan", json={"plan": "pro"})
+    assert resp.status_code == 403
+
+
+def test_cannot_self_grant_plan_via_patch_me(client):
+    client.get("/me")
+    resp = client.patch("/me", json={"plan": "pro"})
+    assert resp.status_code == 200  # unknown field is silently ignored, not an error
+    assert resp.json()["plan"] == "free"
+
+
 def test_review_upsert_and_get(client):
     week_start = date.today() - timedelta(days=date.today().weekday())
     resp = client.get(f"/weekly-review/{week_start.isoformat()}")

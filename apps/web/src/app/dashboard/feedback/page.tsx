@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { api, type ApiAdminEmail, type ApiFeedback } from "@/lib/api";
-import { Mark, MARKS, type MarkKey } from "@/components/marks";
+import { Mark, markSrc, type MarkKey, type ProMarkKey } from "@/components/marks";
 import { SearchIcon, CloseIcon } from "@/components/icons";
 import { useToast } from "@/components/toast";
 
@@ -162,7 +163,12 @@ export default function FeedbackAdminPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-heading-lg font-semibold text-ink-black">Feedback</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-heading-lg font-semibold text-ink-black">Feedback</h1>
+        <Link href="/dashboard/users" className="text-body-sm text-notion-blue hover:opacity-80">
+          Manage users →
+        </Link>
+      </div>
       <p className="mt-1 text-body-sm text-graphite">Bug reports, ideas, and reviews submitted from the app.</p>
 
       <div className="mt-6">
@@ -241,7 +247,7 @@ export default function FeedbackAdminPage() {
             <div key={item.id} className="px-5 py-4">
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2">
-                  <Mark src={MARKS[item.userAvatar as MarkKey]} size={24} />
+                  <Mark src={markSrc(item.userAvatar as MarkKey | ProMarkKey)} size={24} />
                   <span className="text-body-sm font-medium text-ink-black">
                     {item.userName.trim() || "Unnamed user"}
                   </span>

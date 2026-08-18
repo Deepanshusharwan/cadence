@@ -52,6 +52,8 @@ async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
 
 // --- Wire types (snake_case, as returned by the backend) -------------------
 
+type Plan = "free" | "plus" | "pro";
+
 interface WireUser {
   id: string;
   name: string;
@@ -63,6 +65,16 @@ interface WireUser {
   leave_carry_cap: number;
   notifications_enabled: boolean;
   onboarded: boolean;
+  plan: Plan;
+}
+
+interface WireAdminUser {
+  id: string;
+  name: string;
+  avatar: string;
+  plan: Plan;
+  onboarded: boolean;
+  created_at: string;
 }
 
 interface WireCategory {
@@ -170,6 +182,16 @@ export interface ApiUser {
   leaveCarryCap: number;
   notificationsEnabled: boolean;
   onboarded: boolean;
+  plan: Plan;
+}
+
+export interface ApiAdminUser {
+  id: string;
+  name: string;
+  avatar: string;
+  plan: Plan;
+  onboarded: boolean;
+  createdAt: string;
 }
 
 export interface ApiCategory {
@@ -283,6 +305,7 @@ const userFromWire = (w: WireUser): ApiUser => ({
   leaveCarryCap: w.leave_carry_cap,
   notificationsEnabled: w.notifications_enabled,
   onboarded: w.onboarded,
+  plan: w.plan,
 });
 
 const categoryFromWire = (w: WireCategory): ApiCategory => ({
@@ -502,6 +525,25 @@ export const api = {
   addAdminEmail: (email: string) =>
     apiFetch<ApiAdminEmail>("/admin/emails", { method: "POST", body: JSON.stringify({ email }) }),
   removeAdminEmail: (id: string) => apiFetch<void>(`/admin/emails/${id}`, { method: "DELETE" }),
+
+  listAdminUsers: () =>
+    apiFetch<WireAdminUser[]>("/admin/users").then((rows) =>
+      rows.map(
+        (w): ApiAdminUser => ({
+          id: w.id,
+          name: w.name,
+          avatar: w.avatar,
+          plan: w.plan,
+          onboarded: w.onboarded,
+          createdAt: w.created_at,
+        })
+      )
+    ),
+  setUserPlan: (id: string, plan: Plan) =>
+    apiFetch<WireUser>(`/admin/users/${id}/plan`, {
+      method: "PATCH",
+      body: JSON.stringify({ plan }),
+    }).then(userFromWire),
 
   getLeaveBalance: () => apiFetch<WireLeaveBalance>("/leave").then(leaveFromWire),
   getStreakInfo: () => apiFetch<WireStreakInfo>("/streaks").then(streakInfoFromWire),

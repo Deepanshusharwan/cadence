@@ -26,6 +26,13 @@ class User(Base):
     id: Mapped[str] = mapped_column(String, primary_key=True)  # Clerk user id
     name: Mapped[str] = mapped_column(String, default="")
     avatar: Mapped[str] = mapped_column(String, default="cat")
+    # "free" | "plus" | "pro". No billing integration exists yet (see
+    # docs/deployment.md / the pricing-plan work) — nothing sets this except
+    # the admin-only PATCH /admin/users/{id}/plan, reusing the same
+    # email-allowlist gate as GET /feedback. Deliberately absent from
+    # UserUpdate (self-service PATCH /me) so a user can never grant
+    # themselves a paid plan.
+    plan: Mapped[str] = mapped_column(String, default="free")
     timezone: Mapped[str] = mapped_column(String, default="UTC")
     wake_start: Mapped[str] = mapped_column(String, default="06:00")
     wake_end: Mapped[str] = mapped_column(String, default="08:00")

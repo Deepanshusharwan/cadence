@@ -6,6 +6,35 @@ import Link from "next/link";
 import { useStore, type DayType } from "@/lib/store";
 import { LightbulbIcon } from "@/components/icons";
 
+// Wraps a Plus-only section: renders the real content for plus/pro,
+// otherwise a locked upsell card in its place — same shape, so the page
+// doesn't jump around when someone upgrades.
+function PlusGate({
+  plan,
+  title,
+  description,
+  children,
+}: {
+  plan: "free" | "plus" | "pro";
+  title: string;
+  description: string;
+  children: React.ReactNode;
+}) {
+  if (plan !== "free") return <>{children}</>;
+  return (
+    <div className="mt-6 rounded-xl border border-dashed border-ink-black/15 bg-pure-white/60 p-6">
+      <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">{title}</p>
+      <p className="mt-2 text-body-sm text-ink-black/50">{description}</p>
+      <Link
+        href="/pricing"
+        className="mt-3 inline-block text-body-sm font-medium text-notion-blue hover:opacity-80"
+      >
+        Upgrade to Plus →
+      </Link>
+    </div>
+  );
+}
+
 function ProgressBar({ value, className = "" }: { value: number; className?: string }) {
   return (
     <div className="h-2 w-full rounded-full bg-ink-black/8">
@@ -237,27 +266,45 @@ export default function ProgressPage() {
         </div>
       </div>
 
-      {/* Long-term trend */}
-      <div className="mt-6 rounded-xl border border-ink-black/8 bg-pure-white p-6">
-        <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">
-          Last {TREND_WEEKS} weeks
-        </p>
-        <div className="mt-4 flex items-end gap-3" style={{ height: 96 }}>
-          {weeklyTrend.map((w) => (
-            <div key={w.label} className="flex flex-1 flex-col items-center gap-1.5">
-              <span className="text-caption text-ink-black/40">{w.hours > 0 ? w.hours.toFixed(1) : ""}</span>
-              <div
-                className="w-full rounded-t-md bg-marigold transition-[height] duration-500 ease-out"
-                style={{ height: `${Math.max(4, (w.hours / maxTrendHours) * 72)}px` }}
-              />
-              <span className="text-caption text-ink-black/40">{w.label}</span>
-            </div>
-          ))}
+      {/* Long-term trend — Plus */}
+      <PlusGate
+        plan={state.profile.plan}
+        title="Long-term trend"
+        description="See your hours trended across weeks, not just this week and this month."
+      >
+        <div className="mt-6 rounded-xl border border-ink-black/8 bg-pure-white p-6">
+          <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">
+            Last {TREND_WEEKS} weeks
+          </p>
+          <div className="mt-4 flex items-end gap-3" style={{ height: 96 }}>
+            {weeklyTrend.map((w) => (
+              <div key={w.label} className="flex flex-1 flex-col items-center gap-1.5">
+                <span className="text-caption text-ink-black/40">
+                  {w.hours > 0 ? w.hours.toFixed(1) : ""}
+                </span>
+                <div
+                  className="w-full rounded-t-md bg-marigold transition-[height] duration-500 ease-out"
+                  style={{ height: `${Math.max(4, (w.hours / maxTrendHours) * 72)}px` }}
+                />
+                <span className="text-caption text-ink-black/40">{w.label}</span>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      </PlusGate>
 
-      {/* Insights */}
-      {insights.length > 0 ? (
+      {/* Insights — Plus. Gated on plan first, not insights.length: a free
+          user should see the upsell regardless of whether they'd currently
+          have any insights, since they can't see the feature either way. */}
+      {state.profile.plan === "free" ? (
+        <PlusGate
+          plan={state.profile.plan}
+          title="Insights"
+          description="Descriptive patterns pulled from your own history — like a category falling behind, or a weekday with a high missed-day rate."
+        >
+          {null}
+        </PlusGate>
+      ) : insights.length > 0 ? (
         <div className="mt-6 rounded-xl border border-ink-black/8 bg-pure-white p-6">
           <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">
             Insights

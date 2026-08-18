@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import desc
 from sqlalchemy.orm import Session
 
 from .. import models, schemas
@@ -7,6 +8,14 @@ from ..db import get_db
 from ..deps import get_admin_email
 
 router = APIRouter(prefix="/admin", tags=["admin"])
+
+
+@router.get("/users", response_model=list[schemas.AdminUserOut])
+def list_users(
+    _admin_email: str = Depends(get_admin_email),
+    db: Session = Depends(get_db),
+):
+    return db.query(models.User).order_by(desc(models.User.created_at)).all()
 
 
 @router.get("/emails", response_model=list[schemas.AdminEmailOut])
@@ -62,3 +71,23 @@ def remove_admin_email(
         )
     db.delete(row)
     db.commit()
+
+
+@router.patch("/users/{user_id}/plan", response_model=schemas.UserOut)
+def set_user_plan(
+    user_id: str,
+    payload: schemas.PlanUpdate,
+    _admin_email: str = Depends(get_admin_email),
+    db: Session = Depends(get_db),
+):
+    """The only way plan ever changes right now — there's no billing
+    integration, so this is a manual grant until one exists. Deliberately
+    not exposed on PATCH /me (see schemas.UserUpdate).
+    """
+    user = db.get(models.User, user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.plan = payload.plan
+    db.commit()
+    db.refresh(user)
+    return user

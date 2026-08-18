@@ -4,7 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Mark, MARKS, type MarkKey } from "@/components/marks";
+import { Mark, MARKS, type MarkKey, type ProMarkKey } from "@/components/marks";
 import { SparkleIcon } from "@/components/icons";
 import { useStore, type TrackingMode, type AnchorRecurrence } from "@/lib/store";
 import { textOnCategoryColor } from "@/lib/category-color";
@@ -55,7 +55,7 @@ export default function SetupPage() {
   const [step, setStep] = useState(0);
 
   const [name, setName] = useState(store.state.profile.name);
-  const [avatar, setAvatar] = useState<MarkKey>(store.state.profile.avatar);
+  const [avatar, setAvatar] = useState<MarkKey | ProMarkKey>(store.state.profile.avatar);
 
   const [newCatName, setNewCatName] = useState("");
   const [newCatMode, setNewCatMode] = useState<TrackingMode>("hours");

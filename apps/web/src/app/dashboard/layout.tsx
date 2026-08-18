@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { SignOutButton } from "@clerk/nextjs";
-import { Mark, MARKS } from "@/components/marks";
+import { Mark, markSrc } from "@/components/marks";
 import { CadenceMark } from "@/components/logo";
 import { FeedbackModal } from "@/components/feedback-modal";
 import { useStore, anchorAppliesOn, todayISO } from "@/lib/store";
@@ -181,7 +181,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           className={`flex items-center gap-2 rounded-lg py-2 ${collapsed ? "justify-center px-0" : "px-2"}`}
           title={collapsed ? store.state.profile.name : undefined}
         >
-          <Mark src={MARKS[store.state.profile.avatar]} size={32} />
+          <Mark src={markSrc(store.state.profile.avatar)} size={32} />
           {collapsed ? null : (
             <>
               <span className="min-w-0 flex-1 truncate text-body-sm font-medium text-ink-black">

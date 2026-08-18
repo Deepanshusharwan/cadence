@@ -24,6 +24,7 @@ characters.
 | `empty-categories.png` | `src/app/dashboard/page.tsx` and `src/app/dashboard/review/page.tsx` (no categories yet) | Empty — box of items |
 | `empty-week.png` | `src/app/dashboard/calendar/page.tsx` (Week view, no sessions this week) | Empty — calendar desk scene |
 | `empty-progress.png` | `src/app/dashboard/progress/page.tsx` (no categories yet) | Empty — easel with a chart |
+| `something-coming.png` | `src/app/pricing/page.tsx` (Pro tier card) | Building — a character sketching plans at a desk, a cat asleep beside them, a "Something cool is coming…" note and a "Plan / Build / Ship" checklist nearby. Exception to the rule below: that note/checklist text is baked in rather than recreated in HTML, since it reads as an in-scene prop (something the character is looking at) rather than an overlaid marketing headline. |
 
 Each file is a resized PNG (long edge 340–480px) with real transparency
 — no baked-in background — so it drops onto the warm canvas cleanly.

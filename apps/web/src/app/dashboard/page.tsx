@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Mark, MARKS } from "@/components/marks";
+import { Mark, markSrc } from "@/components/marks";
 import { FlameIcon, PlayIcon, TrendingUpIcon } from "@/components/icons";
 import { useStore, todayISO, type Category, type DayType } from "@/lib/store";
 import { useToast } from "@/components/toast";
@@ -152,7 +152,7 @@ export default function DashboardPage() {
     <div className="mx-auto max-w-4xl">
       {/* Greeting */}
       <div className="flex items-center gap-3">
-        <Mark src={MARKS[state.profile.avatar]} size={48} className="ring-2 ring-marigold" />
+        <Mark src={markSrc(state.profile.avatar)} size={48} className="ring-2 ring-marigold" />
         <div>
           <h1 className="text-heading font-semibold text-ink-black">
             Hey {state.profile.name || "there"}.

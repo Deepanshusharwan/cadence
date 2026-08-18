@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Mark, MARKS, type MarkKey } from "@/components/marks";
+import { Mark, MARKS, PRO_MARKS, markSrc, type MarkKey, type ProMarkKey } from "@/components/marks";
 import { PencilIcon } from "@/components/icons";
 import { useStore, type Category, type TrackingMode, type AnchorRecurrence } from "@/lib/store";
 import { useToast } from "@/components/toast";
@@ -204,7 +204,7 @@ export default function SettingsPage() {
 
         {!isEditingProfile ? (
           <div className="mt-4 flex items-center gap-3">
-            <Mark src={MARKS[state.profile.avatar]} size={44} />
+            <Mark src={markSrc(state.profile.avatar)} size={44} />
             <span className="text-body font-medium text-ink-black">{state.profile.name}</span>
             <button
               type="button"
@@ -242,6 +242,37 @@ export default function SettingsPage() {
                 </button>
               ))}
             </div>
+
+            {state.profile.plan === "pro" ? (
+              <>
+                <p className="mt-4 text-caption font-medium uppercase tracking-wide text-notion-blue">
+                  Pro avatars
+                </p>
+                <div className="mt-2 flex flex-wrap gap-3">
+                  {(Object.keys(PRO_MARKS) as ProMarkKey[]).map((key) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => store.setProfile({ avatar: key })}
+                      className={`rounded-full p-1 transition-all duration-200 ease-out ${
+                        state.profile.avatar === key
+                          ? "scale-110 ring-2 ring-notion-blue ring-offset-2 ring-offset-pure-white"
+                          : "opacity-60 hover:opacity-100"
+                      }`}
+                    >
+                      <Mark src={PRO_MARKS[key]} size={44} />
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="mt-4 text-caption text-ink-black/40">
+                <Link href="/pricing" className="text-notion-blue hover:opacity-80">
+                  Upgrade to Pro
+                </Link>{" "}
+                to unlock 24 more avatars.
+              </p>
+            )}
             <button
               type="button"
               onClick={saveProfile}

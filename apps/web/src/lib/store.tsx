@@ -11,7 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import { useAuth } from "@clerk/nextjs";
-import type { MarkKey } from "@/components/marks";
+import type { MarkKey, ProMarkKey } from "@/components/marks";
 import { api, type ApiInsight } from "./api";
 
 export type TrackingMode = "hours" | "sessions";
@@ -69,9 +69,12 @@ export interface Session {
 
 export type DayType = "NORMAL" | "REDUCED" | "LEAVE" | "MISSED";
 
+export type Plan = "free" | "plus" | "pro";
+
 export interface Profile {
   name: string;
-  avatar: MarkKey;
+  avatar: MarkKey | ProMarkKey;
+  plan: Plan;
 }
 
 // Timer is deliberately client-only, in-memory state — there's no backend
@@ -146,7 +149,7 @@ const EMPTY_STREAK_INFO: StreakInfo = { current: EMPTY_STREAK_RUN, longest: EMPT
 
 const DEFAULT_STATE: State = {
   onboarded: false,
-  profile: { name: "", avatar: "cat" },
+  profile: { name: "", avatar: "cat", plan: "free" },
   categories: [],
   wakeStart: "06:00",
   wakeEnd: "08:00",
@@ -322,7 +325,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
         setState((s) => ({
           ...s,
           onboarded: me.onboarded,
-          profile: { name: me.name, avatar: me.avatar as MarkKey },
+          profile: { name: me.name, avatar: me.avatar as MarkKey | ProMarkKey, plan: me.plan },
           wakeStart: me.wakeStart,
           wakeEnd: me.wakeEnd,
           settings: {

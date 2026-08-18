@@ -2,7 +2,8 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { RotatingWord } from "@/components/rotating-word";
 import { Mark, MARKS } from "@/components/marks";
-import { CadenceMark } from "@/components/logo";
+import { SiteHeader } from "@/components/site-header";
+import { SiteFooter } from "@/components/site-footer";
 import {
   BookIcon,
   TrendingUpIcon,
@@ -20,13 +21,6 @@ import {
   SparkleIcon,
   SquiggleArrowIcon,
 } from "@/components/icons";
-
-const NAV_LINKS = [
-  { href: "#philosophy", label: "Philosophy" },
-  { href: "#categories", label: "Categories" },
-  { href: "#leave", label: "Leave" },
-  { href: "#screens", label: "Screens" },
-];
 
 const CATEGORY_MARKS = [
   { Icon: BookIcon, label: "Study", border: "border-signal-blue" },
@@ -172,40 +166,7 @@ function SectionHeader({
 export default function Home() {
   return (
     <div className="flex min-h-screen flex-col overflow-x-hidden bg-paper-warmth">
-      {/* Nav */}
-      <header className="sticky top-0 z-50 border-b border-ink-black/8 bg-paper-warmth/90 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-[1760px] items-center justify-between px-4 sm:px-6">
-          <a href="#" className="flex items-center gap-2 text-heading-sm font-bold tracking-[-0.242px] text-ink-black">
-            <CadenceMark className="h-5 w-5 shrink-0 text-notion-blue" />
-            Cadence
-          </a>
-          <nav className="hidden items-center gap-1 md:flex">
-            {NAV_LINKS.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="rounded-lg px-4 py-3 text-body-sm font-medium text-ink-black/54 transition-colors duration-200 ease-out hover:text-ink-black"
-              >
-                {link.label}
-              </a>
-            ))}
-          </nav>
-          <div className="flex items-center gap-2">
-            <Link
-              href="/sign-in"
-              className="rounded-lg px-4 py-2 text-body-sm font-medium text-ink-black/95 transition-colors duration-200 ease-out hover:bg-ink-black/5"
-            >
-              Sign in
-            </Link>
-            <Link
-              href="/sign-in"
-              className="rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity duration-200 ease-out hover:opacity-90"
-            >
-              Get Cadence Free
-            </Link>
-          </div>
-        </div>
-      </header>
+      <SiteHeader />
 
       <main className="flex-1">
         {/* Hero */}
@@ -740,32 +701,7 @@ export default function Home() {
         </section>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-ink-black/8">
-        <div className="mx-auto flex max-w-[1760px] flex-col items-center justify-between gap-6 px-4 sm:px-6 py-12 md:flex-row">
-          <div>
-            <p className="flex items-center gap-2 text-heading-sm font-bold tracking-[-0.242px] text-ink-black">
-              <CadenceMark className="h-5 w-5 shrink-0 text-notion-blue" />
-              Cadence
-            </p>
-            <p className="mt-1 text-body-sm text-ink-black/40">
-              Fixed anchors. Flexible content.
-            </p>
-          </div>
-          <nav className="hidden items-center gap-1 md:flex">
-            {NAV_LINKS.map((link) => (
-              <a
-                key={link.href}
-                href={link.href}
-                className="rounded-lg px-4 py-2 text-body-sm font-medium text-ink-black/54 transition-colors duration-200 ease-out hover:text-ink-black"
-              >
-                {link.label}
-              </a>
-            ))}
-          </nav>
-          <p className="text-caption text-ink-black/40">© 2026 Cadence</p>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

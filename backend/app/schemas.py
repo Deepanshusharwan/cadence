@@ -8,6 +8,7 @@ AnchorRecurrence = Literal["daily", "weekly", "once"]
 DayType = Literal["NORMAL", "REDUCED", "LEAVE", "MISSED"]
 EventType = Literal["SCHOOL_OR_WORK", "SOCIAL", "PERSONAL", "TRAVEL", "OTHER"]
 FeedbackType = Literal["bug", "idea", "review", "other"]
+PlanType = Literal["free", "plus", "pro"]
 
 
 class ORMModel(BaseModel):
@@ -28,9 +29,12 @@ class UserOut(ORMModel):
     leave_carry_cap: int
     notifications_enabled: bool
     onboarded: bool
+    plan: PlanType
 
 
 class UserUpdate(BaseModel):
+    # No `plan` here on purpose — see models.User.plan. Self-service updates
+    # can never touch it.
     name: str | None = None
     avatar: str | None = None
     timezone: str | None = None
@@ -40,6 +44,10 @@ class UserUpdate(BaseModel):
     leave_carry_cap: int | None = None
     notifications_enabled: bool | None = None
     onboarded: bool | None = None
+
+
+class PlanUpdate(BaseModel):
+    plan: PlanType
 
 
 # --- Category ------------------------------------------------------------
@@ -225,6 +233,22 @@ class AdminEmailOut(BaseModel):
     id: str | None
     email: str
     source: Literal["seed", "added"]
+
+
+class AdminUserOut(ORMModel):
+    """GET /admin/users — for manually granting plans (see models.User.plan)
+    until real billing exists. No email here on purpose: resolving it per
+    row would mean one live Clerk API call per user in the list, which
+    doesn't belong on a list endpoint (see auth.get_clerk_primary_email's
+    own docstring on why it's scoped to a single rarely-called route).
+    """
+
+    id: str
+    name: str
+    avatar: str
+    plan: PlanType
+    onboarded: bool
+    created_at: datetime
 
 
 # --- Computed / read models -----------------------------------------------------
