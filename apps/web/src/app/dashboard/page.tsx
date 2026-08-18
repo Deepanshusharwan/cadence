@@ -12,8 +12,14 @@ import { PipRingTimer } from "@/components/pip-ring-timer";
 import { EightBitTimer } from "@/components/eight-bit-timer";
 import { HeritageTimer } from "@/components/heritage-timer";
 import { BrandTimer } from "@/components/brand-timer";
-import { FlameIcon, PlayIcon, TrendingUpIcon, ExpandIcon, CollapseIcon } from "@/components/icons";
-import { textOnCategoryColor } from "@/lib/category-color";
+import {
+  FlameIcon,
+  PlayIcon,
+  TrendingUpIcon,
+  ExpandIcon,
+  CollapseIcon,
+  ChevronLeftIcon,
+} from "@/components/icons";
 import { useStore, todayISO, type Category, type DayType } from "@/lib/store";
 import { useToast } from "@/components/toast";
 
@@ -102,7 +108,7 @@ export default function DashboardPage() {
   const [manualCategoryId, setManualCategoryId] = useState("");
   const [manualMinutes, setManualMinutes] = useState("30");
   const [manualTags, setManualTags] = useState("");
-  const [timerCategoryId, setTimerCategoryId] = useState("");
+  const [timerMode, setTimerMode] = useState<"timer" | "manual">("timer");
   const [showQuickAddItem, setShowQuickAddItem] = useState(false);
   const [quickAddItemName, setQuickAddItemName] = useState("");
   const [showQuickAddBlock, setShowQuickAddBlock] = useState(false);
@@ -111,7 +117,6 @@ export default function DashboardPage() {
   const [quickAddBlockEnd, setQuickAddBlockEnd] = useState("10:00");
   const [watchFace, setWatchFace] = useState<WatchFace>("chronograph");
   const [timerFullscreen, setTimerFullscreen] = useState(false);
-  const [showFacePicker, setShowFacePicker] = useState(false);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(WATCH_FACE_KEY);
@@ -123,17 +128,12 @@ export default function DashboardPage() {
   function selectWatchFace(face: WatchFace) {
     setWatchFace(face);
     window.localStorage.setItem(WATCH_FACE_KEY, face);
-    setShowFacePicker(false);
   }
 
-  useEffect(() => {
-    if (!showFacePicker) return;
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") setShowFacePicker(false);
-    }
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [showFacePicker]);
+  function cycleWatchFace(dir: 1 | -1) {
+    const i = WATCH_FACES.indexOf(watchFace);
+    selectWatchFace(WATCH_FACES[(i + dir + WATCH_FACES.length) % WATCH_FACES.length]);
+  }
 
   useEffect(() => {
     if (!timerFullscreen) return;
@@ -226,7 +226,11 @@ export default function DashboardPage() {
 
   function timerElapsedMs() {
     if (!state.timer) return 0;
-    const running = state.timer.paused ? 0 : now - state.timer.startedAt;
+    // `now` only refreshes once the interval below ticks (every 1s) -- for
+    // the moment between starting a timer and that first tick, `now` can
+    // still be older than the timer's own startedAt, which would otherwise
+    // render as a negative, garbled elapsed time (e.g. "-1:-1:-1").
+    const running = state.timer.paused ? 0 : Math.max(0, now - state.timer.startedAt);
     return state.timer.accumulatedMs + running;
   }
 
@@ -255,8 +259,7 @@ export default function DashboardPage() {
       weekendPreferred: false,
     });
     if (category) {
-      setTimerCategoryId(category.id);
-      show(`Added ${category.name} — ready to start`);
+      startTimerFor(category.id);
     }
     setQuickAddItemName("");
     setShowQuickAddItem(false);
@@ -425,17 +428,42 @@ export default function DashboardPage() {
           </p>
           {state.timer && timerCategory ? (
             isPlus ? (
-              <div className="relative flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setShowFacePicker((v) => !v)}
-                  className="flex items-center gap-1.5 rounded-lg border border-ink-black/10 bg-paper-warmth px-2.5 py-1.5 text-caption font-medium text-ink-black hover:bg-ink-black/5"
-                >
-                  {WATCH_FACE_LABELS[watchFace]}
-                  <span className={`text-ink-black/40 transition-transform ${showFacePicker ? "rotate-180" : ""}`}>
-                    ⌄
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => cycleWatchFace(-1)}
+                    aria-label="Previous watch face"
+                    className="rounded-lg p-1 text-ink-black/40 hover:bg-ink-black/5 hover:text-ink-black"
+                  >
+                    <ChevronLeftIcon className="h-4 w-4" />
+                  </button>
+                  <span className="min-w-[6.5rem] text-center text-caption font-medium text-ink-black/70">
+                    {WATCH_FACE_LABELS[watchFace]}
                   </span>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => cycleWatchFace(1)}
+                    aria-label="Next watch face"
+                    className="rounded-lg p-1 text-ink-black/40 hover:bg-ink-black/5 hover:text-ink-black"
+                  >
+                    <ChevronLeftIcon className="h-4 w-4 rotate-180" />
+                  </button>
+                </div>
+                <div className="flex items-center gap-1">
+                  {WATCH_FACES.map((face) => (
+                    <button
+                      key={face}
+                      type="button"
+                      onClick={() => selectWatchFace(face)}
+                      title={WATCH_FACE_LABELS[face]}
+                      aria-label={WATCH_FACE_LABELS[face]}
+                      className={`h-1.5 w-1.5 rounded-full transition-colors ${
+                        watchFace === face ? "bg-accent" : "bg-ink-black/15 hover:bg-ink-black/30"
+                      }`}
+                    />
+                  ))}
+                </div>
                 <button
                   type="button"
                   onClick={() => setTimerFullscreen(true)}
@@ -445,35 +473,6 @@ export default function DashboardPage() {
                 >
                   <ExpandIcon className="h-4 w-4" />
                 </button>
-
-                {showFacePicker ? (
-                  <>
-                    <button
-                      aria-label="Close watch face picker"
-                      onClick={() => setShowFacePicker(false)}
-                      className="fixed inset-0 z-10 cursor-default"
-                    />
-                    <div className="absolute right-0 top-full z-20 mt-2 grid w-[340px] grid-cols-4 gap-2 rounded-xl border border-ink-black/10 bg-pure-white p-3 shadow-[0px_8px_24px_rgba(0,0,0,0.12)]">
-                      {WATCH_FACES.map((face) => (
-                        <button
-                          key={face}
-                          type="button"
-                          onClick={() => selectWatchFace(face)}
-                          className={`flex flex-col items-center gap-1 rounded-lg p-1.5 transition-colors ${
-                            watchFace === face ? "bg-accent/10 ring-1 ring-accent" : "hover:bg-ink-black/5"
-                          }`}
-                        >
-                          <div className="pointer-events-none overflow-hidden rounded-full">
-                            {renderFaceByKey(face, 64)}
-                          </div>
-                          <span className="text-center text-[10px] font-medium leading-tight text-ink-black/70">
-                            {WATCH_FACE_LABELS[face]}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                ) : null}
               </div>
             ) : (
               <Link href="/pricing" className="text-caption font-medium text-accent hover:opacity-80">
@@ -526,7 +525,66 @@ export default function DashboardPage() {
           </div>
         ) : (
           <div className="mx-auto mt-4 max-w-sm">
-            {showQuickAddItem ? (
+            <div className="mb-4 inline-flex items-stretch gap-1 rounded-lg border border-ink-black/10 bg-paper-warmth p-1">
+              {(["timer", "manual"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setTimerMode(mode)}
+                  className={`rounded-md px-3 py-1.5 text-body-sm font-medium transition-colors ${
+                    timerMode === mode
+                      ? "bg-accent text-white"
+                      : "text-ink-black/50 hover:bg-ink-black/5"
+                  }`}
+                >
+                  {mode === "timer" ? "Timer" : "Manual log"}
+                </button>
+              ))}
+            </div>
+            {timerMode === "manual" ? (
+              <div>
+                <div className="flex gap-2">
+                  <select
+                    value={manualCategoryId}
+                    onChange={(e) => setManualCategoryId(e.target.value)}
+                    className="min-w-0 flex-1 rounded-lg border border-ink-black/12 bg-pure-white px-2 py-1.5 text-caption text-ink-black"
+                  >
+                    <option value="">Item…</option>
+                    {state.categories.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}
+                      </option>
+                    ))}
+                  </select>
+                  <input
+                    type="number"
+                    min={1}
+                    value={manualMinutes}
+                    onChange={(e) => setManualMinutes(e.target.value)}
+                    className="w-16 rounded-lg border border-ink-black/12 bg-pure-white px-2 py-1.5 text-caption text-ink-black"
+                  />
+                  <button
+                    onClick={logManual}
+                    disabled={!manualCategoryId}
+                    className="shrink-0 rounded-lg bg-ink-black/5 px-3 py-1.5 text-caption font-medium text-ink-black hover:bg-ink-black/10 disabled:opacity-40"
+                  >
+                    Log
+                  </button>
+                </div>
+                {manualBelowSessionThreshold ? (
+                  <p className="mt-1.5 text-caption text-coral">
+                    {manualCategory?.name} counts sessions, and this is under 45 minutes — it&apos;ll
+                    be logged, but won&apos;t count toward this week&apos;s total.
+                  </p>
+                ) : null}
+                <input
+                  value={manualTags}
+                  onChange={(e) => setManualTags(e.target.value)}
+                  placeholder="Tags — comma separated, optional"
+                  className="mt-2 w-full rounded-lg border border-ink-black/12 bg-pure-white px-2 py-1.5 text-caption text-ink-black placeholder:text-ink-black/30"
+                />
+              </div>
+            ) : showQuickAddItem ? (
                 <div className="flex gap-2">
                   <input
                     autoFocus
@@ -568,84 +626,29 @@ export default function DashboardPage() {
                   + New item to start timing
                 </button>
               ) : (
-                <>
-                  <div className="flex flex-wrap gap-1.5">
-                    {state.categories.map((c) => (
-                      <button
-                        key={c.id}
-                        type="button"
-                        onClick={() => setTimerCategoryId(c.id)}
-                        className={`rounded-full px-3 py-1.5 text-caption font-medium transition-colors ${
-                          timerCategoryId === c.id
-                            ? `${c.color} ${textOnCategoryColor(c.color)}`
-                            : "bg-ink-black/5 text-ink-black/60 hover:bg-ink-black/10"
-                        }`}
-                      >
-                        {c.name}
-                      </button>
-                    ))}
+                <div className="flex flex-wrap gap-2.5">
+                  {state.categories.map((c) => (
                     <button
+                      key={c.id}
                       type="button"
-                      onClick={() => setShowQuickAddItem(true)}
-                      className="rounded-full border border-dashed border-ink-black/20 px-3 py-1.5 text-caption font-medium text-ink-black/50 hover:bg-ink-black/5"
+                      onClick={() => startTimerFor(c.id)}
+                      title={`Start timing ${c.name}`}
+                      className="group flex items-center gap-2 rounded-full bg-ink-black/5 py-2 pl-3.5 pr-4 text-body-sm font-medium text-ink-black/70 transition-colors hover:bg-ink-black/10"
                     >
-                      + New
+                      <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${c.color}`} />
+                      {c.name}
+                      <PlayIcon className="-mr-1 h-3.5 w-3.5 shrink-0 text-ink-black/25 opacity-0 transition-opacity group-hover:opacity-100" />
                     </button>
-                  </div>
+                  ))}
                   <button
-                    onClick={() => startTimerFor(timerCategoryId)}
-                    disabled={!timerCategoryId}
-                    className="mt-3 flex w-full items-center justify-center gap-2 rounded-lg bg-accent px-4 py-2 text-body-sm font-medium text-white transition-opacity hover:opacity-90 disabled:opacity-40"
+                    type="button"
+                    onClick={() => setShowQuickAddItem(true)}
+                    className="rounded-full px-3.5 py-2 text-body-sm font-medium text-ink-black/40 hover:bg-ink-black/5 hover:text-ink-black/60"
                   >
-                    <PlayIcon className="h-4 w-4" />
-                    Start session
-                  </button>
-                </>
-              )}
-
-              <div className="mt-5 border-t border-ink-black/8 pt-4">
-                <p className="text-caption font-medium text-ink-black/50">Log manually</p>
-                <div className="mt-2 flex gap-2">
-                  <select
-                    value={manualCategoryId}
-                    onChange={(e) => setManualCategoryId(e.target.value)}
-                    className="min-w-0 flex-1 rounded-lg border border-ink-black/12 bg-pure-white px-2 py-1.5 text-caption text-ink-black"
-                  >
-                    <option value="">Item…</option>
-                    {state.categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.name}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="number"
-                    min={1}
-                    value={manualMinutes}
-                    onChange={(e) => setManualMinutes(e.target.value)}
-                    className="w-16 rounded-lg border border-ink-black/12 bg-pure-white px-2 py-1.5 text-caption text-ink-black"
-                  />
-                  <button
-                    onClick={logManual}
-                    disabled={!manualCategoryId}
-                    className="shrink-0 rounded-lg bg-ink-black/5 px-3 py-1.5 text-caption font-medium text-ink-black hover:bg-ink-black/10 disabled:opacity-40"
-                  >
-                    Log
+                    + New
                   </button>
                 </div>
-                {manualBelowSessionThreshold ? (
-                  <p className="mt-1.5 text-caption text-coral">
-                    {manualCategory?.name} counts sessions, and this is under 45 minutes — it&apos;ll
-                    be logged, but won&apos;t count toward this week&apos;s total.
-                  </p>
-                ) : null}
-                <input
-                  value={manualTags}
-                  onChange={(e) => setManualTags(e.target.value)}
-                  placeholder="Tags — comma separated, optional"
-                  className="mt-2 w-full rounded-lg border border-ink-black/12 bg-pure-white px-2 py-1.5 text-caption text-ink-black placeholder:text-ink-black/30"
-                />
-              </div>
+              )}
             </div>
           )}
         </div>
