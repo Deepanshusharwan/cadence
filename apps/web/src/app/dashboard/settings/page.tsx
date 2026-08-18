@@ -622,9 +622,9 @@ export default function SettingsPage() {
             Theme
           </p>
 
-          <div className="mt-4">
+          <div className="mt-4 flex items-center gap-4">
             <span className="text-body-sm font-medium text-ink-black">Appearance</span>
-            <div className="mt-3 inline-flex items-stretch gap-1 rounded-lg border border-ink-black/10 bg-paper-warmth p-1">
+            <div className="inline-flex items-stretch gap-1 rounded-lg border border-ink-black/10 bg-paper-warmth p-1">
               {(["light", "dark", "system"] as ThemeMode[]).map((mode) => (
                 <button
                   key={mode}

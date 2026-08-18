@@ -38,16 +38,18 @@ const PRICING: Record<
 // what the India price feels like in rupees. Not what's actually charged —
 // Lemon Squeezy always charges the USD amount above, then localizes the
 // display/charge to the buyer's card currency at checkout using whatever
-// the live rate is at that moment, which will drift from this constant.
-const APPROX_INR_RATE = 95.7;
+// the live rate is at that moment. Fetched live (see PricingPage's effect
+// below) from Frankfurter (ECB rates, free, no key, CORS-enabled); this is
+// only the fallback for if that fetch fails or hasn't resolved yet.
+const FALLBACK_INR_RATE = 95.7;
 
 // Matches the free-trial length set on each subscription variant in the
 // Lemon Squeezy dashboard. Lifetime is a one-time purchase, so it has no
 // trial — see the cadence !== "lifetime" checks below.
 const TRIAL_DAYS = 30;
 
-function approxInr(usd: number): string {
-  return `₹${Math.round(usd * APPROX_INR_RATE).toLocaleString("en-IN")}`;
+function approxInr(usd: number, rate: number): string {
+  return `₹${Math.round(usd * rate).toLocaleString("en-IN")}`;
 }
 
 // IANA timezones for India and its immediate neighbors — comparable
@@ -151,8 +153,27 @@ export default function PricingPage() {
   const [region, setRegion] = useState<Region>("US");
   const [checkoutError, setCheckoutError] = useState<string | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [inrRate, setInrRate] = useState(FALLBACK_INR_RATE);
   const router = useRouter();
   const { isSignedIn } = useUser();
+
+  // Live rate for the "≈ ₹X" convenience estimate -- keeps FALLBACK_INR_RATE
+  // if this fails or is still loading, never blocks rendering on it.
+  useEffect(() => {
+    let cancelled = false;
+    fetch("https://api.frankfurter.dev/v1/latest?base=USD&symbols=INR")
+      .then((res) => (res.ok ? res.json() : Promise.reject(res)))
+      .then((data: { rates?: { INR?: number } }) => {
+        const rate = data.rates?.INR;
+        if (!cancelled && typeof rate === "number") setInrRate(rate);
+      })
+      .catch(() => {
+        // Network hiccup or the API's down -- FALLBACK_INR_RATE already covers this.
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Region starts at "US" so the server-prerendered markup and the first
   // client render match (no hydration mismatch), then this corrects it
@@ -279,7 +300,9 @@ export default function PricingPage() {
               <p className="text-caption font-medium uppercase tracking-wide text-ink-black/40">
                 Free
               </p>
-              <p className="mt-3 text-heading font-semibold text-ink-black">$0</p>
+              <p className="mt-3 text-heading font-semibold text-ink-black">
+                {region === "IN" ? "₹0" : "$0"}
+              </p>
               <p className="mt-1 text-body-sm text-ink-black/40">forever</p>
 
               <Link
@@ -312,7 +335,7 @@ export default function PricingPage() {
                 Plus
               </p>
               <p className="mt-3 text-heading font-semibold text-ink-black">
-                {region === "IN" ? approxInr(PRICING.IN[cadence]) : formatPrice(region, cadence)}
+                {region === "IN" ? approxInr(PRICING.IN[cadence], inrRate) : formatPrice(region, cadence)}
                 <span className="text-body-sm font-normal text-ink-black/50">
                   {CADENCE_SUFFIX[cadence]}
                 </span>
