@@ -13,6 +13,7 @@ import { EightBitTimer } from "@/components/eight-bit-timer";
 import { HeritageTimer } from "@/components/heritage-timer";
 import { BrandTimer } from "@/components/brand-timer";
 import { FlameIcon, PlayIcon, TrendingUpIcon, ExpandIcon, CollapseIcon } from "@/components/icons";
+import { textOnCategoryColor } from "@/lib/category-color";
 import { useStore, todayISO, type Category, type DayType } from "@/lib/store";
 import { useToast } from "@/components/toast";
 
@@ -110,6 +111,7 @@ export default function DashboardPage() {
   const [quickAddBlockEnd, setQuickAddBlockEnd] = useState("10:00");
   const [watchFace, setWatchFace] = useState<WatchFace>("chronograph");
   const [timerFullscreen, setTimerFullscreen] = useState(false);
+  const [showFacePicker, setShowFacePicker] = useState(false);
 
   useEffect(() => {
     const stored = window.localStorage.getItem(WATCH_FACE_KEY);
@@ -121,7 +123,17 @@ export default function DashboardPage() {
   function selectWatchFace(face: WatchFace) {
     setWatchFace(face);
     window.localStorage.setItem(WATCH_FACE_KEY, face);
+    setShowFacePicker(false);
   }
+
+  useEffect(() => {
+    if (!showFacePicker) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") setShowFacePicker(false);
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [showFacePicker]);
 
   useEffect(() => {
     if (!timerFullscreen) return;
@@ -287,9 +299,8 @@ export default function DashboardPage() {
     return Math.min(150, (p.current / p.category.weeklyTarget) * 100);
   })();
 
-  function renderWatchFace(size?: number) {
+  function renderFaceByKey(face: WatchFace, size?: number) {
     if (!state.timer || !timerCategory) return null;
-    const face = isPlus ? watchFace : "chronograph";
     const elapsedMs = timerElapsedMs();
     const paused = state.timer.paused;
     const timeLabel = formatElapsed(elapsedMs);
@@ -324,6 +335,10 @@ export default function DashboardPage() {
       default:
         return <AnalogTimer elapsedMs={elapsedMs} paused={paused} size={size} />;
     }
+  }
+
+  function renderWatchFace(size?: number) {
+    return renderFaceByKey(isPlus ? watchFace : "chronograph", size);
   }
 
   return (
@@ -410,18 +425,17 @@ export default function DashboardPage() {
           </p>
           {state.timer && timerCategory ? (
             isPlus ? (
-              <div className="flex items-center gap-2">
-                <select
-                  value={watchFace}
-                  onChange={(e) => selectWatchFace(e.target.value as WatchFace)}
-                  className="rounded-lg border border-ink-black/10 bg-paper-warmth px-2.5 py-1.5 text-caption font-medium text-ink-black"
+              <div className="relative flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowFacePicker((v) => !v)}
+                  className="flex items-center gap-1.5 rounded-lg border border-ink-black/10 bg-paper-warmth px-2.5 py-1.5 text-caption font-medium text-ink-black hover:bg-ink-black/5"
                 >
-                  {WATCH_FACES.map((face) => (
-                    <option key={face} value={face}>
-                      {WATCH_FACE_LABELS[face]}
-                    </option>
-                  ))}
-                </select>
+                  {WATCH_FACE_LABELS[watchFace]}
+                  <span className={`text-ink-black/40 transition-transform ${showFacePicker ? "rotate-180" : ""}`}>
+                    ⌄
+                  </span>
+                </button>
                 <button
                   type="button"
                   onClick={() => setTimerFullscreen(true)}
@@ -431,6 +445,35 @@ export default function DashboardPage() {
                 >
                   <ExpandIcon className="h-4 w-4" />
                 </button>
+
+                {showFacePicker ? (
+                  <>
+                    <button
+                      aria-label="Close watch face picker"
+                      onClick={() => setShowFacePicker(false)}
+                      className="fixed inset-0 z-10 cursor-default"
+                    />
+                    <div className="absolute right-0 top-full z-20 mt-2 grid w-[340px] grid-cols-4 gap-2 rounded-xl border border-ink-black/10 bg-pure-white p-3 shadow-[0px_8px_24px_rgba(0,0,0,0.12)]">
+                      {WATCH_FACES.map((face) => (
+                        <button
+                          key={face}
+                          type="button"
+                          onClick={() => selectWatchFace(face)}
+                          className={`flex flex-col items-center gap-1 rounded-lg p-1.5 transition-colors ${
+                            watchFace === face ? "bg-accent/10 ring-1 ring-accent" : "hover:bg-ink-black/5"
+                          }`}
+                        >
+                          <div className="pointer-events-none overflow-hidden rounded-full">
+                            {renderFaceByKey(face, 64)}
+                          </div>
+                          <span className="text-center text-[10px] font-medium leading-tight text-ink-black/70">
+                            {WATCH_FACE_LABELS[face]}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                ) : null}
               </div>
             ) : (
               <Link href="/pricing" className="text-caption font-medium text-accent hover:opacity-80">
@@ -526,22 +569,25 @@ export default function DashboardPage() {
                 </button>
               ) : (
                 <>
-                  <div className="flex gap-2">
-                    <select
-                      value={timerCategoryId}
-                      onChange={(e) => setTimerCategoryId(e.target.value)}
-                      className="min-w-0 flex-1 rounded-lg border border-ink-black/12 bg-pure-white px-3 py-2 text-body-sm text-ink-black"
-                    >
-                      <option value="">Choose an item…</option>
-                      {state.categories.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.name}
-                        </option>
-                      ))}
-                    </select>
+                  <div className="flex flex-wrap gap-1.5">
+                    {state.categories.map((c) => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => setTimerCategoryId(c.id)}
+                        className={`rounded-full px-3 py-1.5 text-caption font-medium transition-colors ${
+                          timerCategoryId === c.id
+                            ? `${c.color} ${textOnCategoryColor(c.color)}`
+                            : "bg-ink-black/5 text-ink-black/60 hover:bg-ink-black/10"
+                        }`}
+                      >
+                        {c.name}
+                      </button>
+                    ))}
                     <button
+                      type="button"
                       onClick={() => setShowQuickAddItem(true)}
-                      className="shrink-0 rounded-lg px-3 py-2 text-body-sm font-medium text-ink-black/50 hover:bg-ink-black/10"
+                      className="rounded-full border border-dashed border-ink-black/20 px-3 py-1.5 text-caption font-medium text-ink-black/50 hover:bg-ink-black/5"
                     >
                       + New
                     </button>
