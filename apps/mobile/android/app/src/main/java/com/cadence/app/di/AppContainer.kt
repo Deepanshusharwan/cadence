@@ -3,6 +3,7 @@ package com.cadence.app.di
 import android.content.Context
 import com.cadence.app.data.CadenceRepository
 import com.cadence.app.data.local.CadenceLocalStore
+import com.cadence.app.data.local.ThemePreferences
 import com.cadence.app.network.ApiClient
 
 /**
@@ -14,4 +15,5 @@ import com.cadence.app.network.ApiClient
 class AppContainer(context: Context) {
     private val localStore = CadenceLocalStore(context.applicationContext)
     val repository = CadenceRepository(api = ApiClient.service, local = localStore, appContext = context.applicationContext)
+    val themePreferences = ThemePreferences(context.applicationContext)
 }

@@ -9,6 +9,7 @@ import com.cadence.app.network.dto.CategoryDto
 import com.cadence.app.network.dto.LeaveBalanceDto
 import com.cadence.app.network.dto.ScheduleBlockDto
 import com.cadence.app.network.dto.SessionDto
+import java.time.LocalDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -39,34 +40,42 @@ private data class TodayData(
     val leaveBalance: LeaveBalanceDto?,
     val categories: List<CategoryDto>,
     val sessions: List<SessionDto>,
+    val dayTypes: Map<String, String>,
 )
 
 data class TodayUiState(
     val schedule: List<ScheduleBlockDto> = emptyList(),
     val leaveBalance: LeaveBalanceDto? = null,
     val progress: List<CategoryProgress> = emptyList(),
+    val todayDayType: String = "NORMAL",
     val isRefreshing: Boolean = false,
     val errorMessage: String? = null,
 )
 
-/** Backs the Today screen (spec §96): day's schedule, leave balance, and
- * per-item weekly progress -- the last one computed client-side from
- * cached sessions/categories exactly like apps/web/src/app/dashboard/page.tsx's
- * `progress`/`CategoryProgress` (see data/WeekMath.kt), since it isn't one of
- * the server-computed endpoints. Every item is included, not just ones with
- * a weekly target -- a no-target item still shows progress against its own
- * previous week's total instead of a permanently-empty bar. */
+/** Backs the Today screen (spec §96): day's schedule, leave balance,
+ * per-item weekly progress, and marking today reduced/leave (spec §10-11 --
+ * one of the two actions docs/architecture.md §4 calls out as needing to
+ * work offline, see [markToday]). Weekly progress is computed client-side
+ * from cached sessions/categories exactly like
+ * apps/web/src/app/dashboard/page.tsx's `progress`/`CategoryProgress` (see
+ * data/WeekMath.kt), since it isn't one of the server-computed endpoints.
+ * Every item is included, not just ones with a weekly target -- a no-target
+ * item still shows progress against its own previous week's total instead
+ * of a permanently-empty bar. */
 class TodayViewModel(private val repository: CadenceRepository) : ViewModel() {
     private val _isRefreshing = MutableStateFlow(true)
     private val _errorMessage = MutableStateFlow<String?>(null)
+
+    private val todayIso: String get() = LocalDate.now().toString()
 
     private val data = combine(
         repository.todaySchedule,
         repository.leaveBalance,
         repository.categories,
         repository.sessions,
-    ) { schedule, leave, categories, sessions ->
-        TodayData(schedule, leave, categories, sessions)
+        repository.dayTypes,
+    ) { schedule, leave, categories, sessions, dayTypes ->
+        TodayData(schedule, leave, categories, sessions, dayTypes)
     }
 
     val uiState: StateFlow<TodayUiState> = combine(data, _isRefreshing, _errorMessage) { d, refreshing, error ->
@@ -82,6 +91,7 @@ class TodayViewModel(private val repository: CadenceRepository) : ViewModel() {
                     previousWeeklySessionCount = WeekMath.previousWeeklySessionCount(d.sessions, category.id),
                 )
             },
+            todayDayType = d.dayTypes[todayIso] ?: "NORMAL",
             isRefreshing = refreshing,
             errorMessage = error,
         )
@@ -100,5 +110,13 @@ class TodayViewModel(private val repository: CadenceRepository) : ViewModel() {
             }
             _isRefreshing.value = false
         }
+    }
+
+    /** Toggles: tapping the already-active type clears back to NORMAL,
+     * otherwise sets the tapped type. Goes through the offline outbox
+     * (CadenceRepository.setDayType) so it works with no connection. */
+    fun markToday(dayType: String) {
+        val next = if (uiState.value.todayDayType == dayType) "NORMAL" else dayType
+        viewModelScope.launch { repository.setDayType(todayIso, next) }
     }
 }

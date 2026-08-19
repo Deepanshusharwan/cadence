@@ -12,8 +12,8 @@ import com.cadence.app.ui.theme.CadenceShapes
 import com.cadence.app.ui.theme.CadenceThemeTokens
 
 /** notion-web-design skill's "Primary CTA Button" -- the one filled,
- * chromatic (notion-blue) action per screen; everything else defers to
- * [CadenceGhostButton] or plain text. */
+ * chromatic (accent-colored, notion-blue by default) action per screen;
+ * everything else defers to [CadenceGhostButton] or plain text. */
 @Composable
 fun CadencePrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
     val colors = CadenceThemeTokens.colors
@@ -22,14 +22,14 @@ fun CadencePrimaryButton(text: String, onClick: () -> Unit, modifier: Modifier =
         modifier = modifier,
         enabled = enabled,
         shape = CadenceShapes.button,
-        colors = ButtonDefaults.buttonColors(containerColor = colors.notionBlue, contentColor = colors.pureWhite),
+        colors = ButtonDefaults.buttonColors(containerColor = colors.accent, contentColor = colors.pureWhite),
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp),
     ) {
         Text(text)
     }
 }
 
-/** notion-web-design skill's "Ghost CTA Button" -- sky-tint fill, notion-blue
+/** notion-web-design skill's "Ghost CTA Button" -- sky-tint fill, accent-colored
  * text, for the lower-commitment secondary action beside a primary one. */
 @Composable
 fun CadenceGhostButton(text: String, onClick: () -> Unit, modifier: Modifier = Modifier, enabled: Boolean = true) {
@@ -39,7 +39,7 @@ fun CadenceGhostButton(text: String, onClick: () -> Unit, modifier: Modifier = M
         modifier = modifier,
         enabled = enabled,
         shape = CadenceShapes.button,
-        colors = ButtonDefaults.buttonColors(containerColor = colors.skyTint, contentColor = colors.notionBlue),
+        colors = ButtonDefaults.buttonColors(containerColor = colors.skyTint, contentColor = colors.accent),
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp),
     ) {
         Text(text)

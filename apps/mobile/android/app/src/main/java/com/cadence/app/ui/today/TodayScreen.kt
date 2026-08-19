@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -66,6 +68,21 @@ fun TodayScreen(repository: CadenceRepository) {
                             fontWeight = FontWeight.SemiBold,
                             style = MaterialTheme.typography.titleMedium,
                         )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.padding(top = 8.dp),
+                        ) {
+                            DayTypeChip(
+                                label = "Reduced day",
+                                selected = state.todayDayType == "REDUCED",
+                                onClick = { viewModel.markToday("REDUCED") },
+                            )
+                            DayTypeChip(
+                                label = "Full leave",
+                                selected = state.todayDayType == "LEAVE",
+                                onClick = { viewModel.markToday("LEAVE") },
+                            )
+                        }
                     }
                 }
             }
@@ -73,7 +90,7 @@ fun TodayScreen(repository: CadenceRepository) {
             state.errorMessage?.let { message ->
                 item {
                     CadenceCard(backgroundColor = colors.skyTint) {
-                        Text("Couldn't refresh: $message", color = colors.notionBlue)
+                        Text("Couldn't refresh: $message", color = colors.accent)
                     }
                 }
             }
@@ -119,6 +136,23 @@ fun TodayScreen(repository: CadenceRepository) {
     }
 }
 
+/** One of the two offline-critical actions (docs/architecture.md §4) --
+ * "mark a day reduced/leave" -- tapping the already-selected chip clears
+ * back to NORMAL (see TodayViewModel.markToday). */
+@Composable
+private fun DayTypeChip(label: String, selected: Boolean, onClick: () -> Unit) {
+    val colors = CadenceThemeTokens.colors
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label) },
+        colors = FilterChipDefaults.filterChipColors(
+            selectedContainerColor = colors.accent,
+            selectedLabelColor = colors.pureWhite,
+        ),
+    )
+}
+
 /** Mirrors apps/web/src/app/dashboard/page.tsx's `CategoryProgress` exactly:
  * every item shows a bar, not just ones with a weekly target. A no-target
  * item falls back to its own previous week's total as the reference point
@@ -161,7 +195,7 @@ private fun CategoryProgressRow(progress: CategoryProgress) {
         LinearProgressIndicator(
             progress = { fraction.toFloat() },
             modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-            color = colors.notionBlue,
+            color = colors.accent,
             trackColor = colors.skyTint,
         )
     }

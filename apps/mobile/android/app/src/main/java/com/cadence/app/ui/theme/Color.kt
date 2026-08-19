@@ -102,3 +102,21 @@ val DarkCadenceColorTokens = CadenceColorTokens(
     skyTint = CadenceColors.Dark.skyTint,
     hairline = CadenceColors.Dark.hairline,
 )
+
+/** Mirrors apps/web/src/app/dashboard/settings/page.tsx's `ACCENT_OPTIONS`
+ * exactly (same keys, same order) -- these keys are also what's sent to
+ * `PATCH /me` as `accent_color` and read back from `UserDto.accentColor`,
+ * so they must match the backend's/web's strings verbatim. */
+data class AccentOption(val key: String, val label: String, val color: Color)
+
+val ACCENT_OPTIONS = listOf(
+    AccentOption("notion-blue", "Blue (default)", CadenceColors.notionBlue),
+    AccentOption("coral", "Coral", CadenceColors.coral),
+    AccentOption("marigold", "Marigold", CadenceColors.marigold),
+    AccentOption("signal-blue", "Signal blue", CadenceColors.signalBlue),
+    AccentOption("orchid", "Orchid", CadenceColors.orchid),
+    AccentOption("denim", "Denim", CadenceColors.denim),
+    AccentOption("terracotta", "Terracotta", CadenceColors.terracotta),
+)
+
+fun accentColorFor(key: String?): Color = ACCENT_OPTIONS.firstOrNull { it.key == key }?.color ?: CadenceColors.notionBlue

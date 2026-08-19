@@ -82,9 +82,144 @@ data class DayEntryDto(
 )
 
 @Serializable
+data class CategoryCreateDto(
+    val name: String,
+    @SerialName("tracking_mode") val trackingMode: String,
+    @SerialName("weekly_target") val weeklyTarget: Double? = null,
+    @SerialName("priority_tier") val priorityTier: Int = 1,
+    @SerialName("weekend_preferred") val weekendPreferred: Boolean = false,
+)
+
+@Serializable
+data class CategoryUpdateDto(
+    val name: String? = null,
+    @SerialName("tracking_mode") val trackingMode: String? = null,
+    @SerialName("weekly_target") val weeklyTarget: Double? = null,
+    @SerialName("priority_tier") val priorityTier: Int? = null,
+    @SerialName("weekend_preferred") val weekendPreferred: Boolean? = null,
+)
+
+@Serializable
+data class AnchorDto(
+    val id: String,
+    val label: String,
+    val start: String,
+    val end: String,
+    val recurrence: String, // "daily" | "weekly" | "once"
+    @SerialName("days_of_week") val daysOfWeek: List<Int> = emptyList(),
+    val date: String? = null,
+    @SerialName("is_focus_block") val isFocusBlock: Boolean = true,
+    @SerialName("category_ids") val categoryIds: List<String> = emptyList(),
+)
+
+@Serializable
+data class AnchorCreateDto(
+    val label: String,
+    val start: String,
+    val end: String,
+    val recurrence: String,
+    @SerialName("days_of_week") val daysOfWeek: List<Int> = emptyList(),
+    val date: String? = null,
+    @SerialName("is_focus_block") val isFocusBlock: Boolean = true,
+    @SerialName("category_ids") val categoryIds: List<String> = emptyList(),
+)
+
+@Serializable
+data class AnchorUpdateDto(
+    val label: String? = null,
+    val start: String? = null,
+    val end: String? = null,
+    val recurrence: String? = null,
+    @SerialName("days_of_week") val daysOfWeek: List<Int>? = null,
+    val date: String? = null,
+    @SerialName("is_focus_block") val isFocusBlock: Boolean? = null,
+    @SerialName("category_ids") val categoryIds: List<String>? = null,
+)
+
+@Serializable
+data class EventDto(
+    val id: String,
+    val title: String,
+    val date: String,
+    val start: String,
+    val end: String,
+    val type: String, // SCHOOL_OR_WORK | SOCIAL | PERSONAL | TRAVEL | OTHER
+    val notes: String = "",
+)
+
+@Serializable
+data class EventCreateDto(
+    val title: String,
+    val date: String,
+    val start: String,
+    val end: String,
+    val type: String,
+    val notes: String = "",
+)
+
+@Serializable
+data class DayEntrySetDto(
+    @SerialName("day_type") val dayType: String,
+)
+
+@Serializable
+data class ReviewOutDto(
+    @SerialName("week_start") val weekStart: String,
+    val wins: String,
+    val problems: String,
+    @SerialName("next_week_changes") val nextWeekChanges: String,
+)
+
+@Serializable
+data class ReviewUpsertDto(
+    val wins: String? = null,
+    val problems: String? = null,
+    @SerialName("next_week_changes") val nextWeekChanges: String? = null,
+)
+
+@Serializable
+data class StreakRunDto(
+    val length: Int,
+    val dates: List<String> = emptyList(),
+)
+
+@Serializable
+data class StreakInfoDto(
+    val current: StreakRunDto,
+    val longest: StreakRunDto,
+)
+
+@Serializable
+data class InsightDto(
+    val id: String,
+    val text: String,
+)
+
+@Serializable
+data class MonthlyCategoryTotalDto(
+    val month: String, // "YYYY-MM"
+    @SerialName("category_id") val categoryId: String,
+    val minutes: Int,
+    @SerialName("session_count") val sessionCount: Int,
+)
+
+@Serializable
+data class MonthlyConsistencyDto(
+    val month: String,
+    val pct: Int,
+)
+
+@Serializable
+data class LongTermTrendDto(
+    val months: List<MonthlyCategoryTotalDto>,
+    @SerialName("monthly_consistency_pct") val monthlyConsistencyPct: List<MonthlyConsistencyDto>,
+)
+
+@Serializable
 data class UserUpdateDto(
     val name: String? = null,
     val avatar: String? = null,
+    @SerialName("accent_color") val accentColor: String? = null,
     val timezone: String? = null,
     @SerialName("wake_start") val wakeStart: String? = null,
     @SerialName("wake_end") val wakeEnd: String? = null,

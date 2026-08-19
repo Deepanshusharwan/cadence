@@ -63,7 +63,7 @@ fun TimerScreen(repository: CadenceRepository) {
                     onClick = { viewModel.selectCategory(category.id) },
                     label = { Text(category.name) },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = colors.notionBlue,
+                        selectedContainerColor = colors.accent,
                         selectedLabelColor = colors.pureWhite,
                     ),
                 )
@@ -100,7 +100,7 @@ fun TimerScreen(repository: CadenceRepository) {
         ManualLogRow(onLog = viewModel::logManual)
 
         state.lastLoggedMessage?.let { message ->
-            Text(message, color = colors.notionBlue, style = MaterialTheme.typography.bodySmall)
+            Text(message, color = colors.accent, style = MaterialTheme.typography.bodySmall)
         }
     }
 }

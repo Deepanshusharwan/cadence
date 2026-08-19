@@ -51,6 +51,63 @@ fun TimerIcon(modifier: Modifier = Modifier, tint: Color = LocalContentColor.cur
 }
 
 @Composable
+fun CalendarIcon(modifier: Modifier = Modifier, tint: Color = LocalContentColor.current) {
+    Canvas(modifier = modifier.size(24.dp)) {
+        val stroke = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round)
+        val w = size.width * 0.66f
+        val h = size.height * 0.6f
+        val left = (size.width - w) / 2
+        val top = size.height * 0.28f
+        drawRoundRect(
+            color = tint,
+            topLeft = Offset(left, top),
+            size = androidx.compose.ui.geometry.Size(w, h),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.width * 0.08f),
+            style = stroke,
+        )
+        drawLine(tint, Offset(left, top + h * 0.28f), Offset(left + w, top + h * 0.28f), stroke.width, StrokeCap.Round)
+        drawLine(tint, Offset(left + w * 0.28f, top - h * 0.12f), Offset(left + w * 0.28f, top + h * 0.12f), stroke.width, StrokeCap.Round)
+        drawLine(tint, Offset(left + w * 0.72f, top - h * 0.12f), Offset(left + w * 0.72f, top + h * 0.12f), stroke.width, StrokeCap.Round)
+    }
+}
+
+@Composable
+fun ProgressIcon(modifier: Modifier = Modifier, tint: Color = LocalContentColor.current) {
+    Canvas(modifier = modifier.size(24.dp)) {
+        val stroke = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round)
+        val baseline = size.height * 0.78f
+        val barWidth = size.width * 0.16f
+        val xs = listOf(size.width * 0.24f, size.width * 0.5f, size.width * 0.76f)
+        val heights = listOf(size.height * 0.28f, size.height * 0.48f, size.height * 0.62f)
+        xs.forEachIndexed { i, x ->
+            drawLine(tint, Offset(x, baseline), Offset(x, baseline - heights[i]), strokeWidth = barWidth, cap = StrokeCap.Round)
+        }
+        drawLine(tint, Offset(0f, baseline), Offset(size.width, baseline), stroke.width, StrokeCap.Round)
+    }
+}
+
+@Composable
+fun ReviewIcon(modifier: Modifier = Modifier, tint: Color = LocalContentColor.current) {
+    Canvas(modifier = modifier.size(24.dp)) {
+        val stroke = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round)
+        val w = size.width * 0.58f
+        val h = size.height * 0.72f
+        val left = (size.width - w) / 2
+        val top = (size.height - h) / 2
+        drawRoundRect(
+            color = tint,
+            topLeft = Offset(left, top),
+            size = androidx.compose.ui.geometry.Size(w, h),
+            cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.width * 0.06f),
+            style = stroke,
+        )
+        listOf(0.32f, 0.52f, 0.72f).forEach { fy ->
+            drawLine(tint, Offset(left + w * 0.18f, top + h * fy), Offset(left + w * 0.82f, top + h * fy), stroke.width * 0.7f, StrokeCap.Round)
+        }
+    }
+}
+
+@Composable
 fun SettingsIcon(modifier: Modifier = Modifier, tint: Color = LocalContentColor.current) {
     Canvas(modifier = modifier.size(24.dp)) {
         val stroke = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round)
