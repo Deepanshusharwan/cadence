@@ -7,10 +7,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
@@ -50,7 +53,15 @@ fun SetupScreen(repository: CadenceRepository) {
     val state by viewModel.uiState.collectAsState()
     val colors = CadenceThemeTokens.colors
 
-    Column(modifier = Modifier.fillMaxSize().background(colors.paperWarmth)) {
+    // Not wrapped in a Scaffold (unlike CadenceApp), so system-bar insets
+    // aren't applied automatically -- without this, the header sits under
+    // the status bar icons and the footer under the gesture-nav bar.
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(colors.paperWarmth)
+            .windowInsetsPadding(WindowInsets.safeDrawing),
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
