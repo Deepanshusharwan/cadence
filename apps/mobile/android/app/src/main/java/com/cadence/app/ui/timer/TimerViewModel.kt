@@ -3,7 +3,9 @@ package com.cadence.app.ui.timer
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cadence.app.data.CadenceRepository
+import com.cadence.app.data.local.ThemePreferences
 import com.cadence.app.network.dto.CategoryDto
+import com.cadence.app.notifications.TimerNotifier
 import java.time.LocalDate
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -22,13 +24,15 @@ data class TimerUiState(
     val selectedCategoryId: String? = null,
     val runState: TimerRunState = TimerRunState.Idle,
     val lastLoggedMessage: String? = null,
+    val isPlus: Boolean = false,
+    val watchFace: String = "chronograph",
 )
 
 /** Backs the Timer screen (spec §43-44, §98): start/stop a live session, or
  * log one manually. Either path writes through [CadenceRepository.logSession],
  * which queues to the offline outbox first -- so this works exactly the
  * same whether the phone has a connection or not. */
-class TimerViewModel(private val repository: CadenceRepository) : ViewModel() {
+class TimerViewModel(private val repository: CadenceRepository, private val themePreferences: ThemePreferences) : ViewModel() {
     private val _state = MutableStateFlow(TimerUiState())
     val state: StateFlow<TimerUiState> = _state.asStateFlow()
 
@@ -37,12 +41,31 @@ class TimerViewModel(private val repository: CadenceRepository) : ViewModel() {
     init {
         viewModelScope.launch {
             repository.categories.collect { categories ->
+                val pending = repository.consumePendingTimerCategory()
                 _state.value = _state.value.copy(
                     categories = categories,
-                    selectedCategoryId = _state.value.selectedCategoryId ?: categories.firstOrNull()?.id,
+                    selectedCategoryId = pending ?: _state.value.selectedCategoryId ?: categories.firstOrNull()?.id,
                 )
             }
         }
+        viewModelScope.launch {
+            repository.profile.collect { profile ->
+                _state.value = _state.value.copy(isPlus = profile?.plan != null && profile.plan != "free")
+            }
+        }
+        // Watch-face pick is device-level and Plus-gated (see
+        // ui/timer/WatchFaces.kt) -- free accounts always render
+        // "chronograph" regardless of what's stored, same as web falling
+        // back to its default face when plan === "free".
+        viewModelScope.launch {
+            themePreferences.watchFace.collect { key ->
+                _state.value = _state.value.copy(watchFace = key)
+            }
+        }
+    }
+
+    fun setWatchFace(key: String) {
+        viewModelScope.launch { themePreferences.setWatchFace(key) }
     }
 
     fun selectCategory(categoryId: String) {
@@ -57,12 +80,15 @@ class TimerViewModel(private val repository: CadenceRepository) : ViewModel() {
             runState = TimerRunState.Running(startedAt, 0),
             lastLoggedMessage = "Timer started — $name",
         )
+        TimerNotifier.update(repository.appContext, name, 0)
         tickJob?.cancel()
         tickJob = viewModelScope.launch {
             while (true) {
                 delay(1_000)
                 val running = _state.value.runState as? TimerRunState.Running ?: break
-                _state.value = _state.value.copy(runState = running.copy(elapsedSeconds = running.elapsedSeconds + 1))
+                val elapsed = running.elapsedSeconds + 1
+                _state.value = _state.value.copy(runState = running.copy(elapsedSeconds = elapsed))
+                TimerNotifier.update(repository.appContext, name, elapsed)
             }
         }
     }
@@ -70,6 +96,7 @@ class TimerViewModel(private val repository: CadenceRepository) : ViewModel() {
     fun stopAndLog() {
         val running = _state.value.runState as? TimerRunState.Running ?: return
         tickJob?.cancel()
+        TimerNotifier.clear(repository.appContext)
         val minutes = (running.elapsedSeconds / 60).coerceAtLeast(1)
         _state.value = _state.value.copy(runState = TimerRunState.Idle)
         logMinutes(minutes)
@@ -77,6 +104,7 @@ class TimerViewModel(private val repository: CadenceRepository) : ViewModel() {
 
     fun cancelTimer() {
         tickJob?.cancel()
+        TimerNotifier.clear(repository.appContext)
         _state.value = _state.value.copy(runState = TimerRunState.Idle)
     }
 

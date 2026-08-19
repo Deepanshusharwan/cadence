@@ -8,6 +8,7 @@ import com.cadence.app.network.dto.AnchorCreateDto
 import com.cadence.app.network.dto.AnchorDto
 import com.cadence.app.network.dto.CategoryDto
 import com.cadence.app.network.dto.UserUpdateDto
+import com.cadence.app.ui.components.MARK_OPTIONS
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -19,6 +20,7 @@ import kotlinx.coroutines.launch
 private data class SetupCore(
     val step: Int,
     val name: String,
+    val avatar: String,
     val categories: List<CategoryDto>,
     val anchors: List<AnchorDto>,
 )
@@ -26,6 +28,7 @@ private data class SetupCore(
 data class SetupUiState(
     val step: Int = 0,
     val name: String = "",
+    val avatar: String = "cat",
     val categories: List<CategoryDto> = emptyList(),
     val anchors: List<AnchorDto> = emptyList(),
     val isFinishing: Boolean = false,
@@ -48,30 +51,38 @@ private val RANDOM_NAMES = listOf("Alex", "Sam", "Jordan", "Riley", "Casey", "Mo
 class SetupViewModel(private val repository: CadenceRepository) : ViewModel() {
     private val _step = MutableStateFlow(0)
     private val _name = MutableStateFlow("")
+    private val _avatar = MutableStateFlow("cat")
     private val _isFinishing = MutableStateFlow(false)
     private val _errorMessage = MutableStateFlow<String?>(null)
 
-    private val core = combine(_step, _name, repository.categories, repository.anchors) { step, name, categories, anchors ->
-        SetupCore(step, name, categories, anchors)
+    private val core = combine(_step, _name, _avatar, repository.categories, repository.anchors) { step, name, avatar, categories, anchors ->
+        SetupCore(step, name, avatar, categories, anchors)
     }
 
     val uiState: StateFlow<SetupUiState> = combine(core, _isFinishing, _errorMessage) { c, finishing, error ->
-        SetupUiState(c.step, c.name, c.categories, c.anchors, finishing, error)
+        SetupUiState(c.step, c.name, c.avatar, c.categories, c.anchors, finishing, error)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SetupUiState())
 
     init {
         // A returning user redoing setup (web's "Redo the full setup wizard"
         // equivalent) already has a name -- seed the field so Skip/Finish
         // can't blank it out. A genuinely new account has name == "".
+        // Avatar is seeded unconditionally (mirrors web's
+        // useState(store.state.profile.avatar)) -- the backend always has a
+        // default ("cat"), so there's no blank case to guard against.
         viewModelScope.launch {
-            repository.profile.first()?.name?.let { existing ->
-                if (existing.isNotBlank()) _name.value = existing
-            }
+            val profile = repository.profile.first()
+            profile?.name?.let { existing -> if (existing.isNotBlank()) _name.value = existing }
+            profile?.avatar?.let { _avatar.value = it }
         }
     }
 
     fun setName(value: String) {
         _name.value = value
+    }
+
+    fun setAvatar(key: String) {
+        _avatar.value = key
     }
 
     fun nextStep() {
@@ -106,20 +117,25 @@ class SetupViewModel(private val repository: CadenceRepository) : ViewModel() {
     }
 
     fun finish() {
-        completeOnboarding(_name.value.trim().ifBlank { "there" })
+        completeOnboarding(_name.value.trim().ifBlank { "there" }, _avatar.value)
     }
 
-    /** Mirrors the (fixed) web skipSetup: only invents a placeholder name
-     * for a genuinely blank profile -- never clobbers a name the user (or
-     * a previous setup pass) already entered. */
+    /** Mirrors the (fixed) web skipSetup: only invents a placeholder
+     * name+avatar for a genuinely blank profile -- never clobbers a name
+     * (or a picked avatar) the user, or a previous setup pass, already set. */
     fun skip() {
-        completeOnboarding(_name.value.trim().ifBlank { RANDOM_NAMES.random() })
+        val trimmedName = _name.value.trim()
+        if (trimmedName.isBlank()) {
+            completeOnboarding(RANDOM_NAMES.random(), MARK_OPTIONS.random().first)
+        } else {
+            completeOnboarding(trimmedName, avatar = null)
+        }
     }
 
-    private fun completeOnboarding(name: String) {
+    private fun completeOnboarding(name: String, avatar: String?) {
         viewModelScope.launch {
             _isFinishing.value = true
-            val result = repository.updateProfile(UserUpdateDto(name = name, onboarded = true))
+            val result = repository.updateProfile(UserUpdateDto(name = name, avatar = avatar, onboarded = true))
             _errorMessage.value = (result as? ApiResult.Failure)?.message
             _isFinishing.value = false
         }

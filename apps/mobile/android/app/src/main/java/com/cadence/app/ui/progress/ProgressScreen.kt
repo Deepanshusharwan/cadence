@@ -22,9 +22,12 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.cadence.app.R
 import com.cadence.app.data.CadenceRepository
 import com.cadence.app.ui.components.CadenceCard
 import com.cadence.app.ui.components.CadenceGhostButton
+import com.cadence.app.ui.components.CategoryDot
+import com.cadence.app.ui.components.EmptyStateIllustration
 import com.cadence.app.ui.theme.CadenceThemeTokens
 
 @Composable
@@ -59,10 +62,20 @@ fun ProgressScreen(repository: CadenceRepository, onOpenReview: () -> Unit) {
                 }
             }
 
-            if (state.weekly.isNotEmpty()) {
+            item {
+                Text("This week", style = MaterialTheme.typography.titleMedium, color = colors.inkBlack)
+            }
+            if (state.weekly.isEmpty()) {
                 item {
-                    Text("This week", style = MaterialTheme.typography.titleMedium, color = colors.inkBlack)
+                    CadenceCard {
+                        EmptyStateIllustration(
+                            drawableRes = R.drawable.illustration_empty_progress,
+                            title = "Nothing to show yet",
+                            subtitle = "Complete a session or two to see your progress grow.",
+                        )
+                    }
                 }
+            } else {
                 items(state.weekly) { item -> WeeklyItemRow(item) }
             }
 
@@ -125,8 +138,11 @@ private fun WeeklyItemRow(item: WeeklyItemProgress) {
         "${item.weeklySessionCount} sessions"
     }
     CadenceCard {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(item.category.name, color = colors.inkBlack, fontWeight = FontWeight.Medium)
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
+                CategoryDot(item.category.color)
+                Text(item.category.name, color = colors.inkBlack, fontWeight = FontWeight.Medium)
+            }
             Text(label, color = colors.stone, style = MaterialTheme.typography.bodySmall)
         }
     }

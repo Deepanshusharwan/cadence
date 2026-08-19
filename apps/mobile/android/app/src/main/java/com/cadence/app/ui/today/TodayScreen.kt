@@ -2,6 +2,7 @@
 
 package com.cadence.app.ui.today
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -10,33 +11,67 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.lifecycle.viewmodel.initializer
+import com.cadence.app.R
 import com.cadence.app.data.CadenceRepository
+import com.cadence.app.network.dto.CategoryDto
 import com.cadence.app.ui.components.CadenceCard
+import com.cadence.app.ui.components.CadencePrimaryButton
+import com.cadence.app.ui.components.CategoryDot
+import com.cadence.app.ui.components.EmptyStateIllustration
+import com.cadence.app.ui.components.ToastEffect
 import com.cadence.app.ui.theme.CadenceThemeTokens
 
 @Composable
-fun TodayScreen(repository: CadenceRepository) {
+fun TodayScreen(repository: CadenceRepository, onOpenTimer: () -> Unit) {
     val viewModel: TodayViewModel = viewModel(
         factory = viewModelFactory { initializer { TodayViewModel(repository) } },
     )
     val state by viewModel.uiState.collectAsState()
     val colors = CadenceThemeTokens.colors
+    var actionTarget by remember { mutableStateOf<CategoryDto?>(null) }
+
+    ToastEffect(state.errorMessage) { viewModel.dismissError() }
+    ToastEffect(state.lastLoggedMessage) { viewModel.dismissMessage() }
+
+    actionTarget?.let { category ->
+        LogOrTimerDialog(
+            category = category,
+            onDismiss = { actionTarget = null },
+            onOpenTimer = {
+                viewModel.openTimerFor(category.id)
+                actionTarget = null
+                onOpenTimer()
+            },
+            onLog = { minutes ->
+                viewModel.logManual(category.id, minutes)
+                actionTarget = null
+            },
+        )
+    }
 
     PullToRefreshBox(isRefreshing = state.isRefreshing, onRefresh = viewModel::refresh) {
         LazyColumn(
@@ -87,14 +122,6 @@ fun TodayScreen(repository: CadenceRepository) {
                 }
             }
 
-            state.errorMessage?.let { message ->
-                item {
-                    CadenceCard(backgroundColor = colors.skyTint) {
-                        Text("Couldn't refresh: $message", color = colors.accent)
-                    }
-                }
-            }
-
             if (state.schedule.isEmpty() && !state.isRefreshing) {
                 item {
                     CadenceCard {
@@ -121,16 +148,28 @@ fun TodayScreen(repository: CadenceRepository) {
                 }
             }
 
-            if (state.progress.isNotEmpty()) {
+            item {
+                Text(
+                    "This week",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = colors.inkBlack,
+                    modifier = Modifier.padding(top = 8.dp),
+                )
+            }
+            if (state.progress.isEmpty()) {
                 item {
-                    Text(
-                        "This week",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = colors.inkBlack,
-                        modifier = Modifier.padding(top = 8.dp),
-                    )
+                    CadenceCard {
+                        EmptyStateIllustration(
+                            drawableRes = R.drawable.illustration_empty_categories,
+                            title = "No items yet",
+                            subtitle = "Add your first item from Settings to start organizing your week around it.",
+                        )
+                    }
                 }
-                items(state.progress) { progress -> CategoryProgressRow(progress) }
+            } else {
+                items(state.progress) { progress ->
+                    CategoryProgressRow(progress, onClick = { actionTarget = progress.category })
+                }
             }
         }
     }
@@ -160,7 +199,7 @@ private fun DayTypeChip(label: String, selected: Boolean, onClick: () -> Unit) {
  * bar -- fixed on web in "Fix no-target categories showing frozen No
  * minimum instead of logged progress", ported here for the same behavior. */
 @Composable
-private fun CategoryProgressRow(progress: CategoryProgress) {
+private fun CategoryProgressRow(progress: CategoryProgress, onClick: () -> Unit) {
     val colors = CadenceThemeTokens.colors
     val category = progress.category
     val target = category.weeklyTarget
@@ -187,9 +226,12 @@ private fun CategoryProgressRow(progress: CategoryProgress) {
         ""
     }
 
-    CadenceCard {
+    CadenceCard(modifier = Modifier.clickable(onClick = onClick)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Text(category.name, color = colors.inkBlack, fontWeight = FontWeight.Medium)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                CategoryDot(category.color)
+                Text(category.name, color = colors.inkBlack, fontWeight = FontWeight.Medium)
+            }
             Text(label + lastWeekLabel, color = colors.stone, style = MaterialTheme.typography.bodySmall)
         }
         LinearProgressIndicator(
@@ -199,4 +241,36 @@ private fun CategoryProgressRow(progress: CategoryProgress) {
             trackColor = colors.skyTint,
         )
     }
+}
+
+/** Tapping a "This week" row offers the same two actions the web dashboard's
+ * category chips do (see apps/web/src/app/dashboard/page.tsx's
+ * `timerMode === "timer" ? startTimerFor : setPendingManualLog`): jump to
+ * the Timer tab with this item pre-selected, or log minutes right here. */
+@Composable
+private fun LogOrTimerDialog(category: CategoryDto, onDismiss: () -> Unit, onOpenTimer: () -> Unit, onLog: (Int) -> Unit) {
+    val colors = CadenceThemeTokens.colors
+    var minutesText by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(category.name, color = colors.inkBlack) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                CadencePrimaryButton(text = "Start timer", onClick = onOpenTimer, modifier = Modifier.fillMaxWidth())
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(
+                        value = minutesText,
+                        onValueChange = { minutesText = it.filter(Char::isDigit) },
+                        label = { Text("Minutes") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(onClick = { minutesText.toIntOrNull()?.let(onLog) }) { Text("Log") }
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
 }

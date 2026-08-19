@@ -1,11 +1,14 @@
 package com.cadence.app.ui.setup
 
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -13,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -26,11 +30,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import com.cadence.app.R
 import com.cadence.app.data.CadenceRepository
 import com.cadence.app.network.dto.AnchorDto
 import com.cadence.app.network.dto.CategoryDto
@@ -39,6 +45,8 @@ import com.cadence.app.ui.components.CadenceCard
 import com.cadence.app.ui.components.CadenceGhostButton
 import com.cadence.app.ui.components.CadencePrimaryButton
 import com.cadence.app.ui.components.ItemForm
+import com.cadence.app.ui.components.MARK_OPTIONS
+import com.cadence.app.ui.components.MarkAvatar
 import com.cadence.app.ui.theme.CadenceThemeTokens
 
 private val STEP_TITLES = listOf("Identity", "Categories", "Schedule", "Review")
@@ -89,7 +97,12 @@ fun SetupScreen(repository: CadenceRepository) {
             }
 
             when (state.step) {
-                0 -> IdentityStep(name = state.name, onNameChange = viewModel::setName)
+                0 -> IdentityStep(
+                    name = state.name,
+                    onNameChange = viewModel::setName,
+                    avatar = state.avatar,
+                    onAvatarChange = viewModel::setAvatar,
+                )
                 1 -> CategoriesStep(viewModel = viewModel, categories = state.categories)
                 2 -> ScheduleStep(viewModel = viewModel, anchors = state.anchors)
                 else -> ReviewStep(state = state)
@@ -154,7 +167,7 @@ private fun StepIndicator(currentStep: Int) {
 }
 
 @Composable
-private fun IdentityStep(name: String, onNameChange: (String) -> Unit) {
+private fun IdentityStep(name: String, onNameChange: (String) -> Unit, avatar: String, onAvatarChange: (String) -> Unit) {
     val colors = CadenceThemeTokens.colors
     Text("What should we call you?", style = MaterialTheme.typography.headlineSmall, color = colors.inkBlack)
     OutlinedTextField(
@@ -163,6 +176,22 @@ private fun IdentityStep(name: String, onNameChange: (String) -> Unit) {
         label = { Text("Your name") },
         modifier = Modifier.fillMaxWidth(),
     )
+
+    Text("Pick a face", color = colors.inkBlack, fontWeight = FontWeight.Medium, modifier = Modifier.padding(top = 8.dp))
+    FlowRow(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        MARK_OPTIONS.forEach { (key, _) ->
+            val selected = avatar == key
+            MarkAvatar(
+                key = key,
+                size = 56.dp,
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .clickable { onAvatarChange(key) }
+                    .padding(if (selected) 0.dp else 4.dp)
+                    .then(if (selected) Modifier.border(2.dp, colors.accent, CircleShape).padding(2.dp) else Modifier),
+            )
+        }
+    }
 }
 
 @Composable
@@ -218,6 +247,13 @@ private fun ScheduleStep(viewModel: SetupViewModel, anchors: List<AnchorDto>) {
 @Composable
 private fun ReviewStep(state: SetupUiState) {
     val colors = CadenceThemeTokens.colors
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+        Image(
+            painter = painterResource(R.drawable.illustration_all_set),
+            contentDescription = null,
+            modifier = Modifier.widthIn(max = 200.dp),
+        )
+    }
     Text("You're all set", style = MaterialTheme.typography.headlineSmall, color = colors.inkBlack)
     CadenceCard {
         Text("Name: ${state.name.ifBlank { "there" }}", color = colors.inkBlack)

@@ -1,5 +1,7 @@
 package com.cadence.app.ui
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -7,8 +9,13 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import com.cadence.app.ui.components.LocalToastState
+import com.cadence.app.ui.components.ToastHost
+import com.cadence.app.ui.components.ToastState
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -53,7 +60,10 @@ private val bottomNavDestinations = listOf(
 @Composable
 fun CadenceApp(repository: CadenceRepository, themePreferences: ThemePreferences, modifier: Modifier = Modifier) {
     val navController = rememberNavController()
+    val toastState = remember { ToastState() }
 
+    CompositionLocalProvider(LocalToastState provides toastState) {
+    Box(modifier = Modifier.fillMaxSize()) {
     Scaffold(
         modifier = modifier,
         containerColor = CadenceThemeTokens.colors.paperWarmth,
@@ -97,8 +107,19 @@ fun CadenceApp(repository: CadenceRepository, themePreferences: ThemePreferences
             startDestination = CadenceDestination.Today.route,
             modifier = Modifier.padding(innerPadding),
         ) {
-            composable(CadenceDestination.Today.route) { TodayScreen(repository) }
-            composable(CadenceDestination.Timer.route) { TimerScreen(repository) }
+            composable(CadenceDestination.Today.route) {
+                TodayScreen(
+                    repository,
+                    onOpenTimer = {
+                        navController.navigate(CadenceDestination.Timer.route) {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                )
+            }
+            composable(CadenceDestination.Timer.route) { TimerScreen(repository, themePreferences) }
             composable(CadenceDestination.Calendar.route) { CalendarScreen(repository) }
             composable(CadenceDestination.Progress.route) {
                 ProgressScreen(repository, onOpenReview = { navController.navigate(CadenceDestination.Review.route) })
@@ -106,6 +127,9 @@ fun CadenceApp(repository: CadenceRepository, themePreferences: ThemePreferences
             composable(CadenceDestination.Review.route) { ReviewScreen(repository) }
             composable(CadenceDestination.Settings.route) { SettingsScreen(repository, themePreferences) }
         }
+    }
+    ToastHost(toastState)
+    }
     }
 }
 

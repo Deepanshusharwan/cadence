@@ -16,7 +16,13 @@ import com.cadence.app.network.dto.EventCreateDto
 import com.cadence.app.network.dto.ReviewUpsertDto
 import com.cadence.app.network.dto.SessionCreateDto
 import com.cadence.app.network.dto.UserUpdateDto
+import com.cadence.app.notifications.ReminderScheduler
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -34,7 +40,7 @@ import kotlinx.coroutines.launch
 class CadenceRepository(
     private val api: ApiService,
     private val local: CadenceLocalStore,
-    private val appContext: Context,
+    val appContext: Context,
 ) {
     val profile = local.cachedProfile
     val categories = local.cachedCategories
@@ -51,6 +57,20 @@ class CadenceRepository(
     val weekSchedule = local.cachedWeekSchedule
     val pendingSessions = local.pendingSessions
     val pendingDayEntries = local.pendingDayEntries
+
+    // Cross-cutting, app-lifetime concern (not tied to any one screen's
+    // ViewModel scope) -- reschedules schedule-block reminders (see
+    // notifications/ReminderScheduler.kt) whenever the anchors list or the
+    // notifications_enabled flag changes, same dependency array as web's
+    // own anchor-notification useEffect.
+    private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
+    init {
+        repositoryScope.launch {
+            combine(anchors, profile) { a, p -> a to (p?.notificationsEnabled ?: false) }
+                .collect { (currentAnchors, enabled) -> ReminderScheduler.reschedule(appContext, currentAnchors, enabled) }
+        }
+    }
 
     suspend fun refreshAll(): ApiResult<Unit> = apiCall {
         coroutineScope {
@@ -232,4 +252,22 @@ class CadenceRepository(
     }
 
     suspend fun signOutCleanup() = local.clearAll()
+
+    // --- Cross-screen "open Timer for this item" handoff -----------------
+
+    private val _pendingTimerCategoryId = MutableStateFlow<String?>(null)
+
+    /** In-memory only (not persisted) -- Today's "This week" rows use this
+     * to jump to the Timer tab with a category pre-selected, since the
+     * NavHost route itself carries no arguments. [consumePendingTimerCategory]
+     * clears it on read so it only ever applies once. */
+    fun requestTimerFor(categoryId: String) {
+        _pendingTimerCategoryId.value = categoryId
+    }
+
+    fun consumePendingTimerCategory(): String? {
+        val value = _pendingTimerCategoryId.value
+        _pendingTimerCategoryId.value = null
+        return value
+    }
 }

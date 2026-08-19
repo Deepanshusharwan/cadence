@@ -53,6 +53,10 @@ class SettingsViewModel(
         }
     }
 
+    fun dismissSignOutError() {
+        _signOutError.value = null
+    }
+
     fun addItem(name: String, trackingMode: String, weeklyTarget: Double?, priorityTier: Int, weekendPreferred: Boolean) {
         if (name.isBlank()) return
         viewModelScope.launch {
@@ -102,5 +106,30 @@ class SettingsViewModel(
      * the signed-in user to other devices, same as the web app. */
     fun setAccentColor(key: String) {
         viewModelScope.launch { repository.updateProfile(UserUpdateDto(accentColor = key)) }
+    }
+
+    fun saveProfile(name: String, avatar: String) {
+        viewModelScope.launch { repository.updateProfile(UserUpdateDto(name = name.trim(), avatar = avatar)) }
+    }
+
+    fun saveAccount(timezone: String, wakeStart: String, wakeEnd: String, leaveMonthlyAllowance: Int, leaveCarryCap: Int) {
+        viewModelScope.launch {
+            repository.updateProfile(
+                UserUpdateDto(
+                    timezone = timezone,
+                    wakeStart = wakeStart,
+                    wakeEnd = wakeEnd,
+                    leaveMonthlyAllowance = leaveMonthlyAllowance,
+                    leaveCarryCap = leaveCarryCap,
+                ),
+            )
+        }
+    }
+
+    /** Backend-synced (`notifications_enabled` on the user, not a device
+     * preference) -- see notifications/ReminderScheduler.kt, which reacts
+     * to this the moment it changes via CadenceRepository's own combine. */
+    fun setNotificationsEnabled(enabled: Boolean) {
+        viewModelScope.launch { repository.updateProfile(UserUpdateDto(notificationsEnabled = enabled)) }
     }
 }

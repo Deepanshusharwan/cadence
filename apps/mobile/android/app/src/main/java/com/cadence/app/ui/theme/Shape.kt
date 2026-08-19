@@ -12,10 +12,17 @@ object CadenceShapes {
     val pill = RoundedCornerShape(percent = 50)
 }
 
+/** `extraLarge` deliberately stays a card radius, not [CadenceShapes.pill] --
+ * Material3 defaults dialogs/bottom sheets (AlertDialog, ModalBottomSheet,
+ * DatePicker, ...) to `shapes.extraLarge`, and a 50%-rounded pill on a
+ * roughly-square container renders as a circle, clipping their content.
+ * Nothing in this app reaches for `MaterialTheme.shapes.extraLarge`
+ * expecting a pill -- components that actually want one use
+ * [CadenceShapes.pill] directly (see ui/components/CadenceButton.kt). */
 val CadenceMaterialShapes = Shapes(
     extraSmall = CadenceShapes.small,
     small = CadenceShapes.button,
     medium = CadenceShapes.card,
     large = CadenceShapes.card,
-    extraLarge = CadenceShapes.pill,
+    extraLarge = CadenceShapes.card,
 )

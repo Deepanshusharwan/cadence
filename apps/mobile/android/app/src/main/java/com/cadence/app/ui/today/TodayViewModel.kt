@@ -50,6 +50,7 @@ data class TodayUiState(
     val todayDayType: String = "NORMAL",
     val isRefreshing: Boolean = false,
     val errorMessage: String? = null,
+    val lastLoggedMessage: String? = null,
 )
 
 /** Backs the Today screen (spec §96): day's schedule, leave balance,
@@ -65,6 +66,7 @@ data class TodayUiState(
 class TodayViewModel(private val repository: CadenceRepository) : ViewModel() {
     private val _isRefreshing = MutableStateFlow(true)
     private val _errorMessage = MutableStateFlow<String?>(null)
+    private val _lastLoggedMessage = MutableStateFlow<String?>(null)
 
     private val todayIso: String get() = LocalDate.now().toString()
 
@@ -78,7 +80,7 @@ class TodayViewModel(private val repository: CadenceRepository) : ViewModel() {
         TodayData(schedule, leave, categories, sessions, dayTypes)
     }
 
-    val uiState: StateFlow<TodayUiState> = combine(data, _isRefreshing, _errorMessage) { d, refreshing, error ->
+    val uiState: StateFlow<TodayUiState> = combine(data, _isRefreshing, _errorMessage, _lastLoggedMessage) { d, refreshing, error, logged ->
         TodayUiState(
             schedule = d.schedule,
             leaveBalance = d.leaveBalance,
@@ -94,6 +96,7 @@ class TodayViewModel(private val repository: CadenceRepository) : ViewModel() {
             todayDayType = d.dayTypes[todayIso] ?: "NORMAL",
             isRefreshing = refreshing,
             errorMessage = error,
+            lastLoggedMessage = logged,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TodayUiState())
 
@@ -118,5 +121,35 @@ class TodayViewModel(private val repository: CadenceRepository) : ViewModel() {
     fun markToday(dayType: String) {
         val next = if (uiState.value.todayDayType == dayType) "NORMAL" else dayType
         viewModelScope.launch { repository.setDayType(todayIso, next) }
+    }
+
+    /** Tapping a "This week" row offers Start timer / Log time -- this
+     * backs the latter, writing straight through the offline outbox
+     * exactly like TimerViewModel's manual log path. */
+    fun logManual(categoryId: String, minutes: Int) {
+        if (minutes <= 0) return
+        val category = uiState.value.progress.firstOrNull { it.category.id == categoryId }?.category
+        viewModelScope.launch {
+            repository.logSession(categoryId = categoryId, date = todayIso, durationMinutes = minutes)
+            val belowThreshold = category?.trackingMode == "sessions" && minutes < 45
+            val name = category?.name ?: "item"
+            _lastLoggedMessage.value = if (belowThreshold) {
+                "Logged ${minutes}m to $name — under 45m, won't count toward this week"
+            } else {
+                "Logged ${minutes}m to $name"
+            }
+        }
+    }
+
+    fun openTimerFor(categoryId: String) {
+        repository.requestTimerFor(categoryId)
+    }
+
+    fun dismissMessage() {
+        _lastLoggedMessage.value = null
+    }
+
+    fun dismissError() {
+        _errorMessage.value = null
     }
 }

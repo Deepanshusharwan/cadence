@@ -21,11 +21,21 @@ private val Context.themeDataStore: DataStore<Preferences> by preferencesDataSto
 class ThemePreferences(private val context: Context) {
     private object Keys {
         val MODE = stringPreferencesKey("theme_mode")
+        val WATCH_FACE = stringPreferencesKey("watch_face")
     }
 
     val mode: Flow<String> = context.themeDataStore.data.map { it[Keys.MODE] ?: "light" }
 
     suspend fun setMode(mode: String) {
         context.themeDataStore.edit { it[Keys.MODE] = mode }
+    }
+
+    /** Timer watch-face pick (Plus-gated, see ui/timer/WatchFaces.kt) --
+     * same device-level, unsynced treatment as [mode]. Mirrors the web
+     * dashboard's own localStorage-persisted `watchFace` state exactly. */
+    val watchFace: Flow<String> = context.themeDataStore.data.map { it[Keys.WATCH_FACE] ?: "chronograph" }
+
+    suspend fun setWatchFace(key: String) {
+        context.themeDataStore.edit { it[Keys.WATCH_FACE] = key }
     }
 }
