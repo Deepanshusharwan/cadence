@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.cadence.app.data.CadenceRepository
 import com.cadence.app.data.local.ThemePreferences
 import com.cadence.app.network.ApiResult
+import com.cadence.app.network.dto.AnchorCreateDto
+import com.cadence.app.network.dto.AnchorDto
 import com.cadence.app.network.dto.CategoryDto
 import com.cadence.app.network.dto.CategoryUpdateDto
 import com.cadence.app.network.dto.UserDto
@@ -29,6 +31,9 @@ class SettingsViewModel(
 
     val categories: StateFlow<List<CategoryDto>> =
         repository.categories.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val anchors: StateFlow<List<AnchorDto>> =
+        repository.anchors.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val themeMode: StateFlow<String> =
         themePreferences.mode.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "light")
@@ -72,6 +77,20 @@ class SettingsViewModel(
 
     fun dismissItemError() {
         _itemError.value = null
+    }
+
+    fun addAnchor(body: AnchorCreateDto) {
+        viewModelScope.launch {
+            val result = repository.createAnchor(body)
+            _itemError.value = (result as? ApiResult.Failure)?.message
+        }
+    }
+
+    fun removeAnchor(id: String) {
+        viewModelScope.launch {
+            val result = repository.deleteAnchor(id)
+            _itemError.value = (result as? ApiResult.Failure)?.message
+        }
     }
 
     /** Device-level, not synced -- see data/local/ThemePreferences.kt. */

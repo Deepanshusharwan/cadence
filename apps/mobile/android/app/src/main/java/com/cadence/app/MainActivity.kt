@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -20,6 +21,7 @@ import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.cadence.app.di.AppContainer
 import com.cadence.app.ui.CadenceApp
+import com.cadence.app.ui.setup.SetupScreen
 import com.cadence.app.ui.theme.CadenceTheme
 import com.cadence.app.ui.theme.accentColorFor
 import com.clerk.api.Clerk
@@ -63,6 +65,15 @@ private fun CadenceRoot(container: AppContainer) {
     // had no session to pull a token from).
     val user by Clerk.userFlow.collectAsStateWithLifecycle()
 
+    // Resolves onboarded/routing state right after sign-in. Nothing else
+    // triggers this fetch when the destination is Setup (that screen
+    // replaces the whole app, so TodayViewModel/etc.'s own refreshAll()
+    // never runs) -- without this, `profile` would stay null forever and
+    // the loading spinner below would never resolve.
+    LaunchedEffect(user) {
+        if (user != null) container.repository.refreshProfile()
+    }
+
     // Appearance (light/dark/system) is a device-level preference, kept
     // separate from the account and defaulting to light -- see
     // data/local/ThemePreferences.kt, mirroring apps/web/src/lib/theme.ts.
@@ -96,6 +107,8 @@ private fun CadenceRoot(container: AppContainer) {
             when {
                 !isInitialized -> CircularProgressIndicator()
                 user == null -> AuthView(isDismissible = false)
+                profile == null -> CircularProgressIndicator()
+                profile?.onboarded == false -> SetupScreen(repository = container.repository)
                 else -> CadenceApp(
                     repository = container.repository,
                     themePreferences = container.themePreferences,

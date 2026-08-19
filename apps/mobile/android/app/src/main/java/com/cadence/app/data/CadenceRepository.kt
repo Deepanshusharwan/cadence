@@ -140,6 +140,14 @@ class CadenceRepository(
 
     // --- Profile (name/avatar/accent color/etc) -----------------------------
 
+    /** Just `GET /me` -- used to resolve onboarded/routing state right after
+     * sign-in, before any screen that would trigger the full [refreshAll]
+     * has been shown (e.g. Setup, which replaces the whole app while
+     * onboarded is false). */
+    suspend fun refreshProfile(): ApiResult<Unit> = apiCall {
+        local.saveProfile(api.getMe())
+    }
+
     suspend fun updateProfile(patch: UserUpdateDto): ApiResult<Unit> = apiCall {
         local.saveProfile(api.updateMe(patch))
     }

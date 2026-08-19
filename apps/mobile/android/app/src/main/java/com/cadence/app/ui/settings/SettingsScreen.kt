@@ -13,13 +13,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
@@ -31,24 +28,33 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.cadence.app.data.CadenceRepository
 import com.cadence.app.data.local.ThemePreferences
+import com.cadence.app.network.dto.AnchorDto
 import com.cadence.app.network.dto.CategoryDto
+import com.cadence.app.ui.components.AnchorForm
 import com.cadence.app.ui.components.CadenceCard
 import com.cadence.app.ui.components.CadenceGhostButton
 import com.cadence.app.ui.components.CadenceOutlinedButton
-import com.cadence.app.ui.components.CadencePrimaryButton
+import com.cadence.app.ui.components.ItemForm
 import com.cadence.app.ui.theme.ACCENT_OPTIONS
 import com.cadence.app.ui.theme.CadenceThemeTokens
 
-/** Profile + item (category) management + theme (Plus) + sign out.
- * Anchors/schedule editing and some account-level settings (wake window,
- * leave allowance) stay on the web app for now -- see the mobile build
+private val WEEKDAY_LETTERS = mapOf(1 to "M", 2 to "T", 3 to "W", 4 to "T", 5 to "F", 6 to "S", 0 to "S")
+
+private fun describeRecurrence(anchor: AnchorDto): String = when (anchor.recurrence) {
+    "once" -> anchor.date ?: "one-off"
+    "weekly" -> anchor.daysOfWeek.mapNotNull { WEEKDAY_LETTERS[it] }.joinToString("").ifEmpty { "weekly" }
+    else -> "every day"
+}
+
+/** Profile + item (category) + schedule (anchor) management + theme (Plus)
+ * + sign out. Some account-level settings (wake window, leave allowance,
+ * timezone, avatar) stay on the web app for now -- see the mobile build
  * plan's deferred list. */
 @Composable
 fun SettingsScreen(repository: CadenceRepository, themePreferences: ThemePreferences) {
@@ -57,11 +63,13 @@ fun SettingsScreen(repository: CadenceRepository, themePreferences: ThemePrefere
     )
     val profile by viewModel.profile.collectAsState()
     val categories by viewModel.categories.collectAsState()
+    val anchors by viewModel.anchors.collectAsState()
     val themeMode by viewModel.themeMode.collectAsState()
     val signOutError by viewModel.signOutError.collectAsState()
     val itemError by viewModel.itemError.collectAsState()
     val colors = CadenceThemeTokens.colors
     var showAddItem by remember { mutableStateOf(false) }
+    var showAddAnchor by remember { mutableStateOf(false) }
 
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
@@ -101,7 +109,7 @@ fun SettingsScreen(repository: CadenceRepository, themePreferences: ThemePrefere
         }
 
         if (showAddItem) {
-            AddItemForm(
+            ItemForm(
                 onCancel = { showAddItem = false },
                 onSave = { name, mode, target, tier, weekend ->
                     viewModel.addItem(name, mode, target, tier, weekend)
@@ -110,6 +118,28 @@ fun SettingsScreen(repository: CadenceRepository, themePreferences: ThemePrefere
             )
         } else {
             CadenceGhostButton(text = "+ Add item", onClick = { showAddItem = true }, modifier = Modifier.fillMaxWidth())
+        }
+
+        Text("Schedule", style = MaterialTheme.typography.titleMedium, color = colors.inkBlack)
+
+        if (anchors.isEmpty()) {
+            CadenceCard { Text("No fixed times yet.", color = colors.stone) }
+        }
+
+        anchors.forEach { anchor ->
+            AnchorRow(anchor = anchor, onRemove = { viewModel.removeAnchor(anchor.id) })
+        }
+
+        if (showAddAnchor) {
+            AnchorForm(
+                onCancel = { showAddAnchor = false },
+                onSave = { body ->
+                    viewModel.addAnchor(body)
+                    showAddAnchor = false
+                },
+            )
+        } else {
+            CadenceGhostButton(text = "+ Add anchor", onClick = { showAddAnchor = true }, modifier = Modifier.fillMaxWidth())
         }
 
         signOutError?.let { message ->
@@ -217,72 +247,26 @@ private fun ItemRow(category: CategoryDto, onRemove: () -> Unit) {
 }
 
 @Composable
-private fun AddItemForm(
-    onCancel: () -> Unit,
-    onSave: (name: String, trackingMode: String, weeklyTarget: Double?, priorityTier: Int, weekendPreferred: Boolean) -> Unit,
-) {
+private fun AnchorRow(anchor: AnchorDto, onRemove: () -> Unit) {
     val colors = CadenceThemeTokens.colors
-    var name by remember { mutableStateOf("") }
-    var trackingMode by remember { mutableStateOf("hours") }
-    var targetText by remember { mutableStateOf("") }
-    var tier by remember { mutableStateOf(1) }
-    var weekendPreferred by remember { mutableStateOf(false) }
-
     CadenceCard {
-        OutlinedTextField(
-            value = name,
-            onValueChange = { name = it },
-            label = { Text("Item name — e.g. Guitar") },
-            modifier = Modifier.fillMaxWidth(),
-        )
-
-        Row(modifier = Modifier.padding(top = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilterChip(
-                selected = trackingMode == "hours",
-                onClick = { trackingMode = "hours" },
-                label = { Text("Hours") },
-                colors = FilterChipDefaults.filterChipColors(selectedContainerColor = colors.accent, selectedLabelColor = colors.pureWhite),
-            )
-            FilterChip(
-                selected = trackingMode == "sessions",
-                onClick = { trackingMode = "sessions" },
-                label = { Text("Sessions") },
-                colors = FilterChipDefaults.filterChipColors(selectedContainerColor = colors.accent, selectedLabelColor = colors.pureWhite),
-            )
-        }
-
-        OutlinedTextField(
-            value = targetText,
-            onValueChange = { targetText = it.filter(Char::isDigit) },
-            label = { Text("Weekly target (blank = no minimum)") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-        )
-
-        Text("Priority tier", style = MaterialTheme.typography.bodySmall, color = colors.stone, modifier = Modifier.padding(top = 8.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            (1..5).forEach { t ->
-                FilterChip(
-                    selected = tier == t,
-                    onClick = { tier = t },
-                    label = { Text("$t") },
-                    colors = FilterChipDefaults.filterChipColors(selectedContainerColor = colors.accent, selectedLabelColor = colors.pureWhite),
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Column {
+                Text(anchor.label, color = colors.inkBlack, fontWeight = FontWeight.Medium)
+                Text(
+                    "${anchor.start}–${anchor.end} · ${describeRecurrence(anchor)}${if (!anchor.isFocusBlock) " · fixed" else ""}",
+                    color = colors.stone,
+                    style = MaterialTheme.typography.bodySmall,
                 )
             }
-        }
-
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
-            Checkbox(checked = weekendPreferred, onCheckedChange = { weekendPreferred = it })
-            Text("Weekend-preferred", color = colors.inkBlack, style = MaterialTheme.typography.bodySmall)
-        }
-
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 12.dp)) {
-            CadencePrimaryButton(
-                text = "Save",
-                onClick = { onSave(name, trackingMode, targetText.toDoubleOrNull(), tier, weekendPreferred) },
-                enabled = name.isNotBlank(),
+            Text(
+                "Remove",
+                color = colors.coral,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier
+                    .padding(start = 8.dp)
+                    .clickable(onClick = onRemove),
             )
-            CadenceGhostButton(text = "Cancel", onClick = onCancel)
         }
     }
 }
