@@ -1,0 +1,7 @@
+<resources>
+    <!-- Only used for the pre-Compose window background (avoids a white
+         flash before CadenceTheme takes over) and the launcher icon;
+         everything else is themed in Kotlin, see ui/theme/Color.kt. -->
+    <color name="paper_warmth">#F6F5F4</color>
+    <color name="notion_blue">#0075DE</color>
+</resources>

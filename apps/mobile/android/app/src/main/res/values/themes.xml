@@ -1,0 +1,9 @@
+<resources>
+    <!-- Minimal platform theme; Compose (CadenceTheme, ui/theme/Theme.kt)
+         owns all real theming. This only sets the window background so
+         there's no white flash before Compose renders. -->
+    <style name="Theme.Cadence" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/paper_warmth</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
+</resources>

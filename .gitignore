@@ -44,5 +44,15 @@ apps/mobile/ios/**/DerivedData/
 apps/mobile/ios/**/*.xcuserstate
 apps/mobile/ios/**/xcuserdata/
 apps/mobile/android/**/.gradle/
+apps/mobile/android/**/.kotlin/
 apps/mobile/android/**/build/
+apps/mobile/android/**/.cxx/
+apps/mobile/android/**/captures/
 apps/mobile/android/local.properties
+apps/mobile/android/**/*.apk
+apps/mobile/android/**/*.aab
+apps/mobile/android/**/*.hprof
+# Release signing material -- never committed, same spirit as .env/local.properties
+apps/mobile/android/**/*.keystore
+apps/mobile/android/**/*.jks
+apps/mobile/android/**/key.properties

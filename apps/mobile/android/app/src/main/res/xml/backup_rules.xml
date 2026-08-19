@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<full-backup-content>
+    <!-- The session outbox and cached snapshot (data/local/CadenceLocalStore.kt)
+         are DataStore files under a predictable name; exclude them from
+         auto-backup so a restored device doesn't wake up with another
+         account's stale cache or unsynced sessions silently attached to
+         whoever signs in next. -->
+    <exclude domain="file" path="datastore/cadence_store.preferences_pb" />
+</full-backup-content>
