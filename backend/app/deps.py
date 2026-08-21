@@ -1,4 +1,5 @@
 from fastapi import Depends, HTTPException, status
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from . import models
@@ -42,8 +43,19 @@ def get_current_user(
                     **starter,
                 )
             )
-        db.commit()
-        db.refresh(user)
+        try:
+            db.commit()
+        except IntegrityError:
+            # A brand-new user's first authenticated request fans out to
+            # several endpoints in parallel (store.tsx's bootstrap), each
+            # hitting this same lazy-create path -- another one of them can
+            # win the race and commit first. Treat that as success: roll
+            # back this attempt's half-done insert and use the row the
+            # other request just created instead of failing the request.
+            db.rollback()
+            user = db.get(models.User, user_id)
+        else:
+            db.refresh(user)
 
     if user.banned:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Account suspended")
