@@ -24,6 +24,7 @@ import com.cadence.app.ui.CadenceApp
 import com.cadence.app.ui.setup.SetupScreen
 import com.cadence.app.ui.theme.CadenceTheme
 import com.cadence.app.ui.theme.accentColorFor
+import com.cadence.app.ui.theme.rememberCadenceClerkTheme
 import com.clerk.api.Clerk
 import com.clerk.ui.auth.AuthView
 
@@ -106,7 +107,7 @@ private fun CadenceRoot(container: AppContainer) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             when {
                 !isInitialized -> CircularProgressIndicator()
-                user == null -> AuthView(isDismissible = false)
+                user == null -> AuthView(clerkTheme = rememberCadenceClerkTheme(darkTheme), isDismissible = false)
                 profile == null -> CircularProgressIndicator()
                 profile?.onboarded == false -> SetupScreen(repository = container.repository)
                 else -> CadenceApp(
