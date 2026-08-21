@@ -20,7 +20,7 @@ from .routers import (
     webhooks,
 )
 
-app = FastAPI(title="Cadence API")
+app = FastAPI(title="Cadence API", docs_url=None, redoc_url=None, openapi_url=None)
 
 settings = get_settings()
 app.add_middleware(
