@@ -60,9 +60,8 @@ private fun describeRecurrence(anchor: AnchorDto): String = when (anchor.recurre
 }
 
 /** Profile (name + avatar) + item (category) + schedule (anchor) management
- * + theme (Plus) + sign out. Some account-level settings (wake window,
- * leave allowance, timezone) stay on the web app for now -- see the mobile
- * build plan's deferred list. */
+ * + theme (Plus) + account (timezone/notifications/leave/wake window) +
+ * sign out. */
 @Composable
 fun SettingsScreen(repository: CadenceRepository, themePreferences: ThemePreferences) {
     val viewModel: SettingsViewModel = viewModel(
@@ -74,9 +73,11 @@ fun SettingsScreen(repository: CadenceRepository, themePreferences: ThemePrefere
     val themeMode by viewModel.themeMode.collectAsState()
     val signOutError by viewModel.signOutError.collectAsState()
     val itemError by viewModel.itemError.collectAsState()
+    val hasAnyPendingWork by viewModel.hasAnyPendingWork.collectAsState()
     val colors = CadenceThemeTokens.colors
     var showAddItem by remember { mutableStateOf(false) }
     var showAddAnchor by remember { mutableStateOf(false) }
+    var showSignOutConfirm by remember { mutableStateOf(false) }
     var isEditingProfile by remember { mutableStateOf(false) }
     var nameDraft by remember { mutableStateOf("") }
     var avatarDraft by remember { mutableStateOf("cat") }
@@ -233,7 +234,26 @@ fun SettingsScreen(repository: CadenceRepository, themePreferences: ThemePrefere
 
         com.cadence.app.ui.components.ToastEffect(signOutError, viewModel::dismissSignOutError)
 
-        CadenceOutlinedButton(text = "Sign out", onClick = viewModel::signOut)
+        CadenceOutlinedButton(
+            text = "Sign out",
+            onClick = { if (hasAnyPendingWork) showSignOutConfirm = true else viewModel.signOut() },
+        )
+
+        if (showSignOutConfirm) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { showSignOutConfirm = false },
+                title = { Text("Sign out?") },
+                text = { Text("Some changes haven't synced yet -- signing out now will lose them.", color = colors.stone) },
+                confirmButton = {
+                    androidx.compose.material3.TextButton(onClick = { showSignOutConfirm = false; viewModel.signOut() }) {
+                        Text("Sign out anyway", color = colors.coral)
+                    }
+                },
+                dismissButton = {
+                    androidx.compose.material3.TextButton(onClick = { showSignOutConfirm = false }) { Text("Cancel") }
+                },
+            )
+        }
     }
 }
 

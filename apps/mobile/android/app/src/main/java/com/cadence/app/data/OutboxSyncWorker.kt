@@ -8,26 +8,24 @@ import androidx.work.ExistingWorkPolicy
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
-import com.cadence.app.network.ApiResult
+import kotlinx.coroutines.flow.first
 
-/** Flushes both offline outboxes (docs/architecture.md §4: session logging
- * and day-type/leave marking) once connectivity is back. Despite the name
- * (kept from when this only handled sessions) it now drains both queues --
- * this is the WorkManager half of "these two actions always work offline;
- * they sync when the network returns" (spec §43-44, architecture.md §4). */
-class SessionSyncWorker(
+/** Flushes every offline outbox (docs/architecture.md §4's cache+outbox
+ * model, now covering every mutation in the app, not just session logging
+ * and day-type marking) once connectivity is back. A single call into
+ * [CadenceRepository.flushAllOutboxes] -- that function already holds
+ * [CadenceRepository]'s own mutex and runs every entity type in the fixed
+ * priority order the ID-remapping logic depends on, so this worker doesn't
+ * need to know anything about that ordering itself. */
+class OutboxSyncWorker(
     context: Context,
     params: WorkerParameters,
     private val repository: CadenceRepository,
 ) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
-        val sessionResult = repository.flushSessionOutbox()
-        val dayEntryResult = repository.flushDayEntryOutbox()
-        return if (sessionResult is ApiResult.Success && dayEntryResult is ApiResult.Success) {
-            Result.success()
-        } else {
-            Result.retry()
-        }
+        repository.flushAllOutboxes()
+        val stillPending = repository.hasAnyPendingWork.first()
+        return if (stillPending) Result.retry() else Result.success()
     }
 
     companion object {
@@ -37,7 +35,7 @@ class SessionSyncWorker(
             val constraints = Constraints.Builder()
                 .setRequiredNetworkType(NetworkType.CONNECTED)
                 .build()
-            val request = OneTimeWorkRequestBuilder<SessionSyncWorker>()
+            val request = OneTimeWorkRequestBuilder<OutboxSyncWorker>()
                 .setConstraints(constraints)
                 .build()
             WorkManager.getInstance(context)

@@ -38,6 +38,13 @@ class SettingsViewModel(
     val themeMode: StateFlow<String> =
         themePreferences.mode.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "light")
 
+    /** Signing out wipes the entire local store (repository.signOutCleanup),
+     * including any unflushed outbox -- SettingsScreen uses this to warn
+     * before that happens now that far more kinds of edits (not just a
+     * session log or day mark) can be sitting unsynced. */
+    val hasAnyPendingWork: StateFlow<Boolean> =
+        repository.hasAnyPendingWork.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
     private val _signOutError = MutableStateFlow<String?>(null)
     val signOutError: StateFlow<String?> = _signOutError.asStateFlow()
 

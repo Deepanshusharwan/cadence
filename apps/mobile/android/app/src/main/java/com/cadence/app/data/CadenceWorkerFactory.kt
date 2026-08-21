@@ -4,10 +4,10 @@ import android.content.Context
 import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 
-/** [SessionSyncWorker] takes a [CadenceRepository] constructor argument, so
+/** [OutboxSyncWorker] takes a [CadenceRepository] constructor argument, so
  * WorkManager's default reflection-based factory can't build it -- this
  * hands it the same repository instance the rest of the app uses (see
- * di/AppContainer.kt), so a queued session flushed by the worker shows up
+ * di/AppContainer.kt), so a queued write flushed by the worker shows up
  * immediately if the app is also open. */
 class CadenceWorkerFactory(private val repository: CadenceRepository) : WorkerFactory() {
     override fun createWorker(
@@ -15,7 +15,7 @@ class CadenceWorkerFactory(private val repository: CadenceRepository) : WorkerFa
         workerClassName: String,
         workerParameters: WorkerParameters,
     ) = when (workerClassName) {
-        SessionSyncWorker::class.java.name -> SessionSyncWorker(appContext, workerParameters, repository)
+        OutboxSyncWorker::class.java.name -> OutboxSyncWorker(appContext, workerParameters, repository)
         else -> null
     }
 }
