@@ -198,7 +198,7 @@ export default function Home() {
             <div className="relative inline-flex items-center gap-3">
               <SquiggleArrowIcon className="pointer-events-none absolute -left-14 -top-1 hidden h-10 w-20 text-ink-black/25 lg:block" />
               <Link
-                href="/sign-in"
+                href="/sign-up"
                 className="rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-white transition-opacity duration-200 ease-out hover:opacity-90"
               >
                 Get Cadence Free
@@ -691,7 +691,7 @@ export default function Home() {
             </h2>
             <div className="mt-8">
               <Link
-                href="/sign-in"
+                href="/sign-up"
                 className="inline-flex rounded-lg bg-pure-white px-5 py-2.5 text-body-sm font-medium text-notion-blue transition-opacity duration-200 ease-out hover:opacity-90"
               >
                 Get Cadence Free

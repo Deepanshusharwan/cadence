@@ -56,3 +56,5 @@ apps/mobile/android/**/*.hprof
 apps/mobile/android/**/*.keystore
 apps/mobile/android/**/*.jks
 apps/mobile/android/**/key.properties
+.vercel
+.env*

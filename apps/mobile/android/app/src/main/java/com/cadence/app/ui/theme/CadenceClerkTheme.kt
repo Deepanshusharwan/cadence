@@ -16,7 +16,19 @@ import com.clerk.api.ui.ClerkTheme
  * always agrees with CadenceRoot's already-resolved theme (device
  * Appearance preference, not just the OS setting) -- the same resolved
  * palette is passed for `colors`/`lightColors`/`darkColors` so it's correct
- * regardless of which one the SDK actually reads from at this call site. */
+ * regardless of which one the SDK actually reads from at this call site.
+ *
+ * Deliberately does NOT override `primaryForeground`/`secondaryButtonBackground`/
+ * `secondaryButtonForeground`/`neutral`: an earlier version did, and it broke
+ * the GitHub/X social-sign-in buttons -- their brand marks are monochrome
+ * glyphs Clerk tints for a *branded* (dark) background, and forcing every
+ * social button onto one uniform light background (to match web's ghost-
+ * button look) made those two icons render white-on-near-white and
+ * effectively disappear. Facebook/Google's icons are fixed multi-color
+ * bitmaps, so they looked fine and masked the problem until it was reported.
+ * Leaving those fields at Clerk's own defaults keeps every provider's icon
+ * readable; the fields below are the ones safe to repaint without touching
+ * icon rendering. */
 @Composable
 fun rememberCadenceClerkTheme(darkTheme: Boolean): ClerkTheme {
     return remember(darkTheme) {
@@ -27,14 +39,10 @@ fun rememberCadenceClerkTheme(darkTheme: Boolean): ClerkTheme {
                 input = CadenceColors.Dark.pureWhite,
                 foreground = CadenceColors.Dark.inkBlack,
                 mutedForeground = CadenceColors.Dark.stone,
-                primaryForeground = CadenceColors.Dark.paperWarmth,
                 inputForeground = CadenceColors.Dark.inkBlack,
-                neutral = CadenceColors.Dark.stone,
                 border = CadenceColors.Dark.hairline,
                 ring = CadenceColors.notionBlue,
                 muted = CadenceColors.Dark.skyTint,
-                secondaryButtonBackground = CadenceColors.Dark.skyTint,
-                secondaryButtonForeground = CadenceColors.notionBlue,
                 danger = CadenceColors.coral,
             )
         } else {
@@ -44,14 +52,10 @@ fun rememberCadenceClerkTheme(darkTheme: Boolean): ClerkTheme {
                 input = CadenceColors.Light.pureWhite,
                 foreground = CadenceColors.Light.inkBlack,
                 mutedForeground = CadenceColors.Light.stone,
-                primaryForeground = CadenceColors.Light.pureWhite,
                 inputForeground = CadenceColors.Light.inkBlack,
-                neutral = CadenceColors.Light.stone,
                 border = CadenceColors.Light.hairline,
                 ring = CadenceColors.notionBlue,
                 muted = CadenceColors.Light.skyTint,
-                secondaryButtonBackground = CadenceColors.Light.skyTint,
-                secondaryButtonForeground = CadenceColors.notionBlue,
                 danger = CadenceColors.coral,
             )
         }

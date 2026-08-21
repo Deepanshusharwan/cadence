@@ -38,7 +38,7 @@ export function SiteHeader() {
             Sign in
           </Link>
           <Link
-            href="/sign-in"
+            href="/sign-up"
             className="rounded-lg bg-notion-blue px-4 py-2 text-body-sm font-medium text-pure-white transition-opacity duration-200 ease-out hover:opacity-90"
           >
             Get Cadence Free
