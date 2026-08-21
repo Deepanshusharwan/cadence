@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter, Source_Serif_4 } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { StoreProvider } from "@/lib/store";
 import { ToastProvider } from "@/components/toast";
 import { ClerkTokenBridge } from "@/components/clerk-token-bridge";
@@ -40,6 +42,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             <AccentApplier />
             <ToastProvider>{children}</ToastProvider>
           </StoreProvider>
+          <Analytics />
+          <SpeedInsights />
         </body>
       </html>
     </ClerkProvider>
