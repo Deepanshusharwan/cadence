@@ -107,7 +107,11 @@ private fun CadenceRoot(container: AppContainer) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             when {
                 !isInitialized -> CircularProgressIndicator()
-                user == null -> AuthView(clerkTheme = rememberCadenceClerkTheme(darkTheme), isDismissible = false)
+                user == null -> AuthView(
+                    clerkTheme = rememberCadenceClerkTheme(darkTheme),
+                    isDismissible = false,
+                    startSocialOAuthAsSignUp = true,
+                )
                 profile == null -> CircularProgressIndicator()
                 profile?.onboarded == false -> SetupScreen(repository = container.repository)
                 else -> CadenceApp(
