@@ -26,7 +26,21 @@ export function SiteFooter() {
             </Link>
           ))}
         </nav>
-        <p className="text-caption text-ink-black/40">© 2026 Cadence</p>
+        <div className="flex items-center gap-4">
+          <Link
+            href="/privacy"
+            className="text-caption text-ink-black/40 transition-colors duration-200 ease-out hover:text-ink-black/70"
+          >
+            Privacy
+          </Link>
+          <Link
+            href="/terms"
+            className="text-caption text-ink-black/40 transition-colors duration-200 ease-out hover:text-ink-black/70"
+          >
+            Terms
+          </Link>
+          <p className="text-caption text-ink-black/40">© 2026 Cadence</p>
+        </div>
       </div>
     </footer>
   );
